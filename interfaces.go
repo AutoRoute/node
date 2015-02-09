@@ -10,21 +10,27 @@ type NeighborFinder interface {
 	Find(l2.FrameReadWriter) <-chan string
 }
 
+// A map of a fixed size representing an interfaces potential
 type ReachabilityMap interface{}
 
-// A layer three connection allows nodes to communicate with each other, given
-// a hash and a connection. This connection sends Reachabilitymaps and proof of
-// delivery.
-type ControlConnection interface {
-}
+// A receipt listing packets which have been succesfully deliver.
+type PacketReceipt interface{}
 
-// The layer three control plane sends reachability information and other
-// control messages.
-type ControlPlane interface {
+// Layer three interfaces for network control traffic
+type MapConnection interface {
 	ReadabilityMaps() <-chan ReachabilityMap
 }
+type ReceiptConnection interface {
+	PacketReceipts() <-chan PacketReceipt
+}
 
-// The layer three data plane sends packets.
-type DataPlane interface {
+// While the two connections use different messages, a working ControlConnection has both interfaces
+type ControlConnection interface {
+	MapConnection
+	ReceptConnection
+}
+
+// The actual data connection. Should be done at the layer two level in order to be able to send congestion signals
+type DataConnection interface {
 	SendPacket([]byte)
 }
