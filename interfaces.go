@@ -18,19 +18,22 @@ type PacketReceipt interface{}
 
 // Layer three interfaces for network control traffic
 type MapConnection interface {
+	SendMap(ReachabilityMap)
 	ReadabilityMaps() <-chan ReachabilityMap
 }
 type ReceiptConnection interface {
+	SendReceipt(PacketReceipt)
 	PacketReceipts() <-chan PacketReceipt
 }
 
 // While the two connections use different messages, a working ControlConnection has both interfaces
 type ControlConnection interface {
 	MapConnection
-	ReceptConnection
+	ReceiptConnection
 }
 
 // The actual data connection. Should be done at the layer two level in order to be able to send congestion signals
 type DataConnection interface {
 	SendPacket([]byte)
+	Packets() <-chan []byte
 }
