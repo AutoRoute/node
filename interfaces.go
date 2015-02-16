@@ -7,33 +7,35 @@ import (
 // The layer two protocol takes a layer two device and returns the hash of the
 // Public Key of all neighbors it can find.
 type NeighborFinder interface {
-	Find(l2.FrameReadWriter) <-chan string
+	Find(l2.FrameReadWriter) <-chan NodeAddress
 }
+
+type NodeAddress string
 
 // Dummy interface to represent public keys
 type PublicKey interface {
-	Hash() string
+	Hash() NodeAddress
 }
 
 type Packet interface {
-	Destination() string
+	Destination() NodeAddress
 }
 
 // A map of a fixed size representing an interfaces potential
 type ReachabilityMap interface {
-	IsReachable(p PublicKey)
+	IsReachable(s NodeAddress) bool
 }
 
 // A receipt listing packets which have been succesfully delivered
 type PacketReceipt interface {
 	ListPackets() []string
-	Verify(p PublicKey) error
+	Verify(p NodeAddress) error
 }
 
 // Layer three interfaces for network control traffic
 type MapConnection interface {
 	SendMap(ReachabilityMap) error
-	ReadabilityMaps() <-chan ReachabilityMap
+	ReachabilityMaps() <-chan ReachabilityMap
 }
 type ReceiptConnection interface {
 	SendReceipt(PacketReceipt) error
