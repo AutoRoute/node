@@ -11,7 +11,13 @@ type NeighborFinder interface {
 }
 
 // Dummy interface to represent public keys
-type PublicKey interface{}
+type PublicKey interface {
+	Hash() string
+}
+
+type Packet interface {
+	Destination() string
+}
 
 // A map of a fixed size representing an interfaces potential
 type ReachabilityMap interface {
@@ -42,6 +48,13 @@ type ControlConnection interface {
 
 // The actual data connection. Should be done at the layer two level in order to be able to send congestion signals
 type DataConnection interface {
-	SendPacket([]byte) error
-	Packets() <-chan []byte
+	SendPacket(Packet) error
+	Packets() <-chan Packet
+}
+
+type Connection interface {
+	ControlConnection
+	DataConnection
+	Key() PublicKey
+	Close()
 }
