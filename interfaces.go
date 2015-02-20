@@ -1,8 +1,6 @@
 package node
 
-import (
-	"github.com/AutoRoute/l2"
-)
+import ()
 
 type NodeAddress string
 
