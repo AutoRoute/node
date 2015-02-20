@@ -18,9 +18,10 @@ func (nf layer2) Find(frw l2.FrameReadWriter) <-chan string {
 	// Broadcast Hash
 	broadcastAddr := l2.MacToBytesOrDie("ff:ff:ff:ff:ff:ff")
 	localAddr := l2.MacToBytesOrDie("aa:bb:cc:dd:ee:00") // TODO: pass own mac address
+	var protocol uint16 = 31337                          // TODO: add real protocol
 	var p PublicKey                                      // TODO: pass public key
 	publicKeyHash := []byte(p.Hash())
-	initFrame := l2.NewEthFrame(broadcastAddr, localAddr, 31337, publicKeyHash) //TODO: add real protocol
+	initFrame := l2.NewEthFrame(broadcastAddr, localAddr, protocol, publicKeyHash)
 	frw.WriteFrame(initFrame)
 	// Process Loop
 	go func() {
@@ -28,6 +29,9 @@ func (nf layer2) Find(frw l2.FrameReadWriter) <-chan string {
 			newInstanceFrame, _ := frw.ReadFrame()
 			src := l2.EthFrame(newInstanceFrame).Source()
 			dest := l2.EthFrame(newInstanceFrame).Destination()
+			if l2.EthFrame(newInstanceFrame).Type() != protocol {
+				continue // Throw away if protocols don't match
+			}
 			if bytes.Equal(src, localAddr) {
 				continue // Throw away if from me
 			}
