@@ -24,7 +24,10 @@ func (nf layer2) Find(frw l2.FrameReadWriter) <-chan string {
 	publicKeyHash := []byte(p.Hash())
 	initFrame := l2.NewEthFrame(broadcastAddr, localAddr, protocol, publicKeyHash)
 	fmt.Println("Broadcasting packet.")
-	_ = frw.WriteFrame(initFrame) // TODO: check errors
+	var err error = frw.WriteFrame(initFrame) // TODO: check errors
+	if err != nil {
+		panic(err)
+	}
 	fmt.Println("Broadcasted packet.")
 	// Process Loop
 	go func() {
@@ -50,7 +53,10 @@ func (nf layer2) Find(frw l2.FrameReadWriter) <-chan string {
 				publicKeyHash := []byte(p.Hash())
 				initFrame := l2.NewEthFrame(src, localAddr, 31337, publicKeyHash) // TODO: add real protocol
 				fmt.Printf("Sending response packet %v.\n", src)
-				_ = frw.WriteFrame(initFrame) // TODO: check errors
+				var err error = frw.WriteFrame(initFrame) // TODO: check errors
+				if err != nil {
+					panic(err)
+				}
 				fmt.Println("Sent response packet.")
 			}
 		}
