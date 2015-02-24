@@ -2,6 +2,7 @@ package node
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/AutoRoute/l2"
 )
 
@@ -22,13 +23,18 @@ func (nf layer2) Find(frw l2.FrameReadWriter) <-chan string {
 	var p PublicKey                                      // TODO: pass public key
 	publicKeyHash := []byte(p.Hash())
 	initFrame := l2.NewEthFrame(broadcastAddr, localAddr, protocol, publicKeyHash)
+	fmt.Println("Broadcasting packet.")
 	_ = frw.WriteFrame(initFrame) // TODO: check errors
+	fmt.Println("Broadcasted packet.")
 	// Process Loop
 	go func() {
 		for {
+			fmt.Println("Receiving packet.")
 			newInstanceFrame, _ := frw.ReadFrame()
 			src := newInstanceFrame.Source()
 			dest := newInstanceFrame.Destination()
+			fmt.Printf("Received packet from %v.\n", src)
+			fmt.Printf("Received packet to %v.\n", dest)
 			if newInstanceFrame.Type() != protocol {
 				continue // Throw away if protocols don't match
 			}
@@ -43,7 +49,9 @@ func (nf layer2) Find(frw l2.FrameReadWriter) <-chan string {
 				var p PublicKey // TODO: pass public key
 				publicKeyHash := []byte(p.Hash())
 				initFrame := l2.NewEthFrame(src, localAddr, 31337, publicKeyHash) // TODO: add real protocol
-				_ = frw.WriteFrame(initFrame)                                     // TODO: check errors
+				fmt.Printf("Sending response packet %v.\n", src)
+				_ = frw.WriteFrame(initFrame) // TODO: check errors
+				fmt.Println("Sent response packet.")
 			}
 		}
 	}()
