@@ -20,8 +20,8 @@ func (nf layer2) Find(frw l2.FrameReadWriter) <-chan string {
 	broadcastAddr := l2.MacToBytesOrDie("ff:ff:ff:ff:ff:ff")
 	localAddr := l2.MacToBytesOrDie("aa:bb:cc:dd:ee:00") // TODO: pass own mac address
 	var protocol uint16 = 31337                          // TODO: add real protocol
-	var p PublicKey                                      // TODO: pass public key
-	publicKeyHash := []byte("Test message, please ignore.")
+	var p PublicKey = pktest("test")                     // TODO: pass public key
+	publicKeyHash := []byte(p.Hash())
 	initFrame := l2.NewEthFrame(broadcastAddr, localAddr, protocol, publicKeyHash)
 	fmt.Println("Broadcasting packet.")
 	var err error = frw.WriteFrame(initFrame) // TODO: check errors
@@ -49,8 +49,8 @@ func (nf layer2) Find(frw l2.FrameReadWriter) <-chan string {
 			}
 			c <- string(newInstanceFrame.Data())
 			if bytes.Equal(dest, broadcastAddr) { // Respond if to broadcast addr
-				var p PublicKey // TODO: pass public key
-				publicKeyHash := []byte("Test message, please ignore.")
+				var p PublicKey = pktest("test2") // TODO: pass public key
+				publicKeyHash := []byte(p.Hash())
 				initFrame := l2.NewEthFrame(src, localAddr, 31337, publicKeyHash) // TODO: add real protocol
 				fmt.Printf("Sending response packet %v.\n", src)
 				var err error = frw.WriteFrame(initFrame) // TODO: check errors
