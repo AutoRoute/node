@@ -4,11 +4,6 @@ import ()
 
 type NodeAddress string
 
-// Dummy interface to represent public keys
-type PublicKey interface {
-	Hash() NodeAddress
-}
-
 type Packet interface {
 	Destination() NodeAddress
 }

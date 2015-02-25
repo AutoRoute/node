@@ -13,7 +13,7 @@ type routerImpl struct {
 }
 
 func (r *routerImpl) AddConnection(c Connection) {
-	id := c.Key().Hash()
+	id := c.Key().Hash("") // give Hash() string arg
 	_, duplicate := r.connections[id]
 	if duplicate {
 		c.Close()
@@ -40,7 +40,7 @@ func (r *routerImpl) handleData(id NodeAddress, p DataConnection) {
 			// Ideally this call shouldn't be needed, but if we don't have
 			// any maps we should still be able to route to direct neighbours
 			// TODO(colin): Actually handle all the economic activity
-			if c.Key().Hash() == packet.Destination() {
+			if c.Key().Hash("") == packet.Destination() { // give Hash() string arg
 				c.SendPacket(packet)
 				break
 			} else if r.maps[id].IsReachable(packet.Destination()) {
