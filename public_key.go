@@ -1,14 +1,12 @@
 package node
 
-import ()
-
 type pktest string
 
 // Dummy interface to represent public keys
 type PublicKey interface {
-	Hash(p pktest) NodeAddress
+	Hash() NodeAddress
 }
 
-func Hash(p pktest) NodeAddress {
+func (p pktest) Hash() NodeAddress {
 	return NodeAddress(p)
 }
