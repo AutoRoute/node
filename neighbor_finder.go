@@ -12,15 +12,17 @@ type NeighborFinder interface {
 	Find(l2.FrameReadWriter) <-chan string
 }
 
-type layer2 struct{}
+type layer2 struct {
+	mac string
+}
 
-func (nf layer2) Find(frw l2.FrameReadWriter, mac string) <-chan string {
+func (nf layer2) Find(frw l2.FrameReadWriter) <-chan string {
 	c := make(chan string)
 	// Broadcast Hash
 	broadcastAddr := l2.MacToBytesOrDie("ff:ff:ff:ff:ff:ff")
-	localAddr := l2.MacToBytesOrDie(mac) // TODO: decide on mac passing before merging
-	var protocol uint16 = 31337          // TODO: add real protocol
-	var p PublicKey = pktest("test")     // TODO: pass public key
+	localAddr := l2.MacToBytesOrDie(nf.mac) // TODO: decide on mac passing before merging
+	var protocol uint16 = 31337             // TODO: add real protocol
+	var p PublicKey = pktest("test")        // TODO: pass public key
 	publicKeyHash := []byte(p.Hash())
 	initFrame := l2.NewEthFrame(broadcastAddr, localAddr, protocol, publicKeyHash)
 	fmt.Println("Broadcasting packet.")
