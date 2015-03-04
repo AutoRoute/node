@@ -12,16 +12,26 @@ type NeighborFinder interface {
 	Find(l2.FrameReadWriter) <-chan string
 }
 
-type layer2 struct{}
+type NeighborData struct {
+	pk PublicKey
+}
 
-func (nf layer2) Find(frw l2.FrameReadWriter) <-chan string {
+func NewNeighborData(pk PublicKey) NeighborData {
+	return NeighborData{pk}
+}
+func (n NeighborData) Find(mac string, frw l2.FrameReadWriter) (<-chan string, error) {
 	c := make(chan string)
 	// Broadcast Hash
-	broadcastAddr, _ := l2.MacToBytes("ff:ff:ff:ff:ff:ff")
-	localAddr, _ := l2.MacToBytes("aa:bb:cc:dd:ee:00") // TODO: pass own mac address
-	var protocol uint16 = 31337                        // TODO: add real protocol
-	var p PublicKey = pktest("test")                   // TODO: pass public key
-	publicKeyHash := []byte(p.Hash())
+	broadcastAddr, errb := l2.MacToBytes("ff:ff:ff:ff:ff:ff")
+	if errb != nil {
+		return c, errb
+	}
+	localAddr, errl := l2.MacToBytes(mac) // TODO: decide on mac passing before merging
+	if errl != nil {
+		return c, errl
+	}
+	var protocol uint16 = 31337 // TODO: add real protocol
+	publicKeyHash := []byte(n.pk.Hash())
 	initFrame := l2.NewEthFrame(broadcastAddr, localAddr, protocol, publicKeyHash)
 	fmt.Println("Broadcasting packet.")
 	var err error = frw.WriteFrame(initFrame) // TODO: check errors
@@ -61,5 +71,5 @@ func (nf layer2) Find(frw l2.FrameReadWriter) <-chan string {
 			}
 		}
 	}()
-	return c
+	return c, nil // TODO: return channel error?
 }
