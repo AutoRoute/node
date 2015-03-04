@@ -26,10 +26,12 @@ func newMapImpl(me NodeAddress) MapHandler {
 }
 
 func (m *mapImpl) AddConnection(id NodeAddress, c MapConnection) {
+	m.l.Lock()
+	defer m.l.Unlock()
 	m.maps[id] = nil
 	m.conns[id] = c
 
-	// Send the wort map.
+	// Send the worst map.
 	go func() {
 		sm := make(map[NodeAddress]bool)
 		sm[m.me] = true
@@ -40,12 +42,14 @@ func (m *mapImpl) AddConnection(id NodeAddress, c MapConnection) {
 	}()
 
 	// Store all received maps
-	for rmap := range c.ReachabilityMaps() {
-		// TODO(colin): This is a horrible approximation
-		m.l.Lock()
-		m.maps[id] = append(m.maps[id], rmap)
-		m.l.Unlock()
-	}
+	go func() {
+		for rmap := range c.ReachabilityMaps() {
+			// TODO(colin): This is a horrible approximation
+			m.l.Lock()
+			m.maps[id] = append(m.maps[id], rmap)
+			m.l.Unlock()
+		}
+	}()
 }
 
 func (m *mapImpl) FindConnection(id NodeAddress) (NodeAddress, error) {
@@ -69,14 +73,23 @@ func (m *mapImpl) FindConnection(id NodeAddress) (NodeAddress, error) {
 // The brains of everything, takes in connections and wires them togethor.
 type Router interface {
 	AddConnection(Connection)
+	DataConnection
 }
 
 type routerImpl struct {
 	// A struct which maintains reachability information
 	reachability MapHandler
 
+	id NodeAddress
+
 	// A map of public key hashes to connections
 	connections map[NodeAddress]Connection
+
+	incoming chan Packet
+}
+
+func newRouterImpl(id NodeAddress) Router {
+	return &routerImpl{newMapImpl(id), id, make(map[NodeAddress]Connection), make(chan Packet)}
 }
 
 func (r *routerImpl) AddConnection(c Connection) {
@@ -88,21 +101,38 @@ func (r *routerImpl) AddConnection(c Connection) {
 	}
 	r.connections[id] = c
 
-	// Curry the id since the various sub connections don't know abou it
-	go r.reachability.AddConnection(id, c)
+	// Curry the id since the various sub connections don't know about it
+	r.reachability.AddConnection(id, c)
 	go r.handleData(id, c)
-	go r.handleReceipts(id, c)
+	//go r.handleReceipts(id, c)
 }
 
 func (r *routerImpl) handleData(id NodeAddress, p DataConnection) {
 	for packet := range p.Packets() {
-		rid, err := r.reachability.FindConnection(packet.Destination())
+		err := r.SendPacket(packet)
 		if err != nil {
-			log.Printf("Dropping packet destined to %q no known route", packet.Destination())
+			log.Printf("%q: Dropping packet destined to %q: %q", r.id, packet.Destination(), err)
 			continue
 		}
-		r.connections[rid].SendPacket(packet)
 	}
 }
 
-func (r *routerImpl) handleReceipts(id NodeAddress, p ReceiptConnection) {}
+func (r *routerImpl) SendPacket(p Packet) error {
+	if p.Destination() == r.id {
+		log.Printf("%q: Routing packet to self", r.id)
+		r.incoming <- p
+		return nil
+	}
+	rid, err := r.reachability.FindConnection(p.Destination())
+	if err != nil {
+		return err
+	}
+	log.Printf("%q: Routing packet to %q", r.id, rid)
+	return r.connections[rid].SendPacket(p)
+}
+
+func (r *routerImpl) Packets() <-chan Packet {
+	return r.incoming
+}
+
+//func (r *routerImpl) handleReceipts(id NodeAddress, p ReceiptConnection) {}

@@ -11,6 +11,6 @@ func TestSRM(t *testing.T) {
 	s := SimpleReachabilityMap(m)
 
 	if !(s.IsReachable(a)) {
-		t.Fatalf("expected %q to be reachable", s)
+		t.Fatalf("expected %v to be reachable", s)
 	}
 }
