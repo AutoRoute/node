@@ -1,7 +1,6 @@
 package node
 
 import (
-	"fmt"
 	"github.com/AutoRoute/l2"
 	"testing"
 )
@@ -11,15 +10,16 @@ type testInterface struct {
 	out chan l2.EthFrame
 }
 
-func (t testInterface) ReadFrame() l2.EthFrame {
-	return <-in
+func (t testInterface) ReadFrame() (l2.EthFrame, error) {
+	return <-t.in, nil
 }
 
-func (t testInterface) WriteFrame() (e l2.EthFrame) {
-	out <- e
+func (t testInterface) WriteFrame(e l2.EthFrame) error {
+	t.out <- e
+	return nil
 }
 
-func CreatePairedInterface() (FrameReadWriter, FrameReadWriter) {
+func CreatePairedInterface() (l2.FrameReadWriter, l2.FrameReadWriter) {
 	one := make(chan l2.EthFrame)
 	two := make(chan l2.EthFrame)
 	return testInterface{one, two}, testInterface{two, one}
@@ -37,6 +37,6 @@ func TestBasicExchange(t *testing.T) {
 	nf1 := NewNeighborFinder(public_key1)
 	nf2 := NewNeighborFinder(public_key2)
 
-	outone = nf1.Find(test_mac1, one)
-	outtwo = nf2.Find(test_mac2, two)
+	outone := nf1.Find(test_mac1, one)
+	outtwo := nf2.Find(test_mac2, two)
 }
