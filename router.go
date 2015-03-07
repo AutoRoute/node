@@ -26,16 +26,22 @@ func newMapImpl(me NodeAddress) MapHandler {
 }
 
 func (m *mapImpl) AddConnection(id NodeAddress, c MapConnection) {
+	// TODO(colin): This should be streamed. or something similar.
 	m.l.Lock()
 	defer m.l.Unlock()
 	m.maps[id] = nil
 	m.conns[id] = c
 
-	// Send the worst map.
+	// Send all our maps
 	go func() {
-		sm := make(map[NodeAddress]bool)
-		sm[m.me] = true
-		err := c.SendMap(SimpleReachabilityMap(sm))
+		sm := NewSimpleReachabilityMap()
+		sm.AddEntry(m.me)
+		for _, vs := range m.maps {
+			for _, v := range vs {
+				sm.Merge(v)
+			}
+		}
+		err := c.SendMap(sm)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -44,7 +50,7 @@ func (m *mapImpl) AddConnection(id NodeAddress, c MapConnection) {
 	// Store all received maps
 	go func() {
 		for rmap := range c.ReachabilityMaps() {
-			// TODO(colin): This is a horrible approximation
+			rmap.Increment()
 			m.l.Lock()
 			m.maps[id] = append(m.maps[id], rmap)
 			m.l.Unlock()
