@@ -34,8 +34,8 @@ func TestBasicExchange(t *testing.T) {
 
 	one, two := CreatePairedInterface()
 
-	nf1 := NewNeighborFinder(public_key1)
-	nf2 := NewNeighborFinder(public_key2)
+	nf1 := NewNeighborData(public_key1)
+	nf2 := NewNeighborData(public_key2)
 
 	outone := nf1.Find(test_mac1, one)
 	outtwo := nf2.Find(test_mac2, two)
