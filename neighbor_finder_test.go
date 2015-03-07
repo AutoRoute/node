@@ -1,8 +1,10 @@
 package node
 
 import (
+	"fmt"
 	"github.com/AutoRoute/l2"
 	"testing"
+	"time"
 )
 
 type testInterface struct {
@@ -11,18 +13,23 @@ type testInterface struct {
 }
 
 func (t testInterface) ReadFrame() (l2.EthFrame, error) {
-	return <-t.in, nil
+	return <-t.in, nil // TODO: return error
 }
 
 func (t testInterface) WriteFrame(e l2.EthFrame) error {
 	t.out <- e
-	return nil
+	return nil // TODO: return error
 }
 
 func CreatePairedInterface() (l2.FrameReadWriter, l2.FrameReadWriter) {
 	one := make(chan l2.EthFrame)
 	two := make(chan l2.EthFrame)
 	return testInterface{one, two}, testInterface{two, one}
+}
+
+func PrintFromChannel(cs <-chan string) {
+	var msg string = <-cs
+	fmt.Println(msg)
 }
 
 func TestBasicExchange(t *testing.T) {
@@ -37,6 +44,17 @@ func TestBasicExchange(t *testing.T) {
 	nf1 := NewNeighborData(public_key1)
 	nf2 := NewNeighborData(public_key2)
 
-	outone := nf1.Find(test_mac1, one)
-	outtwo := nf2.Find(test_mac2, two)
+	outone, err1 := nf1.Find(test_mac1, one)
+	if err1 != nil {
+		panic(err1)
+	}
+	outtwo, err2 := nf2.Find(test_mac2, two)
+	if err2 != nil {
+		panic(err2)
+	}
+	for i := 0; i < 100; i++ {
+		go PrintFromChannel(outone)
+		go PrintFromChannel(outtwo)
+		time.Sleep(1 * 1e9)
+	}
 }
