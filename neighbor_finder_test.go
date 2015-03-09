@@ -22,8 +22,8 @@ func (t testInterface) WriteFrame(e l2.EthFrame) error {
 }
 
 func CreatePairedInterface() (l2.FrameReadWriter, l2.FrameReadWriter) {
-	one := make(chan l2.EthFrame)
-	two := make(chan l2.EthFrame)
+	one := make(chan l2.EthFrame, 100)
+	two := make(chan l2.EthFrame, 100)
 	return testInterface{one, two}, testInterface{two, one}
 }
 
