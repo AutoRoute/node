@@ -19,6 +19,7 @@ type NeighborData struct {
 func NewNeighborData(pk PublicKey) NeighborData {
 	return NeighborData{pk}
 }
+
 func (n NeighborData) Find(mac string, frw l2.FrameReadWriter) (<-chan string, error) {
 	c := make(chan string)
 	// Broadcast Hash
