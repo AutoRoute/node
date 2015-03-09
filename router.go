@@ -8,6 +8,7 @@ import (
 type Router interface {
 	AddConnection(Connection)
 	DataConnection
+	GetAddress() PublicKey
 }
 
 type routerImpl struct {
@@ -21,6 +22,10 @@ type routerImpl struct {
 
 func newRouterImpl(id NodeAddress) Router {
 	return &routerImpl{id, make(chan Packet), newMapImpl(id), make(map[NodeAddress]Connection)}
+}
+
+func (r *routerImpl) GetAddress() PublicKey {
+	return pktest(r.id)
 }
 
 func (r *routerImpl) AddConnection(c Connection) {

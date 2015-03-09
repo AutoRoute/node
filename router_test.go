@@ -1,63 +1,10 @@
 package node
 
 import (
+	"log"
 	"testing"
 	"time"
 )
-
-type testMapConnection struct {
-	in  chan ReachabilityMap
-	out chan ReachabilityMap
-}
-
-func (c testMapConnection) SendMap(m ReachabilityMap) error {
-	c.out <- m
-	return nil
-}
-func (c testMapConnection) ReachabilityMaps() <-chan ReachabilityMap {
-	return c.in
-}
-
-func makePairedMapConnections() (MapConnection, MapConnection) {
-	one := make(chan ReachabilityMap)
-	two := make(chan ReachabilityMap)
-	return testMapConnection{one, two}, testMapConnection{two, one}
-}
-
-func TestMapHandler(t *testing.T) {
-
-	c1, c2 := makePairedMapConnections()
-
-	a1 := NodeAddress("1")
-	a2 := NodeAddress("2")
-
-	m1 := newMapImpl(a1)
-	m2 := newMapImpl(a1)
-
-	m1.AddConnection(a2, c2)
-	m2.AddConnection(a1, c1)
-
-	timeout := func(m MapHandler, id NodeAddress) bool {
-		start := time.Now()
-		for now := start; now.Before(start.Add(time.Second)); now = time.Now() {
-			if a, err := m.FindConnection(id); err == nil {
-				if a == id {
-					return true
-				} else {
-					t.Fatal("impossible?", a, id)
-				}
-			}
-		}
-		return false
-	}
-
-	if !timeout(m1, a2) {
-		t.Fatal("timed out waiting for m1", m1)
-	}
-	if !timeout(m2, a1) {
-		t.Fatal("timed out waiting for m1", m2)
-	}
-}
 
 type testDataConnection struct {
 	in  chan Packet
@@ -98,25 +45,22 @@ type testPacket NodeAddress
 
 func (p testPacket) Destination() NodeAddress { return NodeAddress(p) }
 
-func TestRouter(t *testing.T) {
+func LinkRouters(a, b Router) {
+	c1, c2 := makePairedConnections(a.GetAddress(), b.GetAddress())
+	a.AddConnection(c2)
+	b.AddConnection(c1)
+}
+
+func TestDirectRouter(t *testing.T) {
 
 	a1 := NodeAddress("1")
 	a2 := NodeAddress("2")
-
-	k1 := pktest(a1)
-	k2 := pktest(a2)
-
 	r1 := newRouterImpl(a1)
 	r2 := newRouterImpl(a2)
-
-	c1, c2 := makePairedConnections(k1, k2)
-
-	r1.AddConnection(c2)
-	r2.AddConnection(c1)
+	LinkRouters(r1, r2)
 
 	// Send a test packet over the connection
 	p2 := testPacket(a2)
-
 	go func() {
 		err := r1.SendPacket(p2)
 		if err != nil {
@@ -125,7 +69,6 @@ func TestRouter(t *testing.T) {
 	}()
 
 	received := <-r2.Packets()
-
 	if received != p2 {
 		t.Fatalf("%q != %q", received, p2)
 	}
@@ -136,5 +79,38 @@ func TestRouter(t *testing.T) {
 	err := r1.SendPacket(p3)
 	if err == nil {
 		t.Fatal("Expected error got nil")
+	}
+}
+
+func TestRelayRouter(t *testing.T) {
+
+	a1 := NodeAddress("1")
+	a2 := NodeAddress("2")
+	a3 := NodeAddress("3")
+	r1 := newRouterImpl(a1)
+	r2 := newRouterImpl(a2)
+	r3 := newRouterImpl(a3)
+	LinkRouters(r1, r2)
+	LinkRouters(r2, r3)
+
+	// Send a test packet over the connection
+	p3 := testPacket(a3)
+	go func() {
+		start := time.Now()
+		var err error = nil
+		for now := start; now.Before(start.Add(time.Second)); now = time.Now() {
+			err = r1.SendPacket(p3)
+			if err == nil {
+				break
+			}
+		}
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	received := <-r3.Packets()
+	if received != p3 {
+		t.Fatalf("%q != %q", received, p3)
 	}
 }

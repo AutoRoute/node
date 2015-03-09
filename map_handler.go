@@ -30,6 +30,7 @@ func newMapImpl(me NodeAddress) MapHandler {
 	conns := make(map[NodeAddress]MapConnection)
 	maps := make(map[NodeAddress]ReachabilityMap)
 	impl := &mapImpl{me, &sync.Mutex{}, conns, maps, make(chan taggedMap), NewSimpleReachabilityMap()}
+	impl.merged_map.AddEntry(me)
 	go impl.maphandler()
 	return impl
 }
@@ -70,8 +71,8 @@ func (m *mapImpl) AddConnection(id NodeAddress, c MapConnection) {
 			rmap.Increment()
 			m.l.Lock()
 			m.maps[id].Merge(rmap)
-			m.updates <- taggedMap{id, rmap}
 			m.l.Unlock()
+			m.updates <- taggedMap{id, rmap}
 		}
 	}()
 }
