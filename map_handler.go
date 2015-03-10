@@ -22,29 +22,26 @@ type mapImpl struct {
 	l          *sync.Mutex
 	conns      map[NodeAddress]MapConnection
 	maps       map[NodeAddress]ReachabilityMap
-	updates    chan taggedMap
 	merged_map ReachabilityMap
 }
 
 func newMapImpl(me NodeAddress) MapHandler {
 	conns := make(map[NodeAddress]MapConnection)
 	maps := make(map[NodeAddress]ReachabilityMap)
-	impl := &mapImpl{me, &sync.Mutex{}, conns, maps, make(chan taggedMap), NewSimpleReachabilityMap()}
+	impl := &mapImpl{me, &sync.Mutex{}, conns, maps, NewSimpleReachabilityMap()}
 	impl.merged_map.AddEntry(me)
-	go impl.maphandler()
 	return impl
 }
 
-func (m *mapImpl) maphandler() {
-	for update := range m.updates {
-		m.l.Lock()
-		m.merged_map.Merge(update.new_map)
-		for addr, conn := range m.conns {
-			if addr != update.address {
-				conn.SendMap(update.new_map)
-			}
+func (m *mapImpl) addMap(update taggedMap) {
+	m.l.Lock()
+	defer m.l.Unlock()
+	m.maps[update.address].Merge(update.new_map)
+	m.merged_map.Merge(update.new_map)
+	for addr, conn := range m.conns {
+		if addr != update.address {
+			conn.SendMap(update.new_map)
 		}
-		m.l.Unlock()
 	}
 }
 
@@ -69,10 +66,7 @@ func (m *mapImpl) AddConnection(id NodeAddress, c MapConnection) {
 	go func() {
 		for rmap := range c.ReachabilityMaps() {
 			rmap.Increment()
-			m.l.Lock()
-			m.maps[id].Merge(rmap)
-			m.l.Unlock()
-			m.updates <- taggedMap{id, rmap}
+			m.addMap(taggedMap{id, rmap})
 		}
 	}()
 }

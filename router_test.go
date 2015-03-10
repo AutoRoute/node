@@ -37,7 +37,6 @@ func (t testConnection) Key() PublicKey { return t.k }
 func makePairedConnections(k1, k2 PublicKey) (Connection, Connection) {
 	d1, d2 := makePairedDataConnections()
 	m1, m2 := makePairedMapConnections()
-
 	return testConnection{d1, m1, k1}, testConnection{d2, m2, k2}
 }
 
@@ -52,7 +51,6 @@ func LinkRouters(a, b Router) {
 }
 
 func TestDirectRouter(t *testing.T) {
-
 	a1 := NodeAddress("1")
 	a2 := NodeAddress("2")
 	r1 := newRouterImpl(a1)
@@ -83,7 +81,6 @@ func TestDirectRouter(t *testing.T) {
 }
 
 func TestRelayRouter(t *testing.T) {
-
 	a1 := NodeAddress("1")
 	a2 := NodeAddress("2")
 	a3 := NodeAddress("3")
@@ -96,16 +93,18 @@ func TestRelayRouter(t *testing.T) {
 	// Send a test packet over the connection
 	p3 := testPacket(a3)
 	go func() {
-		start := time.Now()
-		var err error = nil
-		for now := start; now.Before(start.Add(time.Second)); now = time.Now() {
-			err = r1.SendPacket(p3)
-			if err == nil {
-				break
+		tries := time.Tick(10 * time.Millisecond)
+		timeout := time.After(time.Second)
+		for {
+			select {
+			case <-tries:
+				err := r1.SendPacket(p3)
+				if err == nil {
+					break
+				}
+			case <-timeout:
+				log.Fatal("Timed out waiting for succesful send")
 			}
-		}
-		if err != nil {
-			log.Fatal(err)
 		}
 	}()
 
