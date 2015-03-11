@@ -3,6 +3,7 @@ package node
 import (
 	"fmt"
 	"github.com/AutoRoute/l2"
+	"log"
 	"testing"
 	"time"
 )
@@ -27,9 +28,12 @@ func CreatePairedInterface() (l2.FrameReadWriter, l2.FrameReadWriter) {
 	return testInterface{one, two}, testInterface{two, one}
 }
 
-func PrintFromChannel(cs <-chan string) {
+func CheckReceivedMessage(cs <-chan string, test string) {
 	var msg string = <-cs
-	fmt.Println(msg)
+	if msg != test {
+		log.Fatalf("Received %q != %q", msg, test)
+	}
+	fmt.Printf("Received: %v\n", msg)
 }
 
 func TestBasicExchange(t *testing.T) {
@@ -61,8 +65,8 @@ func TestBasicExchange(t *testing.T) {
 		}
 	}()
 	for i := 0; i < 100; i++ {
-		go PrintFromChannel(outone)
-		go PrintFromChannel(outtwo)
+		go CheckReceivedMessage(outone, string(public_key2.Hash()))
+		go CheckReceivedMessage(outtwo, string(public_key1.Hash()))
 		time.Sleep(1 * 1e9)
 	}
 }
