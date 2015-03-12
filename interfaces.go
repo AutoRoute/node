@@ -5,9 +5,11 @@ import (
 )
 
 type NodeAddress string
+type PacketHash string
 
 type Packet interface {
 	Destination() NodeAddress
+	Hash() PacketHash
 }
 
 // A map of a fixed size representing an interfaces potential
@@ -37,7 +39,7 @@ type ReceiptConnection interface {
 // While the two connections use different messages, a working ControlConnection has both interfaces
 type ControlConnection interface {
 	MapConnection
-	//ReceiptConnection
+	ReceiptConnection
 }
 
 // The actual data connection. Should be done at the layer two level in order to be able to send congestion signals

@@ -18,6 +18,7 @@ type routerImpl struct {
 	reachability MapHandler
 	// A map of public key hashes to connections
 	connections map[NodeAddress]Connection
+	payments    ReceiptHandler
 }
 
 func newRouterImpl(id NodeAddress) Router {
