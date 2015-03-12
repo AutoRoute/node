@@ -6,11 +6,16 @@ import (
 
 func TestSRM(t *testing.T) {
 	a := NodeAddress("1")
-	m := make(map[NodeAddress]bool)
-	m[a] = true
-	s := SimpleReachabilityMap(m)
+	s := NewSimpleReachabilityMap()
+	s.AddEntry(a)
 
 	if !(s.IsReachable(a)) {
+		t.Fatalf("expected %v to be reachable", s)
+	}
+
+	b := NewSimpleReachabilityMap()
+	b.Merge(s)
+	if !(b.IsReachable(a)) {
 		t.Fatalf("expected %v to be reachable", s)
 	}
 }

@@ -13,6 +13,9 @@ type Packet interface {
 // A map of a fixed size representing an interfaces potential
 type ReachabilityMap interface {
 	IsReachable(s NodeAddress) bool
+	AddEntry(n NodeAddress)
+	Increment()
+	Merge(n ReachabilityMap)
 }
 
 // A receipt listing packets which have been succesfully delivered
