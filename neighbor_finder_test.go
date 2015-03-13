@@ -28,12 +28,12 @@ func CreatePairedInterface() (l2.FrameReadWriter, l2.FrameReadWriter) {
 	return testInterface{one, two}, testInterface{two, one}
 }
 
-func CheckReceivedMessage(cs <-chan string, test string) {
+func CheckReceivedMessage(cs <-chan string, test string, receiver string) {
 	var msg string = <-cs
 	if msg != test {
-		log.Fatalf("Received %q != %q", msg, test)
+		log.Fatalf("%q: Received %q != %q", receiver, msg, test)
 	}
-	fmt.Printf("Received: %v\n", msg)
+	fmt.Printf("%q: Received: %v\n", receiver, msg)
 }
 
 func TestBasicExchange(t *testing.T) {
@@ -65,8 +65,8 @@ func TestBasicExchange(t *testing.T) {
 		}
 	}()
 	for i := 0; i < 100; i++ {
-		go CheckReceivedMessage(outone, string(public_key2.Hash()))
-		go CheckReceivedMessage(outtwo, string(public_key1.Hash()))
+		go CheckReceivedMessage(outone, string(public_key2.Hash()), string(public_key1.Hash()))
+		go CheckReceivedMessage(outtwo, string(public_key1.Hash()), string(public_key2.Hash()))
 		time.Sleep(1 * 1e9)
 	}
 }
