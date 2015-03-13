@@ -23,8 +23,8 @@ func (t testInterface) WriteFrame(e l2.EthFrame) error {
 }
 
 func CreatePairedInterface() (l2.FrameReadWriter, l2.FrameReadWriter) {
-	one := make(chan l2.EthFrame, 100)
-	two := make(chan l2.EthFrame, 100)
+	one := make(chan l2.EthFrame, 2)
+	two := make(chan l2.EthFrame, 2)
 	return testInterface{one, two}, testInterface{two, one}
 }
 
@@ -64,7 +64,7 @@ func TestBasicExchange(t *testing.T) {
 			panic(err2)
 		}
 	}()
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 2; i++ {
 		go CheckReceivedMessage(outone, string(public_key2.Hash()), string(public_key1.Hash()))
 		go CheckReceivedMessage(outtwo, string(public_key1.Hash()), string(public_key2.Hash()))
 		time.Sleep(1 * 1e9)
