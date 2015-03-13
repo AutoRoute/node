@@ -70,6 +70,7 @@ func (n NeighborData) Find(mac string, frw l2.FrameReadWriter) (<-chan string, e
 				fmt.Printf("%q: Sent response packet.\n", publicKeyHash)
 			}
 		}
+		close(c)
 	}()
 	return c, nil // TODO: return channel error?
 }

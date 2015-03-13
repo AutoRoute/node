@@ -49,28 +49,19 @@ func TestBasicExchange(t *testing.T) {
 	nf1 := NewNeighborData(public_key1)
 	nf2 := NewNeighborData(public_key2)
 
-	var outone <-chan string
-	var outtwo <-chan string
-	var err1 error
-	var err2 error
-	go func() {
-		outone, err1 = nf1.Find(test_mac1, one)
-		if err1 != nil {
-			panic(err1)
-		}
-	}()
-	go func() {
-		outtwo, err2 = nf2.Find(test_mac2, two)
-		if err2 != nil {
-			panic(err2)
-		}
-	}()
+	outone, err1 := nf1.Find(test_mac1, one)
+	if err1 != nil {
+		panic(err1)
+	}
+	outtwo, err2 := nf2.Find(test_mac2, two)
+	if err2 != nil {
+		panic(err2)
+	}
 	var wg sync.WaitGroup
 	for i := 0; i < 2; i++ {
 		wg.Add(2)
 		go CheckReceivedMessage(outone, string(public_key2.Hash()), string(public_key1.Hash()), &wg)
 		go CheckReceivedMessage(outtwo, string(public_key1.Hash()), string(public_key2.Hash()), &wg)
-		fmt.Println("DONE")
 		wg.Wait()
 	}
 }
