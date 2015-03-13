@@ -19,6 +19,7 @@ type NeighborData struct {
 func NewNeighborData(pk PublicKey) NeighborData {
 	return NeighborData{pk}
 }
+
 func (n NeighborData) Find(mac string, frw l2.FrameReadWriter) (<-chan string, error) {
 	c := make(chan string)
 	// Broadcast Hash
@@ -59,8 +60,6 @@ func (n NeighborData) Find(mac string, frw l2.FrameReadWriter) (<-chan string, e
 			}
 			c <- string(newInstanceFrame.Data())
 			if bytes.Equal(dest, broadcastAddr) { // Respond if to broadcast addr
-				var p PublicKey = pktest("test2") // TODO: pass public key
-				publicKeyHash := []byte(p.Hash())
 				initFrame := l2.NewEthFrame(src, localAddr, 31337, publicKeyHash) // TODO: add real protocol
 				fmt.Printf("Sending response packet %v.\n", src)
 				var err error = frw.WriteFrame(initFrame) // TODO: check errors
