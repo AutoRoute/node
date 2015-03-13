@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"github.com/AutoRoute/l2"
 	"log"
+	"sync"
 	"testing"
-	"time"
 )
 
 type testInterface struct {
@@ -23,12 +23,13 @@ func (t testInterface) WriteFrame(e l2.EthFrame) error {
 }
 
 func CreatePairedInterface() (l2.FrameReadWriter, l2.FrameReadWriter) {
-	one := make(chan l2.EthFrame, 2)
-	two := make(chan l2.EthFrame, 2)
+	one := make(chan l2.EthFrame, 100)
+	two := make(chan l2.EthFrame, 100)
 	return testInterface{one, two}, testInterface{two, one}
 }
 
-func CheckReceivedMessage(cs <-chan string, test string, receiver string) {
+func CheckReceivedMessage(cs <-chan string, test string, receiver string, wg *sync.WaitGroup) {
+	defer wg.Done()
 	var msg string = <-cs
 	if msg != test {
 		log.Fatalf("%q: Received %q != %q", receiver, msg, test)
@@ -64,9 +65,12 @@ func TestBasicExchange(t *testing.T) {
 			panic(err2)
 		}
 	}()
+	var wg sync.WaitGroup
 	for i := 0; i < 2; i++ {
-		go CheckReceivedMessage(outone, string(public_key2.Hash()), string(public_key1.Hash()))
-		go CheckReceivedMessage(outtwo, string(public_key1.Hash()), string(public_key2.Hash()))
-		time.Sleep(1 * 1e9)
+		wg.Add(2)
+		go CheckReceivedMessage(outone, string(public_key2.Hash()), string(public_key1.Hash()), &wg)
+		go CheckReceivedMessage(outtwo, string(public_key1.Hash()), string(public_key2.Hash()), &wg)
+		fmt.Println("DONE")
+		wg.Wait()
 	}
 }
