@@ -26,11 +26,11 @@ func (n NeighborData) Find(mac string, frw l2.FrameReadWriter) (<-chan string, e
 	// Broadcast Hash
 	broadcastAddr, errb := l2.MacToBytes("ff:ff:ff:ff:ff:ff")
 	if errb != nil {
-		log.Fatalf("%v\n", errb)
+		log.Fatal("%v\n", errb)
 	}
 	localAddr, errl := l2.MacToBytes(mac) // TODO: decide on mac passing before merging
 	if errl != nil {
-		log.Fatalf("%v\n", errl)
+		return c, errl
 	}
 	var protocol uint16 = 31337 // TODO: add real protocol
 	publicKeyHash := []byte(n.pk.Hash())

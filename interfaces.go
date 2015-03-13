@@ -1,6 +1,8 @@
 package node
 
-import ()
+import (
+	"io"
+)
 
 type NodeAddress string
 
@@ -11,6 +13,9 @@ type Packet interface {
 // A map of a fixed size representing an interfaces potential
 type ReachabilityMap interface {
 	IsReachable(s NodeAddress) bool
+	AddEntry(n NodeAddress)
+	Increment()
+	Merge(n ReachabilityMap)
 }
 
 // A receipt listing packets which have been succesfully delivered
@@ -32,7 +37,7 @@ type ReceiptConnection interface {
 // While the two connections use different messages, a working ControlConnection has both interfaces
 type ControlConnection interface {
 	MapConnection
-	ReceiptConnection
+	//ReceiptConnection
 }
 
 // The actual data connection. Should be done at the layer two level in order to be able to send congestion signals
@@ -45,5 +50,5 @@ type Connection interface {
 	ControlConnection
 	DataConnection
 	Key() PublicKey
-	Close()
+	io.Closer
 }
