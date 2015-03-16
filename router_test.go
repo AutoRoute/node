@@ -28,6 +28,7 @@ func makePairedDataConnections() (DataConnection, DataConnection) {
 type testConnection struct {
 	DataConnection
 	MapConnection
+	ReceiptConnection
 	k PublicKey
 }
 
@@ -37,12 +38,14 @@ func (t testConnection) Key() PublicKey { return t.k }
 func makePairedConnections(k1, k2 PublicKey) (Connection, Connection) {
 	d1, d2 := makePairedDataConnections()
 	m1, m2 := makePairedMapConnections()
-	return testConnection{d1, m1, k1}, testConnection{d2, m2, k2}
+	r1, r2 := makePairedReceiptConnections()
+	return testConnection{d1, m1, r1, k1}, testConnection{d2, m2, r2, k2}
 }
 
 type testPacket NodeAddress
 
 func (p testPacket) Destination() NodeAddress { return NodeAddress(p) }
+func (p testPacket) Hash() PacketHash         { return PacketHash(p) }
 
 func LinkRouters(a, b Router) {
 	c1, c2 := makePairedConnections(a.GetAddress(), b.GetAddress())

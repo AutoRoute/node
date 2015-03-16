@@ -22,8 +22,9 @@ type ReachabilityMap interface {
 
 // A receipt listing packets which have been succesfully delivered
 type PacketReceipt interface {
-	ListPackets() []string
-	Verify(p NodeAddress) error
+	ListPackets() []PacketHash
+	Source() NodeAddress
+	Verify() error
 }
 
 // Layer three interfaces for network control traffic
