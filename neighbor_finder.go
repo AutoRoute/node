@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/AutoRoute/l2"
+	"log"
 )
 
 // The layer two protocol takes a layer two device and returns the hash of the
@@ -19,12 +20,13 @@ type NeighborData struct {
 func NewNeighborData(pk PublicKey) NeighborData {
 	return NeighborData{pk}
 }
+
 func (n NeighborData) Find(mac string, frw l2.FrameReadWriter) (<-chan string, error) {
 	c := make(chan string)
 	// Broadcast Hash
 	broadcastAddr, errb := l2.MacToBytes("ff:ff:ff:ff:ff:ff")
 	if errb != nil {
-		return c, errb
+		log.Fatal("%v\n", errb)
 	}
 	localAddr, errl := l2.MacToBytes(mac) // TODO: decide on mac passing before merging
 	if errl != nil {
@@ -33,21 +35,21 @@ func (n NeighborData) Find(mac string, frw l2.FrameReadWriter) (<-chan string, e
 	var protocol uint16 = 31337 // TODO: add real protocol
 	publicKeyHash := []byte(n.pk.Hash())
 	initFrame := l2.NewEthFrame(broadcastAddr, localAddr, protocol, publicKeyHash)
-	fmt.Println("Broadcasting packet.")
+	fmt.Printf("%q: Broadcasting packet.\n", publicKeyHash)
 	var err error = frw.WriteFrame(initFrame) // TODO: check errors
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("Broadcasted packet.")
+	fmt.Printf("%q: Broadcasted packet.\n", publicKeyHash)
 	// Process Loop
 	go func() {
 		for {
-			fmt.Println("Receiving packet.")
+			fmt.Printf("%q: Receiving packet.\n", publicKeyHash)
 			newInstanceFrame, _ := frw.ReadFrame()
 			src := newInstanceFrame.Source()
 			dest := newInstanceFrame.Destination()
-			fmt.Printf("Received packet from %v.\n", src)
-			fmt.Printf("Received packet to %v.\n", dest)
+			fmt.Printf("%q: Received packet from %v.\n", publicKeyHash, src)
+			fmt.Printf("%q: Received packet to %v.\n", publicKeyHash, dest)
 			if newInstanceFrame.Type() != protocol {
 				continue // Throw away if protocols don't match
 			}
@@ -59,17 +61,16 @@ func (n NeighborData) Find(mac string, frw l2.FrameReadWriter) (<-chan string, e
 			}
 			c <- string(newInstanceFrame.Data())
 			if bytes.Equal(dest, broadcastAddr) { // Respond if to broadcast addr
-				var p PublicKey = pktest("test2") // TODO: pass public key
-				publicKeyHash := []byte(p.Hash())
 				initFrame := l2.NewEthFrame(src, localAddr, 31337, publicKeyHash) // TODO: add real protocol
-				fmt.Printf("Sending response packet %v.\n", src)
+				fmt.Printf("%q: Sending response packet %v.\n", publicKeyHash, src)
 				var err error = frw.WriteFrame(initFrame) // TODO: check errors
 				if err != nil {
 					panic(err)
 				}
-				fmt.Println("Sent response packet.")
+				fmt.Printf("%q: Sent response packet.\n", publicKeyHash)
 			}
 		}
+		close(c)
 	}()
 	return c, nil // TODO: return channel error?
 }
