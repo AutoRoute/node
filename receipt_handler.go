@@ -78,9 +78,12 @@ func (r *receiptImpl) sendReceipt(id NodeAddress, receipt PacketReceipt) {
 			log.Printf("Received packet receipt from wrong host? %q != %q", id, record.next)
 		}
 		dest[record.src] = true
+		log.Printf("%q: Notifying action", r.id)
 		r.a.Receipt(hash)
 	}
 	for addr, _ := range dest {
-		r.connections[addr].SendReceipt(receipt)
+		if addr != r.id {
+			r.connections[addr].SendReceipt(receipt)
+		}
 	}
 }
