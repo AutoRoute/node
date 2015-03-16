@@ -8,8 +8,8 @@ type srmentry struct {
 type SimpleReachabilityMap map[NodeAddress]srmentry
 
 func NewSimpleReachabilityMap() ReachabilityMap {
-	m := make(map[NodeAddress]srmentry)
-	return SimpleReachabilityMap(m)
+	m := make(SimpleReachabilityMap)
+	return m
 }
 
 func (m SimpleReachabilityMap) IsReachable(n NodeAddress) bool {
