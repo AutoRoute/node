@@ -14,7 +14,12 @@ func TestSBRM(t *testing.T) {
 	}
 
 	b := NewSimpleBloomReachabilityMap()
-	b.Merge(s)
+
+	err := b.Merge(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	if !(b.IsReachable(a)) {
 		t.Fatalf("expected %v to be reachable", s)
 	}

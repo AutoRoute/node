@@ -2,6 +2,7 @@ package node
 
 import (
 	"bloom"
+	"fmt"
 )
 
 type SimpleBloomReachabilityMap struct {
@@ -29,10 +30,14 @@ func (m SimpleBloomReachabilityMap) Increment() {
 	return
 }
 
-func (m SimpleBloomReachabilityMap) Merge(nr ReachabilityMap) {
+func (m SimpleBloomReachabilityMap) Merge(nr ReachabilityMap) error {
+	var err error
+
 	if n, ok := nr.(SimpleBloomReachabilityMap); ok {
-		m.f.Merge(n.f)
+		err = m.f.Merge(n.f)
 	} else {
-		// TODO: Error goes here.
+		err = fmt.Errorf("Mismatched reachability map types")
 	}
+
+	return err
 }
