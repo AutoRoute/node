@@ -18,10 +18,15 @@ type routerImpl struct {
 	reachability MapHandler
 	// A map of public key hashes to connections
 	connections map[NodeAddress]Connection
+	payments    ReceiptHandler
 }
 
+type NullAction struct{}
+
+func (n NullAction) Receipt(PacketHash) {}
+
 func newRouterImpl(id NodeAddress) Router {
-	return &routerImpl{id, make(chan Packet), newMapImpl(id), make(map[NodeAddress]Connection)}
+	return &routerImpl{id, make(chan Packet), newMapImpl(id), make(map[NodeAddress]Connection), newReceiptImpl(id, NullAction{})}
 }
 
 func (r *routerImpl) GetAddress() PublicKey {
