@@ -28,9 +28,11 @@ func (m SimpleReachabilityMap) Increment() {
 	}
 }
 
-func (m SimpleReachabilityMap) Merge(nr ReachabilityMap) {
+func (m SimpleReachabilityMap) Merge(nr ReachabilityMap) error {
 	n := nr.(SimpleReachabilityMap)
 	for k, v := range n {
 		m[k] = v
 	}
+
+	return nil
 }
