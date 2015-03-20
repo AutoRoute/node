@@ -6,14 +6,14 @@ import (
 
 func TestSBRM(t *testing.T) {
 	a := NodeAddress("1")
-	s := NewSimpleBloomReachabilityMap()
+	s := NewBloomReachabilityMap()
 	s.AddEntry(a)
 
 	if !(s.IsReachable(a)) {
 		t.Fatalf("expected %v to be reachable", s)
 	}
 
-	b := NewSimpleBloomReachabilityMap()
+	b := NewBloomReachabilityMap()
 
 	err := b.Merge(s)
 	if err != nil {
