@@ -5,7 +5,7 @@ import (
 	"sync"
 )
 
-// Takes care of maintaining maps and insures that we know which interfaces are reachable where.
+// Takes care of recording which packets made it to the other side
 type ReceiptHandler interface {
 	AddConnection(NodeAddress, ReceiptConnection)
 	AddSentPacket(p Packet, src, next NodeAddress)
