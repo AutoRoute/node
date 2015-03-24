@@ -10,7 +10,7 @@ type PacketHash string
 type Packet interface {
 	Destination() NodeAddress
 	Hash() PacketHash
-    Amount() int64
+	Amount() int64
 }
 
 // A map of a fixed size representing an interfaces potential
@@ -30,9 +30,9 @@ type PacketReceipt interface {
 
 // A type representing a payment that you can use
 type Payment interface {
-    Source() NodeAddress
-    Verify() error
-    Amount() int64
+	Source() NodeAddress
+	Verify() error
+	Amount() int64
 }
 
 // Layer three interfaces for network control traffic
@@ -45,8 +45,8 @@ type ReceiptConnection interface {
 	PacketReceipts() <-chan PacketReceipt
 }
 type PaymentConnection interface {
-    SendPayment(Payment)
-    Payments() <-chan Payment
+	SendPayment(Payment) error
+	Payments() <-chan Payment
 }
 
 // While the two connections use different messages, a working ControlConnection has both interfaces
