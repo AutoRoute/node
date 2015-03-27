@@ -31,6 +31,7 @@ type PacketReceipt interface {
 // A type representing a payment that you can use
 type Payment interface {
 	Source() NodeAddress
+	Destination() NodeAddress
 	Verify() error
 	Amount() int64
 }
