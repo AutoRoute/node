@@ -54,10 +54,17 @@ func LinkRouters(a, b Router) {
 }
 
 func TestDirectRouter(t *testing.T) {
-	a1 := NodeAddress("1")
-	a2 := NodeAddress("2")
-	r1 := newRouterImpl(a1)
-	r2 := newRouterImpl(a2)
+	k1, err := NewPublicKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+	k2, err := NewPublicKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+	r1 := newRouterImpl(k1)
+	r2 := newRouterImpl(k2)
+	a2 := k2.Hash()
 	LinkRouters(r1, r2)
 
 	// Send a test packet over the connection
@@ -77,19 +84,29 @@ func TestDirectRouter(t *testing.T) {
 	// Make sure a bad packet fails
 	a3 := NodeAddress("3")
 	p3 := testPacket(a3)
-	err := r1.SendPacket(p3)
+	err = r1.SendPacket(p3)
 	if err == nil {
 		t.Fatal("Expected error got nil")
 	}
 }
 
 func TestRelayRouter(t *testing.T) {
-	a1 := NodeAddress("1")
-	a2 := NodeAddress("2")
-	a3 := NodeAddress("3")
-	r1 := newRouterImpl(a1)
-	r2 := newRouterImpl(a2)
-	r3 := newRouterImpl(a3)
+	k1, err := NewPublicKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+	k2, err := NewPublicKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+	k3, err := NewPublicKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+	a3 := k3.Hash()
+	r1 := newRouterImpl(k1)
+	r2 := newRouterImpl(k2)
+	r3 := newRouterImpl(k3)
 	LinkRouters(r1, r2)
 	LinkRouters(r2, r3)
 
