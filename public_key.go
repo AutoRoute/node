@@ -11,12 +11,6 @@ type PublicKey interface {
 	Hash() NodeAddress
 }
 
-type pktest string
-
-func (p pktest) Hash() NodeAddress {
-	return NodeAddress(p)
-}
-
 type ecdsaEncoding ecdsa.PublicKey
 
 func (e ecdsaEncoding) Hash() NodeAddress {

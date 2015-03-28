@@ -41,8 +41,14 @@ func TestBasicExchange(t *testing.T) {
 	var test_mac1 string = "aa:bb:cc:dd:ee:00"
 	var test_mac2 string = "aa:bb:cc:dd:ee:11"
 
-	var public_key1 PublicKey = pktest("test1")
-	var public_key2 PublicKey = pktest("test2")
+	public_key1, err := NewPublicKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+	public_key2, err := NewPublicKey()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	one, two := CreatePairedInterface()
 

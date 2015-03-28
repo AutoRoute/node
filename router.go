@@ -12,7 +12,7 @@ type Router interface {
 }
 
 type routerImpl struct {
-	id       NodeAddress
+	pk       PublicKey
 	incoming chan Packet
 	// A struct which maintains reachability information
 	reachability MapHandler
@@ -25,12 +25,12 @@ type NullAction struct{}
 
 func (n NullAction) Receipt(PacketHash) {}
 
-func newRouterImpl(id NodeAddress) Router {
-	return &routerImpl{id, make(chan Packet), newMapImpl(id), make(map[NodeAddress]Connection), newReceiptImpl(id, NullAction{})}
+func newRouterImpl(pk PublicKey) Router {
+	return &routerImpl{pk, make(chan Packet), newMapImpl(pk.Hash()), make(map[NodeAddress]Connection), newReceiptImpl(pk.Hash(), NullAction{})}
 }
 
 func (r *routerImpl) GetAddress() PublicKey {
-	return pktest(r.id)
+	return r.pk
 }
 
 func (r *routerImpl) AddConnection(c Connection) {
@@ -52,15 +52,15 @@ func (r *routerImpl) handleData(id NodeAddress, p DataConnection) {
 	for packet := range p.Packets() {
 		err := r.SendPacket(packet)
 		if err != nil {
-			log.Printf("%q: Dropping packet destined to %q: %q", r.id, packet.Destination(), err)
+			log.Printf("%q: Dropping packet destined to %q: %q", r.pk.Hash(), packet.Destination(), err)
 			continue
 		}
 	}
 }
 
 func (r *routerImpl) SendPacket(p Packet) error {
-	if p.Destination() == r.id {
-		log.Printf("%q: Routing packet to self", r.id)
+	if p.Destination() == r.pk.Hash() {
+		log.Printf("%q: Routing packet to self", r.pk.Hash())
 		r.incoming <- p
 		return nil
 	}
@@ -68,7 +68,7 @@ func (r *routerImpl) SendPacket(p Packet) error {
 	if err != nil {
 		return err
 	}
-	log.Printf("%q: Routing packet to %q", r.id, rid)
+	log.Printf("%q: Routing packet to %q", r.pk.Hash(), rid)
 	return r.connections[rid].SendPacket(p)
 }
 
