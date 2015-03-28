@@ -9,6 +9,16 @@ import (
 
 const protocol = 6042
 
+var broadcast []byte
+
+func init() {
+	var err error
+	broadcast, err = l2.MacToBytes("ff:ff:ff:ff:ff:ff")
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 // The layer two protocol takes a layer two device and returns the hash of the
 // Public Key of all neighbors it can find.
 type NeighborFinder interface {
@@ -21,14 +31,6 @@ type NeighborData struct {
 
 func NewNeighborData(pk PublicKey) NeighborData {
 	return NeighborData{pk}
-}
-
-func broadcastMAC() []byte {
-	broadcast, err := l2.MacToBytes("ff:ff:ff:ff:ff:ff")
-	if err != nil {
-		log.Fatal("%v\n", err)
-	}
-	return broadcast
 }
 
 func (n NeighborData) handleLink(mac []byte, frw l2.FrameReadWriter, c chan NodeAddress) {
@@ -52,10 +54,10 @@ func (n NeighborData) handleLink(mac []byte, frw l2.FrameReadWriter, c chan Node
 		}
 		// If the packet is to us or broadcast, record it.
 		if bytes.Equal(frame.Destination(), mac) ||
-			bytes.Equal(frame.Destination(), broadcastMAC()) {
+			bytes.Equal(frame.Destination(), broadcast) {
 			c <- NodeAddress(string(frame.Data()))
 		}
-		if !bytes.Equal(frame.Destination(), broadcastMAC()) {
+		if !bytes.Equal(frame.Destination(), broadcast) {
 			continue
 		}
 		response := l2.NewEthFrame(frame.Source(), mac, protocol, []byte(n.pk.Hash()))
@@ -70,7 +72,7 @@ func (n NeighborData) handleLink(mac []byte, frw l2.FrameReadWriter, c chan Node
 
 func (n NeighborData) Find(mac []byte, frw l2.FrameReadWriter) (<-chan NodeAddress, error) {
 	// Send initial packet
-	frame := l2.NewEthFrame(broadcastMAC(), mac, protocol, []byte(n.pk.Hash()))
+	frame := l2.NewEthFrame(broadcast, mac, protocol, []byte(n.pk.Hash()))
 	log.Printf("%q: Broadcasting packet.\n", n.pk.Hash())
 	err := frw.WriteFrame(frame)
 	if err != nil {
