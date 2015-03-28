@@ -12,7 +12,7 @@ const protocol = 6042
 // The layer two protocol takes a layer two device and returns the hash of the
 // Public Key of all neighbors it can find.
 type NeighborFinder interface {
-	Find(l2.FrameReadWriter) <-chan string
+	Find(l2.FrameReadWriter) <-chan NodeAddress
 }
 
 type NeighborData struct {
@@ -31,7 +31,7 @@ func broadcastMAC() []byte {
 	return broadcast
 }
 
-func (n NeighborData) handleLink(mac []byte, frw l2.FrameReadWriter, c chan string) {
+func (n NeighborData) handleLink(mac []byte, frw l2.FrameReadWriter, c chan NodeAddress) {
 	// Handle received packets
 	defer close(c)
 	for {
@@ -53,7 +53,7 @@ func (n NeighborData) handleLink(mac []byte, frw l2.FrameReadWriter, c chan stri
 		// If the packet is to us or broadcast, record it.
 		if bytes.Equal(frame.Destination(), mac) ||
 			bytes.Equal(frame.Destination(), broadcastMAC()) {
-			c <- string(frame.Data())
+			c <- NodeAddress(string(frame.Data()))
 		}
 		if !bytes.Equal(frame.Destination(), broadcastMAC()) {
 			continue
@@ -68,7 +68,7 @@ func (n NeighborData) handleLink(mac []byte, frw l2.FrameReadWriter, c chan stri
 	}
 }
 
-func (n NeighborData) Find(mac []byte, frw l2.FrameReadWriter) (<-chan string, error) {
+func (n NeighborData) Find(mac []byte, frw l2.FrameReadWriter) (<-chan NodeAddress, error) {
 	// Send initial packet
 	frame := l2.NewEthFrame(broadcastMAC(), mac, protocol, []byte(n.pk.Hash()))
 	log.Printf("%q: Broadcasting packet.\n", n.pk.Hash())
@@ -77,7 +77,7 @@ func (n NeighborData) Find(mac []byte, frw l2.FrameReadWriter) (<-chan string, e
 		return nil, err
 	}
 
-	c := make(chan string)
+	c := make(chan NodeAddress)
 	go n.handleLink(mac, frw, c)
 	return c, nil
 }

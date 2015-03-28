@@ -3,7 +3,6 @@ package node
 import (
 	"github.com/AutoRoute/l2"
 	"log"
-	"sync"
 	"testing"
 )
 
@@ -29,30 +28,15 @@ func CreatePairedInterface() (l2.FrameReadWriter, l2.FrameReadWriter) {
 	return testInterface{one, two}, testInterface{two, one}
 }
 
-func CheckReceivedMessage(cs <-chan string, test string, wg *sync.WaitGroup) {
-	defer wg.Done()
-	msg := <-cs
-	log.Printf("received %q", msg)
-	if msg != test {
-		log.Fatalf("%Received %q != %q", msg, test)
-	}
-}
-
 func TestBasicExchange(t *testing.T) {
 	test_mac1, _ := l2.MacToBytes("aa:bb:cc:dd:ee:00")
 	test_mac2, _ := l2.MacToBytes("aa:bb:cc:dd:ee:11")
-
-	public_key1 := pktest("test1")
-	public_key2 := pktest("test2")
+	pk1 := pktest("test1")
+	pk2 := pktest("test2")
+	nf1 := NewNeighborData(pk1)
+	nf2 := NewNeighborData(pk2)
 
 	one, two := CreatePairedInterface()
-
-	wg := &sync.WaitGroup{}
-	wg.Add(4)
-
-	nf1 := NewNeighborData(public_key1)
-	nf2 := NewNeighborData(public_key2)
-
 	outone, err := nf1.Find(test_mac1, one)
 	if err != nil {
 		t.Fatal(err)
@@ -61,11 +45,23 @@ func TestBasicExchange(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// We should receive the other side twice, once from broadcast, and one
+
+	// We should receive the other side twice, once from broadcast, and once
 	// from directed response
-	go CheckReceivedMessage(outone, string(public_key2.Hash()), wg)
-	go CheckReceivedMessage(outone, string(public_key2.Hash()), wg)
-	go CheckReceivedMessage(outtwo, string(public_key1.Hash()), wg)
-	go CheckReceivedMessage(outtwo, string(public_key1.Hash()), wg)
-	wg.Wait()
+	msg := <-outone
+	if msg != pk2.Hash() {
+		log.Printf("Expected %q!=%q", pk2.Hash(), msg)
+	}
+	msg = <-outtwo
+	if msg != pk1.Hash() {
+		log.Printf("Expected %q!=%q", pk1.Hash(), msg)
+	}
+	msg = <-outone
+	if msg != pk2.Hash() {
+		log.Printf("Expected %q!=%q", pk2.Hash(), msg)
+	}
+	msg = <-outtwo
+	if msg != pk1.Hash() {
+		log.Printf("Expected %q!=%q", pk1.Hash(), msg)
+	}
 }
