@@ -1,7 +1,6 @@
 package node
 
 import (
-	"fmt"
 	"github.com/AutoRoute/l2"
 	"log"
 	"sync"
@@ -14,54 +13,59 @@ type testInterface struct {
 }
 
 func (t testInterface) ReadFrame() (l2.EthFrame, error) {
-	return <-t.in, nil // TODO: return error
+	return <-t.in, nil
 }
 
 func (t testInterface) WriteFrame(e l2.EthFrame) error {
 	t.out <- e
-	return nil // TODO: return error
+	return nil
 }
 
 func CreatePairedInterface() (l2.FrameReadWriter, l2.FrameReadWriter) {
-	one := make(chan l2.EthFrame, 100)
-	two := make(chan l2.EthFrame, 100)
+	// Make non blocking since buffering exists on ethernet drivers, so
+	// we can be less stringent
+	one := make(chan l2.EthFrame, 1)
+	two := make(chan l2.EthFrame, 1)
 	return testInterface{one, two}, testInterface{two, one}
 }
 
-func CheckReceivedMessage(cs <-chan string, test string, receiver string, wg *sync.WaitGroup) {
+func CheckReceivedMessage(cs <-chan string, test string, wg *sync.WaitGroup) {
 	defer wg.Done()
-	var msg string = <-cs
+	msg := <-cs
+	log.Printf("received %q", msg)
 	if msg != test {
-		log.Fatalf("%q: Received %q != %q", receiver, msg, test)
+		log.Fatalf("%Received %q != %q", msg, test)
 	}
-	fmt.Printf("%q: Received: %v\n", receiver, msg)
 }
 
 func TestBasicExchange(t *testing.T) {
-	var test_mac1 string = "aa:bb:cc:dd:ee:00"
-	var test_mac2 string = "aa:bb:cc:dd:ee:11"
+	test_mac1, _ := l2.MacToBytes("aa:bb:cc:dd:ee:00")
+	test_mac2, _ := l2.MacToBytes("aa:bb:cc:dd:ee:11")
 
-	var public_key1 PublicKey = pktest("test1")
-	var public_key2 PublicKey = pktest("test2")
+	public_key1 := pktest("test1")
+	public_key2 := pktest("test2")
 
 	one, two := CreatePairedInterface()
+
+	wg := &sync.WaitGroup{}
+	wg.Add(4)
 
 	nf1 := NewNeighborData(public_key1)
 	nf2 := NewNeighborData(public_key2)
 
-	outone, err1 := nf1.Find(test_mac1, one)
-	if err1 != nil {
-		panic(err1)
+	outone, err := nf1.Find(test_mac1, one)
+	if err != nil {
+		t.Fatal(err)
 	}
-	outtwo, err2 := nf2.Find(test_mac2, two)
-	if err2 != nil {
-		panic(err2)
+	outtwo, err := nf2.Find(test_mac2, two)
+	if err != nil {
+		t.Fatal(err)
 	}
-	var wg sync.WaitGroup
-	for i := 0; i < 2; i++ {
-		wg.Add(2)
-		go CheckReceivedMessage(outone, string(public_key2.Hash()), string(public_key1.Hash()), &wg)
-		go CheckReceivedMessage(outtwo, string(public_key1.Hash()), string(public_key2.Hash()), &wg)
-		wg.Wait()
-	}
+	// We should receive the other side twice, once from broadcast, and one
+	// from directed response
+	go CheckReceivedMessage(outone, string(public_key2.Hash()), wg)
+	go CheckReceivedMessage(outone, string(public_key2.Hash()), wg)
+	go CheckReceivedMessage(outtwo, string(public_key1.Hash()), wg)
+	go CheckReceivedMessage(outtwo, string(public_key1.Hash()), wg)
+	wg.Wait()
 }
