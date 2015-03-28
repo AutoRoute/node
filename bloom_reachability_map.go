@@ -1,8 +1,8 @@
 package node
 
 import (
-	"bloom"
 	"fmt"
+	"github.com/AutoRoute/bloom"
 )
 
 type BloomReachabilityMap struct {
