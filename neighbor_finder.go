@@ -2,15 +2,27 @@ package node
 
 import (
 	"bytes"
-	"fmt"
-	"github.com/AutoRoute/l2"
 	"log"
+
+	"github.com/AutoRoute/l2"
 )
+
+const protocol = 6042
+
+var broadcast []byte
+
+func init() {
+	var err error
+	broadcast, err = l2.MacToBytes("ff:ff:ff:ff:ff:ff")
+	if err != nil {
+		log.Fatal(err)
+	}
+}
 
 // The layer two protocol takes a layer two device and returns the hash of the
 // Public Key of all neighbors it can find.
 type NeighborFinder interface {
-	Find(l2.FrameReadWriter) <-chan string
+	Find(l2.FrameReadWriter) <-chan NodeAddress
 }
 
 type NeighborData struct {
@@ -21,56 +33,53 @@ func NewNeighborData(pk PublicKey) NeighborData {
 	return NeighborData{pk}
 }
 
-func (n NeighborData) Find(mac string, frw l2.FrameReadWriter) (<-chan string, error) {
-	c := make(chan string)
-	// Broadcast Hash
-	broadcastAddr, errb := l2.MacToBytes("ff:ff:ff:ff:ff:ff")
-	if errb != nil {
-		log.Fatal("%v\n", errb)
-	}
-	localAddr, errl := l2.MacToBytes(mac) // TODO: decide on mac passing before merging
-	if errl != nil {
-		return c, errl
-	}
-	var protocol uint16 = 31337 // TODO: add real protocol
-	publicKeyHash := []byte(n.pk.Hash())
-	initFrame := l2.NewEthFrame(broadcastAddr, localAddr, protocol, publicKeyHash)
-	fmt.Printf("%q: Broadcasting packet.\n", publicKeyHash)
-	var err error = frw.WriteFrame(initFrame) // TODO: check errors
-	if err != nil {
-		panic(err)
-	}
-	fmt.Printf("%q: Broadcasted packet.\n", publicKeyHash)
-	// Process Loop
-	go func() {
-		for {
-			fmt.Printf("%q: Receiving packet.\n", publicKeyHash)
-			newInstanceFrame, _ := frw.ReadFrame()
-			src := newInstanceFrame.Source()
-			dest := newInstanceFrame.Destination()
-			fmt.Printf("%q: Received packet from %v.\n", publicKeyHash, src)
-			fmt.Printf("%q: Received packet to %v.\n", publicKeyHash, dest)
-			if newInstanceFrame.Type() != protocol {
-				continue // Throw away if protocols don't match
-			}
-			if bytes.Equal(src, localAddr) {
-				continue // Throw away if from me
-			}
-			if !(bytes.Equal(dest, localAddr) || bytes.Equal(dest, broadcastAddr)) {
-				continue // Throw away if it wasn't to me or the broadcast address
-			}
-			c <- string(newInstanceFrame.Data())
-			if bytes.Equal(dest, broadcastAddr) { // Respond if to broadcast addr
-				initFrame := l2.NewEthFrame(src, localAddr, 31337, publicKeyHash) // TODO: add real protocol
-				fmt.Printf("%q: Sending response packet %v.\n", publicKeyHash, src)
-				var err error = frw.WriteFrame(initFrame) // TODO: check errors
-				if err != nil {
-					panic(err)
-				}
-				fmt.Printf("%q: Sent response packet.\n", publicKeyHash)
-			}
+func (n NeighborData) handleLink(mac []byte, frw l2.FrameReadWriter, c chan NodeAddress) {
+	// Handle received packets
+	defer close(c)
+	for {
+		frame, err := frw.ReadFrame()
+		if err != nil {
+			log.Printf("Failure reading from connection %c, %v", frw, err)
+			return
 		}
-		close(c)
-	}()
-	return c, nil // TODO: return channel error?
+		log.Printf("%q: Received packet from %v sent to %v.\n", n.pk.Hash(), frame.Source(), frame.Destination())
+		// Throw away if protocols don't match
+		if frame.Type() != protocol {
+			log.Printf("%q: bad protocol", n.pk.Hash())
+			continue
+		}
+		if bytes.Equal(frame.Source(), mac) {
+			log.Printf("%q: from ourselves?", n.pk.Hash())
+			continue // Throw away if from me
+		}
+		// If the packet is to us or broadcast, record it.
+		if bytes.Equal(frame.Destination(), mac) ||
+			bytes.Equal(frame.Destination(), broadcast) {
+			c <- NodeAddress(string(frame.Data()))
+		}
+		if !bytes.Equal(frame.Destination(), broadcast) {
+			continue
+		}
+		response := l2.NewEthFrame(frame.Source(), mac, protocol, []byte(n.pk.Hash()))
+		log.Printf("%q: Sending response packet %v.\n", n.pk.Hash(), frame.Source())
+		err = frw.WriteFrame(response)
+		if err != nil {
+			log.Printf("Failure writing to connection %c, %v", frw, err)
+			return
+		}
+	}
+}
+
+func (n NeighborData) Find(mac []byte, frw l2.FrameReadWriter) (<-chan NodeAddress, error) {
+	// Send initial packet
+	frame := l2.NewEthFrame(broadcast, mac, protocol, []byte(n.pk.Hash()))
+	log.Printf("%q: Broadcasting packet.\n", n.pk.Hash())
+	err := frw.WriteFrame(frame)
+	if err != nil {
+		return nil, err
+	}
+
+	c := make(chan NodeAddress)
+	go n.handleLink(mac, frw, c)
+	return c, nil
 }
