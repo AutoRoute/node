@@ -19,9 +19,18 @@ func TestMerkle(t *testing.T) {
 	if pr.Source() != k.PublicKey().Hash() {
 		t.Fatal("Expected %v got %v", pr.Source(), k.PublicKey().Hash())
 	}
-	for i, _ := range pr.ListPackets() {
-		if pr.ListPackets()[i] != p[i] {
-			t.Fatal("Expected %v got %v", pr.ListPackets()[i], p[i])
+	if len(pr.ListPackets()) != len(p) {
+		t.Fatal("Expected %v got %v", pr.ListPackets(), p)
+	}
+	for _, i := range pr.ListPackets() {
+		found := false
+		for _, j := range p {
+			if j == i {
+				found = true
+			}
+		}
+		if !found {
+			t.Fatal("Expected %v in %v", i, p)
 		}
 	}
 }
