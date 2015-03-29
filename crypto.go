@@ -25,7 +25,7 @@ type Signature interface {
 }
 
 type privateECDSAEncoding struct {
-	k ecdsa.PrivateKey
+	k *ecdsa.PrivateKey
 }
 
 func (p privateECDSAEncoding) PublicKey() PublicKey {
@@ -33,7 +33,7 @@ func (p privateECDSAEncoding) PublicKey() PublicKey {
 }
 
 func (p privateECDSAEncoding) Sign(m []byte) Signature {
-	r, s, err := ecdsa.Sign(rand.Reader, &p.k, m)
+	r, s, err := ecdsa.Sign(rand.Reader, p.k, m)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -78,10 +78,10 @@ func (e ecdsaEncoding) Hash() NodeAddress {
 	return NodeAddress("ecdsa:P521:" + string(t1) + "," + string(t2))
 }
 
-func NewPublicKey() (PublicKey, error) {
+func NewECDSAKey() (PrivateKey, error) {
 	private, err := ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
 	if err != nil {
 		return nil, err
 	}
-	return ecdsaEncoding(private.PublicKey), nil
+	return privateECDSAEncoding{private}, nil
 }
