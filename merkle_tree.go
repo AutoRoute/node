@@ -13,13 +13,16 @@ type PacketReceipt interface {
 	Verify() error
 }
 
-func CreateMerkleReceipt(key PrivateKey, packets []PacketHash) merklereceipt {
+func CreateMerkleReceipt(key PrivateKey, packets []PacketHash) PacketReceipt {
 	old := make([]merklenode, 0)
 	for _, h := range packets {
 		old = append(old, merklenode{h, nil, nil})
 	}
 
-	for len(old) > 1 {
+	for {
+		if len(old) <= 1 {
+			break
+		}
 		cur := make([]merklenode, 0)
 		for i, _ := range old {
 			if i%2 == 1 {
@@ -43,7 +46,7 @@ func (m merklereceipt) Verify() error {
 	if !bytes.Equal(m.signature.Signed(), m.tree.Hash()) {
 		return errors.New("Signature does not match contents")
 	}
-	return m.Verify()
+	return m.signature.Verify()
 }
 
 func (m merklereceipt) Source() NodeAddress {

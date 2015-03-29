@@ -4,6 +4,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/sha512"
 	"errors"
 	"log"
 	"math/big"
@@ -66,6 +67,11 @@ func (e ecdsaSignature) Signed() []byte {
 
 type ecdsaEncoding ecdsa.PublicKey
 
+func hashstring(s string) string {
+	o := sha512.Sum512([]byte(s))
+	return string(o[0:sha512.Size])
+}
+
 func (e ecdsaEncoding) Hash() NodeAddress {
 	t1, err := e.X.MarshalText()
 	if err != nil {
@@ -75,7 +81,7 @@ func (e ecdsaEncoding) Hash() NodeAddress {
 	if err != nil {
 		panic(err)
 	}
-	return NodeAddress("ecdsa:P521:" + string(t1) + "," + string(t2))
+	return NodeAddress(hashstring("ecdsa:P521:" + string(t1) + "," + string(t2)))
 }
 
 func NewECDSAKey() (PrivateKey, error) {
