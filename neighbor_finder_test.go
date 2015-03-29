@@ -29,10 +29,19 @@ func CreatePairedInterface() (l2.FrameReadWriter, l2.FrameReadWriter) {
 }
 
 func TestBasicExchange(t *testing.T) {
+
 	test_mac1, _ := l2.MacToBytes("aa:bb:cc:dd:ee:00")
 	test_mac2, _ := l2.MacToBytes("aa:bb:cc:dd:ee:11")
-	pk1 := pktest("test1")
-	pk2 := pktest("test2")
+
+	pk1, err := NewPublicKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+	pk2, err := NewPublicKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	nf1 := NewNeighborData(pk1)
 	nf2 := NewNeighborData(pk2)
 
