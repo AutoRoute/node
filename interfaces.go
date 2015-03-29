@@ -20,13 +20,6 @@ type ReachabilityMap interface {
 	Merge(n ReachabilityMap) error
 }
 
-// A receipt listing packets which have been succesfully delivered
-type PacketReceipt interface {
-	ListPackets() []PacketHash
-	Source() NodeAddress
-	Verify() error
-}
-
 // Layer three interfaces for network control traffic
 type MapConnection interface {
 	SendMap(ReachabilityMap) error
