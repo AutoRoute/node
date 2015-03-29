@@ -19,6 +19,7 @@ type ReachabilityMap interface {
 	AddEntry(n NodeAddress)
 	Increment()
 	Merge(n ReachabilityMap) error
+	Copy() ReachabilityMap
 }
 
 // A receipt listing packets which have been succesfully delivered
