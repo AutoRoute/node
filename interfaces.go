@@ -22,13 +22,6 @@ type ReachabilityMap interface {
 	Copy() ReachabilityMap
 }
 
-// A receipt listing packets which have been succesfully delivered
-type PacketReceipt interface {
-	ListPackets() []PacketHash
-	Source() NodeAddress
-	Verify() error
-}
-
 // A type representing a payment that you can use
 type Payment interface {
 	Source() NodeAddress

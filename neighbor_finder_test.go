@@ -33,11 +33,13 @@ func TestBasicExchange(t *testing.T) {
 	test_mac1, _ := l2.MacToBytes("aa:bb:cc:dd:ee:00")
 	test_mac2, _ := l2.MacToBytes("aa:bb:cc:dd:ee:11")
 
-	pk1, err := NewPublicKey()
+	k1, err := NewECDSAKey()
+	pk1 := k1.PublicKey()
 	if err != nil {
 		t.Fatal(err)
 	}
-	pk2, err := NewPublicKey()
+	k2, err := NewECDSAKey()
+	pk2 := k2.PublicKey()
 	if err != nil {
 		t.Fatal(err)
 	}

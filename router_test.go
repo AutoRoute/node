@@ -55,11 +55,13 @@ func LinkRouters(a, b Router) {
 }
 
 func TestDirectRouter(t *testing.T) {
-	k1, err := NewPublicKey()
+	sk1, err := NewECDSAKey()
+	k1 := sk1.PublicKey()
 	if err != nil {
 		t.Fatal(err)
 	}
-	k2, err := NewPublicKey()
+	sk2, err := NewECDSAKey()
+	k2 := sk2.PublicKey()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -92,15 +94,18 @@ func TestDirectRouter(t *testing.T) {
 }
 
 func TestRelayRouter(t *testing.T) {
-	k1, err := NewPublicKey()
+	sk1, err := NewECDSAKey()
+	k1 := sk1.PublicKey()
 	if err != nil {
 		t.Fatal(err)
 	}
-	k2, err := NewPublicKey()
+	sk2, err := NewECDSAKey()
+	k2 := sk2.PublicKey()
 	if err != nil {
 		t.Fatal(err)
 	}
-	k3, err := NewPublicKey()
+	sk3, err := NewECDSAKey()
+	k3 := sk3.PublicKey()
 	if err != nil {
 		t.Fatal(err)
 	}
