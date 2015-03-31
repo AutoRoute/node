@@ -1,8 +1,8 @@
 package node
 
 import (
-	"bloom"
 	"fmt"
+	"github.com/AutoRoute/bloom"
 )
 
 type BloomReachabilityMap struct {
@@ -40,4 +40,9 @@ func (m BloomReachabilityMap) Merge(nr ReachabilityMap) error {
 	}
 
 	return err
+}
+
+// TODO: Figure out how to copy
+func (m BloomReachabilityMap) Copy() ReachabilityMap {
+	return m
 }

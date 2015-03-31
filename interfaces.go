@@ -10,6 +10,7 @@ type PacketHash string
 type Packet interface {
 	Destination() NodeAddress
 	Hash() PacketHash
+	Amount() int64
 }
 
 // A map of a fixed size representing an interfaces potential
@@ -18,13 +19,15 @@ type ReachabilityMap interface {
 	AddEntry(n NodeAddress)
 	Increment()
 	Merge(n ReachabilityMap) error
+	Copy() ReachabilityMap
 }
 
-// A receipt listing packets which have been succesfully delivered
-type PacketReceipt interface {
-	ListPackets() []PacketHash
+// A type representing a payment that you can use
+type Payment interface {
 	Source() NodeAddress
+	Destination() NodeAddress
 	Verify() error
+	Amount() int64
 }
 
 // Layer three interfaces for network control traffic
@@ -35,6 +38,10 @@ type MapConnection interface {
 type ReceiptConnection interface {
 	SendReceipt(PacketReceipt) error
 	PacketReceipts() <-chan PacketReceipt
+}
+type PaymentConnection interface {
+	SendPayment(Payment) error
+	Payments() <-chan Payment
 }
 
 // While the two connections use different messages, a working ControlConnection has both interfaces

@@ -19,7 +19,7 @@ type taggedMap struct {
 
 type mapImpl struct {
 	me         NodeAddress
-	mtx        *sync.Mutex
+	l          *sync.Mutex
 	conns      map[NodeAddress]MapConnection
 	maps       map[NodeAddress]ReachabilityMap
 	merged_map ReachabilityMap
@@ -34,29 +34,29 @@ func newMapImpl(me NodeAddress) MapHandler {
 }
 
 func (m *mapImpl) addMap(update taggedMap) {
-	m.mtx.Lock()
-	defer m.mtx.Unlock()
+	m.l.Lock()
+	defer m.l.Unlock()
 	m.maps[update.address].Merge(update.new_map)
 	m.merged_map.Merge(update.new_map)
 	for addr, conn := range m.conns {
 		if addr != update.address {
-			conn.SendMap(update.new_map)
+			conn.SendMap(update.new_map.Copy())
 		}
 	}
 }
 
 func (m *mapImpl) AddConnection(id NodeAddress, c MapConnection) {
 	// TODO(colin): This should be streamed. or something similar.
-	m.mtx.Lock()
-	defer m.mtx.Unlock()
+	m.l.Lock()
+	defer m.l.Unlock()
 	m.maps[id] = NewSimpleReachabilityMap()
 	m.conns[id] = c
 
 	// Send all our maps
 	go func() {
-		m.mtx.Lock()
-		defer m.mtx.Unlock()
-		err := c.SendMap(m.merged_map)
+		m.l.Lock()
+		defer m.l.Unlock()
+		err := c.SendMap(m.merged_map.Copy())
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -72,8 +72,8 @@ func (m *mapImpl) AddConnection(id NodeAddress, c MapConnection) {
 }
 
 func (m *mapImpl) FindConnection(id NodeAddress) (NodeAddress, error) {
-	m.mtx.Lock()
-	defer m.mtx.Unlock()
+	m.l.Lock()
+	defer m.l.Unlock()
 	_, ok := m.conns[id]
 	if ok {
 		return id, nil
