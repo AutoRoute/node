@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	//"golang.org/x/crypto/ssh"
 	"github.com/AutoRoute/l2"
 	"github.com/AutoRoute/node"
 	"log"
@@ -29,7 +30,12 @@ func main() {
 			log.Fatal(err)
 		}
 
-		public_key := node.pktest(fmt.Sprintf("test%d", i))
+		k, err := NewECDSAKey()
+		public_key := k.PublicKey()
+		if err != nil {
+			log.Fatal(err)
+		}
+
 		nf := node.NewNeighborData(public_key)
 		out, err := nf.Find(interfaces[i].HardwareAddr, conn)
 		if err != nil {
