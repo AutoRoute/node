@@ -29,6 +29,7 @@ type testConnection struct {
 	DataConnection
 	MapConnection
 	ReceiptConnection
+	PaymentConnection
 	k PublicKey
 }
 
@@ -39,7 +40,8 @@ func makePairedConnections(k1, k2 PublicKey) (Connection, Connection) {
 	d1, d2 := makePairedDataConnections()
 	m1, m2 := makePairedMapConnections()
 	r1, r2 := makePairedReceiptConnections()
-	return testConnection{d1, m1, r1, k1}, testConnection{d2, m2, r2, k2}
+	p1, p2 := makePairedPaymentConnections()
+	return testConnection{d1, m1, r1, p1, k1}, testConnection{d2, m2, r2, p2, k2}
 }
 
 type testPacket NodeAddress
