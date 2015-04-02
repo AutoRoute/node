@@ -10,14 +10,14 @@ import (
 	"sync"
 )
 
-func PrintMessage(cs <-chan string, test string, wg *sync.WaitGroup) {
+func PrintMessage(cs <-chan node.NodeAddress, test string, wg *sync.WaitGroup) {
 	defer wg.Done()
 	msg := <-cs
 	fmt.Printf("%q: Received: %v\n", test, msg)
 }
 
 func main() {
-	var channels []<-chan string
+	var channels []<-chan node.NodeAddress
 	interfaces, err := net.Interfaces()
 
 	if err != nil {
@@ -30,7 +30,7 @@ func main() {
 			log.Fatal(err)
 		}
 
-		k, err := NewECDSAKey()
+		k, err := node.NewECDSAKey()
 		public_key := k.PublicKey()
 		if err != nil {
 			log.Fatal(err)
@@ -41,7 +41,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		append(channels, out)
+		channels = append(channels, out)
 	}
 
 	var wg sync.WaitGroup
