@@ -1,7 +1,6 @@
 package node
 
 import (
-	"log"
 	"testing"
 )
 
@@ -59,7 +58,5 @@ func TestReceiptHandler(t *testing.T) {
 	go ri2.SendReceipt(pr{"2", a2})
 
 	<-ra2
-	log.Print("notified2")
 	<-ra1
-	log.Print("notified1")
 }
