@@ -39,7 +39,7 @@ func (n NeighborData) handleLink(mac []byte, frw l2.FrameReadWriter, c chan Node
 	for {
 		frame, err := frw.ReadFrame()
 		if err != nil {
-			log.Printf("Failure reading from connection %c, %v", frw, err)
+			log.Printf("Failure reading from connection %v, %v", frw, err)
 			return
 		}
 		log.Printf("%q: Received packet from %v sent to %v.\n", n.pk.Hash(), frame.Source(), frame.Destination())
@@ -64,7 +64,7 @@ func (n NeighborData) handleLink(mac []byte, frw l2.FrameReadWriter, c chan Node
 		log.Printf("%q: Sending response packet %v.\n", n.pk.Hash(), frame.Source())
 		err = frw.WriteFrame(response)
 		if err != nil {
-			log.Printf("Failure writing to connection %c, %v", frw, err)
+			log.Printf("Failure writing to connection %v, %v", frw, err)
 			return
 		}
 	}
