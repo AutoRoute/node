@@ -9,6 +9,8 @@ type Router interface {
 	AddConnection(Connection)
 	DataConnection
 	GetAddress() PublicKey
+	SendReceipt(PacketReceipt)
+	SendPayment(Payment)
 }
 
 type routerImpl struct {
@@ -23,10 +25,6 @@ type routerImpl struct {
 	payment      PaymentHandler
 }
 
-type NullAction struct{}
-
-func (n NullAction) Receipt(PacketHash) {}
-
 func newRouterImpl(pk PublicKey) Router {
 	payment := newPaymentImpl(pk.Hash())
 	return &routerImpl{
@@ -40,6 +38,14 @@ func newRouterImpl(pk PublicKey) Router {
 
 func (r *routerImpl) GetAddress() PublicKey {
 	return r.pk
+}
+
+func (r *routerImpl) SendReceipt(p PacketReceipt) {
+	r.receipt.SendReceipt(p)
+}
+
+func (r *routerImpl) SendPayment(p Payment) {
+	r.payment.SendPayment(p)
 }
 
 func (r *routerImpl) AddConnection(c Connection) {
