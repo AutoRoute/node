@@ -5,11 +5,19 @@ import (
 	"sync"
 )
 
-// Takes care of recording which packets made it to the other side
+// Takes care of handling packet receipts, namely relaying them to other
+// interested hosts and sending them to any objects which want to take action
+// on them via the ReceiptAction interface.
 type ReceiptHandler interface {
 	AddConnection(NodeAddress, ReceiptConnection)
 	AddSentPacket(p Packet, src, next NodeAddress)
 	SendReceipt(PacketReceipt)
+}
+
+// The interface that something which wants to be informed about packet receipts
+// should take.
+type ReceiptAction interface {
+	Receipt(PacketHash)
 }
 
 type packetRecord struct {
@@ -17,10 +25,6 @@ type packetRecord struct {
 	src         NodeAddress
 	next        NodeAddress
 	hash        PacketHash
-}
-
-type ReceiptAction interface {
-	Receipt(PacketHash)
 }
 
 type receiptImpl struct {

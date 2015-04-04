@@ -6,7 +6,8 @@ import (
 	"sync"
 )
 
-// Takes care of maintaining maps and insures that we know which interfaces are reachable where.
+// Takes care of maintaining and relaying maps and insures that we know which
+// interfaces can reach which addresses.
 type MapHandler interface {
 	AddConnection(NodeAddress, MapConnection)
 	FindConnection(NodeAddress) (NodeAddress, error)

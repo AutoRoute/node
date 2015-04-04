@@ -5,6 +5,8 @@ import (
 	"sync"
 )
 
+// This keeps track of our outstanding owed payments and provides an interface
+// to send payments. It does not create payments on its own.
 type PaymentHandler interface {
 	AddConnection(NodeAddress, PaymentConnection)
 	Receipt(PacketHash)

@@ -4,7 +4,9 @@ import (
 	"log"
 )
 
-// The brains of everything, takes in connections and wires them togethor.
+// A router handles all routing tasks that don't involve the local machine
+// including connection management, reachability handling, packet receipt
+// relaying, and (outstanding) payment tracking.
 type Router interface {
 	AddConnection(Connection)
 	DataConnection
