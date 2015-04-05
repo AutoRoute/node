@@ -28,14 +28,14 @@ type routerImpl struct {
 }
 
 func newRouterImpl(pk PublicKey) Router {
-	payment := newPaymentImpl(pk.Hash())
+	r := newReceiptImpl(pk.Hash())
 	return &routerImpl{
 		pk,
 		make(chan Packet),
 		make(map[NodeAddress]Connection),
 		newMapImpl(pk.Hash()),
-		newReceiptImpl(pk.Hash(), payment),
-		payment}
+		newReceiptImpl(pk.Hash()),
+		newPaymentImpl(pk.Hash(), r.PacketHashes())}
 }
 
 func (r *routerImpl) GetAddress() PublicKey {

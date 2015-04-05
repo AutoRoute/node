@@ -35,11 +35,12 @@ func (t testPayment) Verify() error            { return nil }
 func (t testPayment) Amount() int64            { return t.amt }
 
 func TestPaymentHandler(t *testing.T) {
+	h1, h2 := make(chan PacketHash), make(chan PacketHash)
 	c1, c2 := makePairedPaymentConnections()
 	a1 := NodeAddress("1")
 	a2 := NodeAddress("2")
-	p1 := newPaymentImpl(a1)
-	p2 := newPaymentImpl(a2)
+	p1 := newPaymentImpl(a1, h1)
+	p2 := newPaymentImpl(a2, h2)
 	p1.AddConnection(a2, c1)
 	p2.AddConnection(a1, c2)
 
@@ -51,7 +52,7 @@ func TestPaymentHandler(t *testing.T) {
 	if p1.OutgoingDebt(a2) != 0 {
 		t.Fatalf("Expected a2 outgoingdebt %d got %d", 0, p1.OutgoingDebt(a2))
 	}
-	p1.Receipt(t1.Hash())
+	h1 <- t1.Hash()
 	if p1.IncomingDebt(a1) != 1 {
 		t.Fatalf("Expected a1 incomingdebt %d got %d", 1, p1.IncomingDebt(a1))
 	}
@@ -60,7 +61,7 @@ func TestPaymentHandler(t *testing.T) {
 	}
 
 	p2.AddSentPacket(t1, a1, a2)
-	p2.Receipt(t1.Hash())
+	h2 <- t1.Hash()
 	if p2.IncomingDebt(a1) != 1 {
 		t.Fatalf("Expected a1 incomingdebt %d got %d", 1, p2.IncomingDebt(a1))
 	}

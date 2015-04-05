@@ -9,7 +9,6 @@ import (
 // to send payments. It does not create payments on its own.
 type PaymentHandler interface {
 	AddConnection(NodeAddress, PaymentConnection)
-	Receipt(PacketHash)
 	AddSentPacket(p Packet, src, next NodeAddress)
 	SendPayment(Payment)
 	IncomingDebt(NodeAddress) int64
@@ -29,8 +28,8 @@ type paymentImpl struct {
 	id            NodeAddress
 }
 
-func newPaymentImpl(id NodeAddress) PaymentHandler {
-	return &paymentImpl{
+func newPaymentImpl(id NodeAddress, c <-chan PacketHash) PaymentHandler {
+	p := &paymentImpl{
 		make(map[NodeAddress]int64),
 		make(map[NodeAddress]int64),
 		make(map[NodeAddress]PaymentConnection),
@@ -39,6 +38,8 @@ func newPaymentImpl(id NodeAddress) PaymentHandler {
 		make(map[PacketHash]NodeAddress),
 		&sync.Mutex{},
 		id}
+	go p.handleReceipt(c)
+	return p
 }
 
 func (p *paymentImpl) AddConnection(id NodeAddress, c PaymentConnection) {
@@ -72,16 +73,18 @@ func (p *paymentImpl) OutgoingDebt(n NodeAddress) int64 {
 	return p.outgoing_debt[n]
 }
 
-func (p *paymentImpl) Receipt(h PacketHash) {
-	p.l.Lock()
-	defer p.l.Unlock()
-	cost, ok := p.packetcost[h]
-	if !ok {
-		log.Printf("unrecognized hash")
-		return
+func (p *paymentImpl) handleReceipt(c <-chan PacketHash) {
+	for h := range c {
+		p.l.Lock()
+		cost, ok := p.packetcost[h]
+		if !ok {
+			log.Printf("unrecognized hash")
+			return
+		}
+		p.incoming_debt[p.packetsrc[h]] += cost
+		p.outgoing_debt[p.packetnext[h]] += cost
+		p.l.Unlock()
 	}
-	p.incoming_debt[p.packetsrc[h]] += cost
-	p.outgoing_debt[p.packetnext[h]] += cost
 }
 
 func (p *paymentImpl) AddSentPacket(pack Packet, src, next NodeAddress) {

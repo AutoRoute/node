@@ -23,12 +23,6 @@ func makePairedReceiptConnections() (ReceiptConnection, ReceiptConnection) {
 	return testReceiptConnection{one, two}, testReceiptConnection{two, one}
 }
 
-type ra chan PacketHash
-
-func (r ra) Receipt(h PacketHash) {
-	r <- h
-}
-
 type pr struct {
 	hash string
 	src  NodeAddress
@@ -43,11 +37,9 @@ func TestReceiptHandler(t *testing.T) {
 	a2 := NodeAddress("2")
 
 	c1, c2 := makePairedReceiptConnections()
-	ra1 := ra(make(chan PacketHash))
-	ra2 := ra(make(chan PacketHash))
-	ri1 := newReceiptImpl(a1, ra1)
+	ri1 := newReceiptImpl(a1)
 	ri1.AddConnection(a2, c1)
-	ri2 := newReceiptImpl(a2, ra2)
+	ri2 := newReceiptImpl(a2)
 	ri2.AddConnection(a1, c2)
 
 	p := testPacket("2")
@@ -57,6 +49,6 @@ func TestReceiptHandler(t *testing.T) {
 
 	go ri2.SendReceipt(pr{"2", a2})
 
-	<-ra2
-	<-ra1
+	<-ri2.PacketHashes()
+	<-ri1.PacketHashes()
 }

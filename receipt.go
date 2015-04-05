@@ -12,6 +12,7 @@ type ReceiptHandler interface {
 	AddConnection(NodeAddress, ReceiptConnection)
 	AddSentPacket(p Packet, src, next NodeAddress)
 	SendReceipt(PacketReceipt)
+	PacketHashes() <-chan PacketHash
 }
 
 // The interface that something which wants to be informed about packet receipts
@@ -31,12 +32,12 @@ type receiptImpl struct {
 	connections map[NodeAddress]ReceiptConnection
 	packets     map[PacketHash]packetRecord
 	l           *sync.Mutex
-	a           ReceiptAction
 	id          NodeAddress
+	outgoing    chan PacketHash
 }
 
-func newReceiptImpl(id NodeAddress, a ReceiptAction) ReceiptHandler {
-	return &receiptImpl{make(map[NodeAddress]ReceiptConnection), make(map[PacketHash]packetRecord), &sync.Mutex{}, a, id}
+func newReceiptImpl(id NodeAddress) ReceiptHandler {
+	return &receiptImpl{make(map[NodeAddress]ReceiptConnection), make(map[PacketHash]packetRecord), &sync.Mutex{}, id, make(chan PacketHash)}
 }
 
 func (r *receiptImpl) AddConnection(id NodeAddress, c ReceiptConnection) {
@@ -54,6 +55,10 @@ func (r *receiptImpl) AddSentPacket(p Packet, src, next NodeAddress) {
 	r.l.Lock()
 	defer r.l.Unlock()
 	r.packets[p.Hash()] = packetRecord{p.Destination(), src, next, p.Hash()}
+}
+
+func (r *receiptImpl) PacketHashes() <-chan PacketHash {
+	return r.outgoing
 }
 
 func (r *receiptImpl) SendReceipt(receipt PacketReceipt) {
@@ -83,7 +88,7 @@ func (r *receiptImpl) sendReceipt(id NodeAddress, receipt PacketReceipt) {
 		}
 		dest[record.src] = true
 		log.Printf("%q: Notifying action", r.id)
-		r.a.Receipt(hash)
+		r.outgoing <- hash
 	}
 	for addr, _ := range dest {
 		if addr != r.id {
