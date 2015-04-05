@@ -2,6 +2,7 @@ package node
 
 import (
 	"testing"
+	"time"
 )
 
 type testPaymentConnection struct {
@@ -34,6 +35,38 @@ func (t testPayment) Destination() NodeAddress { return t.dst }
 func (t testPayment) Verify() error            { return nil }
 func (t testPayment) Amount() int64            { return t.amt }
 
+func WaitForIncomingDebt(t *testing.T, p PaymentHandler, a NodeAddress, m int64) {
+	timeout := time.After(time.Second)
+	tick := time.Tick(time.Millisecond * 5)
+	for {
+		select {
+		case _ = <-timeout:
+			t.Fatalf("Timeout witing for IncomingDebt(%v) from %v in %v", m, a, p)
+			return
+		case _ = <-tick:
+			if p.IncomingDebt(a) == m {
+				return
+			}
+		}
+	}
+}
+
+func WaitForOutgoingDebt(t *testing.T, p PaymentHandler, a NodeAddress, m int64) {
+	timeout := time.After(time.Second)
+	tick := time.Tick(time.Millisecond * 5)
+	for {
+		select {
+		case _ = <-timeout:
+			t.Fatalf("Timeout witing for OutgoingDebt(%v) from %v in %v", m, a, p)
+			return
+		case _ = <-tick:
+			if p.OutgoingDebt(a) == m {
+				return
+			}
+		}
+	}
+}
+
 func TestPaymentHandler(t *testing.T) {
 	h1, h2 := make(chan PacketHash), make(chan PacketHash)
 	c1, c2 := makePairedPaymentConnections()
@@ -46,32 +79,18 @@ func TestPaymentHandler(t *testing.T) {
 
 	t1 := testPacket(a2)
 	p1.AddSentPacket(t1, a1, a2)
-	if p1.IncomingDebt(a1) != 0 {
-		t.Fatalf("Expected a1 incomingdebt %d got %d", 0, p1.IncomingDebt(a1))
-	}
-	if p1.OutgoingDebt(a2) != 0 {
-		t.Fatalf("Expected a2 outgoingdebt %d got %d", 0, p1.OutgoingDebt(a2))
-	}
+	WaitForIncomingDebt(t, p1, a1, 0)
+	WaitForOutgoingDebt(t, p1, a2, 0)
 	h1 <- t1.Hash()
-	if p1.IncomingDebt(a1) != 1 {
-		t.Fatalf("Expected a1 incomingdebt %d got %d", 1, p1.IncomingDebt(a1))
-	}
-	if p1.OutgoingDebt(a2) != 1 {
-		t.Fatalf("Expected a2 outgoingdebt %d got %d", 1, p1.OutgoingDebt(a2))
-	}
+	WaitForIncomingDebt(t, p1, a1, 1)
+	WaitForOutgoingDebt(t, p1, a2, 1)
 
 	p2.AddSentPacket(t1, a1, a2)
 	h2 <- t1.Hash()
-	if p2.IncomingDebt(a1) != 1 {
-		t.Fatalf("Expected a1 incomingdebt %d got %d", 1, p2.IncomingDebt(a1))
-	}
+	WaitForIncomingDebt(t, p2, a1, 1)
 
 	payment := testPayment{a1, a2, 1}
 	p1.SendPayment(payment)
-	if p2.IncomingDebt(a1) != 0 {
-		t.Fatalf("Expected a1 incomingdebt %d got %d", 0, p2.IncomingDebt(a1))
-	}
-	if p1.OutgoingDebt(a2) != 0 {
-		t.Fatalf("Expected a2 outgoingdebt %d got %d", 0, p1.OutgoingDebt(a2))
-	}
+	WaitForIncomingDebt(t, p2, a1, 0)
+	WaitForOutgoingDebt(t, p1, a2, 0)
 }
