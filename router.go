@@ -99,5 +99,3 @@ func (r *routerImpl) sendPacket(p Packet, src NodeAddress) error {
 func (r *routerImpl) Packets() <-chan Packet {
 	return r.incoming
 }
-
-//func (r *routerImpl) handleReceipts(id NodeAddress, p ReceiptConnection) {}
