@@ -36,7 +36,7 @@ type receipt struct {
 	outgoing    chan PacketHash
 }
 
-func newReceiptImpl(id NodeAddress) ReceiptHandler {
+func newReceipt(id NodeAddress) ReceiptHandler {
 	return &receipt{make(map[NodeAddress]ReceiptConnection), make(map[PacketHash]packetRecord), &sync.Mutex{}, id, make(chan PacketHash)}
 }
 

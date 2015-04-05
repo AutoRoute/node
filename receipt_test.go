@@ -37,9 +37,9 @@ func TestReceiptHandler(t *testing.T) {
 	a2 := NodeAddress("2")
 
 	c1, c2 := makePairedReceiptConnections()
-	ri1 := newReceiptImpl(a1)
+	ri1 := newReceipt(a1)
 	ri1.AddConnection(a2, c1)
-	ri2 := newReceiptImpl(a2)
+	ri2 := newReceipt(a2)
 	ri2.AddConnection(a1, c2)
 
 	p := testPacket("2")

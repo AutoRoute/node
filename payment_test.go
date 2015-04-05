@@ -72,8 +72,8 @@ func TestPaymentHandler(t *testing.T) {
 	c1, c2 := makePairedPaymentConnections()
 	a1 := NodeAddress("1")
 	a2 := NodeAddress("2")
-	p1 := newPaymentImpl(a1, h1)
-	p2 := newPaymentImpl(a2, h2)
+	p1 := newPayment(a1, h1)
+	p2 := newPayment(a2, h2)
 	p1.AddConnection(a2, c1)
 	p2.AddConnection(a1, c2)
 

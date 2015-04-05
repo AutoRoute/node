@@ -26,7 +26,7 @@ type reachability struct {
 	merged_map ReachabilityMap
 }
 
-func newMapImpl(me NodeAddress) ReachabilityHandler {
+func newReachability(me NodeAddress) ReachabilityHandler {
 	conns := make(map[NodeAddress]MapConnection)
 	maps := make(map[NodeAddress]ReachabilityMap)
 	impl := &reachability{me, &sync.Mutex{}, conns, maps, NewSimpleReachabilityMap()}

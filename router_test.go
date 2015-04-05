@@ -67,8 +67,8 @@ func TestDirectRouter(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r1 := newRouterImpl(k1)
-	r2 := newRouterImpl(k2)
+	r1 := newRouter(k1)
+	r2 := newRouter(k2)
 	a2 := k2.Hash()
 	LinkRouters(r1, r2)
 
@@ -112,9 +112,9 @@ func TestRelayRouter(t *testing.T) {
 		t.Fatal(err)
 	}
 	a3 := k3.Hash()
-	r1 := newRouterImpl(k1)
-	r2 := newRouterImpl(k2)
-	r3 := newRouterImpl(k3)
+	r1 := newRouter(k1)
+	r2 := newRouter(k2)
+	r3 := newRouter(k3)
 	LinkRouters(r1, r2)
 	LinkRouters(r2, r3)
 

@@ -27,15 +27,15 @@ type router struct {
 	payment      PaymentHandler
 }
 
-func newRouterImpl(pk PublicKey) Router {
-	r := newReceiptImpl(pk.Hash())
+func newRouter(pk PublicKey) Router {
+	r := newReceipt(pk.Hash())
 	return &router{
 		pk,
 		make(chan Packet),
 		make(map[NodeAddress]Connection),
-		newMapImpl(pk.Hash()),
-		newReceiptImpl(pk.Hash()),
-		newPaymentImpl(pk.Hash(), r.PacketHashes())}
+		newReachability(pk.Hash()),
+		newReceipt(pk.Hash()),
+		newPayment(pk.Hash(), r.PacketHashes())}
 }
 
 func (r *router) GetAddress() PublicKey {

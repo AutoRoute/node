@@ -28,7 +28,7 @@ type payment struct {
 	id            NodeAddress
 }
 
-func newPaymentImpl(id NodeAddress, c <-chan PacketHash) PaymentHandler {
+func newPayment(id NodeAddress, c <-chan PacketHash) PaymentHandler {
 	p := &payment{
 		make(map[NodeAddress]int64),
 		make(map[NodeAddress]int64),
