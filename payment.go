@@ -15,7 +15,7 @@ type PaymentHandler interface {
 	OutgoingDebt(NodeAddress) int64
 }
 
-type paymentImpl struct {
+type payment struct {
 	// debt that other people will pay us
 	incoming_debt map[NodeAddress]int64
 	// debt that we will pay other people
@@ -29,7 +29,7 @@ type paymentImpl struct {
 }
 
 func newPaymentImpl(id NodeAddress, c <-chan PacketHash) PaymentHandler {
-	p := &paymentImpl{
+	p := &payment{
 		make(map[NodeAddress]int64),
 		make(map[NodeAddress]int64),
 		make(map[NodeAddress]PaymentConnection),
@@ -42,14 +42,14 @@ func newPaymentImpl(id NodeAddress, c <-chan PacketHash) PaymentHandler {
 	return p
 }
 
-func (p *paymentImpl) AddConnection(id NodeAddress, c PaymentConnection) {
+func (p *payment) AddConnection(id NodeAddress, c PaymentConnection) {
 	p.l.Lock()
 	defer p.l.Unlock()
 	p.connections[id] = c
 	go p.handleConnection(c)
 }
 
-func (p *paymentImpl) handleConnection(c PaymentConnection) {
+func (p *payment) handleConnection(c PaymentConnection) {
 	for pay := range c.Payments() {
 		if pay.Verify() != nil {
 			log.Printf("Error verifying payment: %s", pay.Verify())
@@ -61,19 +61,19 @@ func (p *paymentImpl) handleConnection(c PaymentConnection) {
 	}
 }
 
-func (p *paymentImpl) IncomingDebt(n NodeAddress) int64 {
+func (p *payment) IncomingDebt(n NodeAddress) int64 {
 	p.l.Lock()
 	defer p.l.Unlock()
 	return p.incoming_debt[n]
 }
 
-func (p *paymentImpl) OutgoingDebt(n NodeAddress) int64 {
+func (p *payment) OutgoingDebt(n NodeAddress) int64 {
 	p.l.Lock()
 	defer p.l.Unlock()
 	return p.outgoing_debt[n]
 }
 
-func (p *paymentImpl) handleReceipt(c <-chan PacketHash) {
+func (p *payment) handleReceipt(c <-chan PacketHash) {
 	for h := range c {
 		p.l.Lock()
 		cost, ok := p.packetcost[h]
@@ -87,7 +87,7 @@ func (p *paymentImpl) handleReceipt(c <-chan PacketHash) {
 	}
 }
 
-func (p *paymentImpl) AddSentPacket(pack Packet, src, next NodeAddress) {
+func (p *payment) AddSentPacket(pack Packet, src, next NodeAddress) {
 	p.l.Lock()
 	defer p.l.Unlock()
 	p.packetcost[pack.Hash()] = pack.Amount()
@@ -95,7 +95,7 @@ func (p *paymentImpl) AddSentPacket(pack Packet, src, next NodeAddress) {
 	p.packetsrc[pack.Hash()] = src
 }
 
-func (p *paymentImpl) SendPayment(y Payment) {
+func (p *payment) SendPayment(y Payment) {
 	p.l.Lock()
 	defer p.l.Unlock()
 	p.connections[y.Destination()].SendPayment(y)

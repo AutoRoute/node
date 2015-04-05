@@ -15,21 +15,21 @@ type Router interface {
 	SendPayment(Payment)
 }
 
-type routerImpl struct {
+type router struct {
 	pk PublicKey
 	// A chan down which we send packets destined for ourselves.
 	incoming chan Packet
 	// A map of public key hashes to connections
 	connections map[NodeAddress]Connection
 
-	reachability MapHandler
+	reachability ReachabilityHandler
 	receipt      ReceiptHandler
 	payment      PaymentHandler
 }
 
 func newRouterImpl(pk PublicKey) Router {
 	r := newReceiptImpl(pk.Hash())
-	return &routerImpl{
+	return &router{
 		pk,
 		make(chan Packet),
 		make(map[NodeAddress]Connection),
@@ -38,19 +38,19 @@ func newRouterImpl(pk PublicKey) Router {
 		newPaymentImpl(pk.Hash(), r.PacketHashes())}
 }
 
-func (r *routerImpl) GetAddress() PublicKey {
+func (r *router) GetAddress() PublicKey {
 	return r.pk
 }
 
-func (r *routerImpl) SendReceipt(p PacketReceipt) {
+func (r *router) SendReceipt(p PacketReceipt) {
 	r.receipt.SendReceipt(p)
 }
 
-func (r *routerImpl) SendPayment(p Payment) {
+func (r *router) SendPayment(p Payment) {
 	r.payment.SendPayment(p)
 }
 
-func (r *routerImpl) AddConnection(c Connection) {
+func (r *router) AddConnection(c Connection) {
 	id := c.Key().Hash()
 	_, duplicate := r.connections[id]
 	if duplicate {
@@ -66,7 +66,7 @@ func (r *routerImpl) AddConnection(c Connection) {
 	go r.handleData(id, c)
 }
 
-func (r *routerImpl) handleData(id NodeAddress, p DataConnection) {
+func (r *router) handleData(id NodeAddress, p DataConnection) {
 	for packet := range p.Packets() {
 		err := r.sendPacket(packet, id)
 		if err != nil {
@@ -76,11 +76,11 @@ func (r *routerImpl) handleData(id NodeAddress, p DataConnection) {
 	}
 }
 
-func (r *routerImpl) SendPacket(p Packet) error {
+func (r *router) SendPacket(p Packet) error {
 	return r.sendPacket(p, r.pk.Hash())
 }
 
-func (r *routerImpl) sendPacket(p Packet, src NodeAddress) error {
+func (r *router) sendPacket(p Packet, src NodeAddress) error {
 	if p.Destination() == r.pk.Hash() {
 		log.Printf("%q: Routing packet to self", r.pk.Hash())
 		r.incoming <- p
@@ -96,6 +96,6 @@ func (r *routerImpl) sendPacket(p Packet, src NodeAddress) error {
 	return r.connections[next].SendPacket(p)
 }
 
-func (r *routerImpl) Packets() <-chan Packet {
+func (r *router) Packets() <-chan Packet {
 	return r.incoming
 }

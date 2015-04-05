@@ -8,7 +8,7 @@ import (
 
 // Takes care of maintaining and relaying maps and insures that we know which
 // interfaces can reach which addresses.
-type MapHandler interface {
+type ReachabilityHandler interface {
 	AddConnection(NodeAddress, MapConnection)
 	FindConnection(NodeAddress) (NodeAddress, error)
 }
@@ -18,7 +18,7 @@ type taggedMap struct {
 	new_map ReachabilityMap
 }
 
-type mapImpl struct {
+type reachability struct {
 	me         NodeAddress
 	l          *sync.Mutex
 	conns      map[NodeAddress]MapConnection
@@ -26,15 +26,15 @@ type mapImpl struct {
 	merged_map ReachabilityMap
 }
 
-func newMapImpl(me NodeAddress) MapHandler {
+func newMapImpl(me NodeAddress) ReachabilityHandler {
 	conns := make(map[NodeAddress]MapConnection)
 	maps := make(map[NodeAddress]ReachabilityMap)
-	impl := &mapImpl{me, &sync.Mutex{}, conns, maps, NewSimpleReachabilityMap()}
+	impl := &reachability{me, &sync.Mutex{}, conns, maps, NewSimpleReachabilityMap()}
 	impl.merged_map.AddEntry(me)
 	return impl
 }
 
-func (m *mapImpl) addMap(update taggedMap) {
+func (m *reachability) addMap(update taggedMap) {
 	m.l.Lock()
 	defer m.l.Unlock()
 	m.maps[update.address].Merge(update.new_map)
@@ -46,7 +46,7 @@ func (m *mapImpl) addMap(update taggedMap) {
 	}
 }
 
-func (m *mapImpl) AddConnection(id NodeAddress, c MapConnection) {
+func (m *reachability) AddConnection(id NodeAddress, c MapConnection) {
 	// TODO(colin): This should be streamed. or something similar.
 	m.l.Lock()
 	defer m.l.Unlock()
@@ -72,7 +72,7 @@ func (m *mapImpl) AddConnection(id NodeAddress, c MapConnection) {
 	}()
 }
 
-func (m *mapImpl) FindConnection(id NodeAddress) (NodeAddress, error) {
+func (m *reachability) FindConnection(id NodeAddress) (NodeAddress, error) {
 	m.l.Lock()
 	defer m.l.Unlock()
 	_, ok := m.conns[id]

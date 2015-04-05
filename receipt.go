@@ -28,7 +28,7 @@ type packetRecord struct {
 	hash        PacketHash
 }
 
-type receiptImpl struct {
+type receipt struct {
 	connections map[NodeAddress]ReceiptConnection
 	packets     map[PacketHash]packetRecord
 	l           *sync.Mutex
@@ -37,10 +37,10 @@ type receiptImpl struct {
 }
 
 func newReceiptImpl(id NodeAddress) ReceiptHandler {
-	return &receiptImpl{make(map[NodeAddress]ReceiptConnection), make(map[PacketHash]packetRecord), &sync.Mutex{}, id, make(chan PacketHash)}
+	return &receipt{make(map[NodeAddress]ReceiptConnection), make(map[PacketHash]packetRecord), &sync.Mutex{}, id, make(chan PacketHash)}
 }
 
-func (r *receiptImpl) AddConnection(id NodeAddress, c ReceiptConnection) {
+func (r *receipt) AddConnection(id NodeAddress, c ReceiptConnection) {
 	r.l.Lock()
 	r.connections[id] = c
 	r.l.Unlock()
@@ -51,21 +51,21 @@ func (r *receiptImpl) AddConnection(id NodeAddress, c ReceiptConnection) {
 	}()
 }
 
-func (r *receiptImpl) AddSentPacket(p Packet, src, next NodeAddress) {
+func (r *receipt) AddSentPacket(p Packet, src, next NodeAddress) {
 	r.l.Lock()
 	defer r.l.Unlock()
 	r.packets[p.Hash()] = packetRecord{p.Destination(), src, next, p.Hash()}
 }
 
-func (r *receiptImpl) PacketHashes() <-chan PacketHash {
+func (r *receipt) PacketHashes() <-chan PacketHash {
 	return r.outgoing
 }
 
-func (r *receiptImpl) SendReceipt(receipt PacketReceipt) {
+func (r *receipt) SendReceipt(receipt PacketReceipt) {
 	r.sendReceipt(r.id, receipt)
 }
 
-func (r *receiptImpl) sendReceipt(id NodeAddress, receipt PacketReceipt) {
+func (r *receipt) sendReceipt(id NodeAddress, receipt PacketReceipt) {
 	if receipt.Verify() != nil {
 		log.Printf("Error verifying receipt: %q", receipt.Verify())
 		return
