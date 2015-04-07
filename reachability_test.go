@@ -36,7 +36,7 @@ func TestMapHandler(t *testing.T) {
 	timeout := func(m ReachabilityHandler, id NodeAddress) bool {
 		start := time.Now()
 		for now := start; now.Before(start.Add(time.Second)); now = time.Now() {
-			if a, err := m.FindConnection(id); err == nil {
+			if a, err := m.FindNextHop(id); err == nil {
 				if a == id {
 					return true
 				} else {
@@ -72,7 +72,7 @@ func TestRelayMapHandler(t *testing.T) {
 	timeout := func(m ReachabilityHandler, id NodeAddress, nexthop NodeAddress) bool {
 		start := time.Now()
 		for now := start; now.Before(start.Add(time.Second)); now = time.Now() {
-			if a, err := m.FindConnection(id); err == nil {
+			if a, err := m.FindNextHop(id); err == nil {
 				if a == nexthop {
 					return true
 				} else {

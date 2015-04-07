@@ -10,7 +10,7 @@ import (
 // interfaces can reach which addresses.
 type ReachabilityHandler interface {
 	AddConnection(NodeAddress, MapConnection)
-	FindConnection(NodeAddress) (NodeAddress, error)
+	FindNextHop(NodeAddress) (NodeAddress, error)
 }
 
 type taggedMap struct {
@@ -72,7 +72,7 @@ func (m *reachability) AddConnection(id NodeAddress, c MapConnection) {
 	}()
 }
 
-func (m *reachability) FindConnection(id NodeAddress) (NodeAddress, error) {
+func (m *reachability) FindNextHop(id NodeAddress) (NodeAddress, error) {
 	m.l.Lock()
 	defer m.l.Unlock()
 	_, ok := m.conns[id]

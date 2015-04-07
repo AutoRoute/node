@@ -86,7 +86,7 @@ func (r *router) sendPacket(p Packet, src NodeAddress) error {
 		r.incoming <- p
 		return nil
 	}
-	next, err := r.reachability.FindConnection(p.Destination())
+	next, err := r.reachability.FindNextHop(p.Destination())
 	if err != nil {
 		return err
 	}
