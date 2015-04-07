@@ -77,14 +77,14 @@ func TestPaymentHandler(t *testing.T) {
 	p2.AddConnection(a1, c2)
 
 	t1 := testPacket(a2)
-	i1 <- RoutingDecision{t1, a1, a2}
+	i1 <- NewRoutingDecision(t1, a1, a2)
 	WaitForIncomingDebt(t, p1, a1, 0)
 	WaitForOutgoingDebt(t, p1, a2, 0)
 	h1 <- t1.Hash()
 	WaitForIncomingDebt(t, p1, a1, 1)
 	WaitForOutgoingDebt(t, p1, a2, 1)
 
-	i2 <- RoutingDecision{t1, a1, a2}
+	i2 <- NewRoutingDecision(t1, a1, a2)
 	h2 <- t1.Hash()
 	WaitForIncomingDebt(t, p2, a1, 1)
 

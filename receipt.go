@@ -14,23 +14,16 @@ type ReceiptHandler interface {
 	PacketHashes() <-chan PacketHash
 }
 
-type packetRecord struct {
-	destination NodeAddress
-	src         NodeAddress
-	next        NodeAddress
-	hash        PacketHash
-}
-
 type receipt struct {
 	connections map[NodeAddress]ReceiptConnection
-	packets     map[PacketHash]packetRecord
+	packets     map[PacketHash]RoutingDecision
 	l           *sync.Mutex
 	id          NodeAddress
 	outgoing    chan PacketHash
 }
 
 func newReceipt(id NodeAddress, c <-chan RoutingDecision) ReceiptHandler {
-	r := &receipt{make(map[NodeAddress]ReceiptConnection), make(map[PacketHash]packetRecord), &sync.Mutex{}, id, make(chan PacketHash)}
+	r := &receipt{make(map[NodeAddress]ReceiptConnection), make(map[PacketHash]RoutingDecision), &sync.Mutex{}, id, make(chan PacketHash)}
 	go r.sentPackets(c)
 	return r
 }
@@ -49,7 +42,7 @@ func (r *receipt) AddConnection(id NodeAddress, c ReceiptConnection) {
 func (r *receipt) sentPackets(c <-chan RoutingDecision) {
 	for d := range c {
 		r.l.Lock()
-		r.packets[d.p.Hash()] = packetRecord{d.p.Destination(), d.source, d.nexthop, d.p.Hash()}
+		r.packets[d.hash] = d
 		r.l.Unlock()
 	}
 }
@@ -77,14 +70,13 @@ func (r *receipt) sendReceipt(id NodeAddress, receipt PacketReceipt) {
 			continue
 		}
 		if record.destination != receipt.Source() {
-			log.Printf("Invalid source %q != %q", record.src, receipt.Source())
+			log.Printf("Invalid source %q != %q", record.source, receipt.Source())
 			continue
 		}
-		if record.next != id {
-			log.Printf("Received packet receipt from wrong host? %q != %q", id, record.next)
+		if record.nexthop != id {
+			log.Printf("Received packet receipt from wrong host? %q != %q", id, record.nexthop)
 		}
-		dest[record.src] = true
-		log.Printf("%q: Notifying action", r.id)
+		dest[record.source] = true
 		r.outgoing <- hash
 	}
 	for addr, _ := range dest {

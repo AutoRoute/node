@@ -20,9 +20,7 @@ type payment struct {
 	// debt that we will pay other people
 	outgoing_debt map[NodeAddress]int64
 	connections   map[NodeAddress]PaymentConnection
-	packetcost    map[PacketHash]int64
-	packetnext    map[PacketHash]NodeAddress
-	packetsrc     map[PacketHash]NodeAddress
+	packets       map[PacketHash]RoutingDecision
 	l             *sync.Mutex
 	id            NodeAddress
 }
@@ -32,9 +30,7 @@ func newPayment(id NodeAddress, c <-chan PacketHash, d <-chan RoutingDecision) P
 		make(map[NodeAddress]int64),
 		make(map[NodeAddress]int64),
 		make(map[NodeAddress]PaymentConnection),
-		make(map[PacketHash]int64),
-		make(map[PacketHash]NodeAddress),
-		make(map[PacketHash]NodeAddress),
+		make(map[PacketHash]RoutingDecision),
 		&sync.Mutex{},
 		id}
 	go p.handleReceipt(c)
@@ -76,13 +72,13 @@ func (p *payment) OutgoingDebt(n NodeAddress) int64 {
 func (p *payment) handleReceipt(c <-chan PacketHash) {
 	for h := range c {
 		p.l.Lock()
-		cost, ok := p.packetcost[h]
+		i, ok := p.packets[h]
 		if !ok {
 			log.Printf("unrecognized hash")
 			return
 		}
-		p.incoming_debt[p.packetsrc[h]] += cost
-		p.outgoing_debt[p.packetnext[h]] += cost
+		p.incoming_debt[i.source] += i.amount
+		p.outgoing_debt[i.nexthop] += i.amount
 		p.l.Unlock()
 	}
 }
@@ -90,9 +86,7 @@ func (p *payment) handleReceipt(c <-chan PacketHash) {
 func (p *payment) sentPackets(c <-chan RoutingDecision) {
 	for d := range c {
 		p.l.Lock()
-		p.packetcost[d.p.Hash()] = d.p.Amount()
-		p.packetnext[d.p.Hash()] = d.nexthop
-		p.packetsrc[d.p.Hash()] = d.source
+		p.packets[d.hash] = d
 		p.l.Unlock()
 	}
 }

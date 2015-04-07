@@ -43,8 +43,8 @@ func TestReceiptHandler(t *testing.T) {
 
 	p := testPacket("2")
 
-	i1 <- RoutingDecision{p, a1, a2}
-	i2 <- RoutingDecision{p, a1, a2}
+	i1 <- NewRoutingDecision(p, a1, a2)
+	i2 <- NewRoutingDecision(p, a1, a2)
 
 	go ri2.SendReceipt(pr{"2", a2})
 

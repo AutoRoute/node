@@ -5,9 +5,16 @@ import (
 )
 
 type RoutingDecision struct {
-	p       Packet
-	source  NodeAddress
-	nexthop NodeAddress
+	hash        PacketHash
+	amount      int64
+	source      NodeAddress
+	destination NodeAddress
+	nexthop     NodeAddress
+}
+
+func NewRoutingDecision(p Packet, src NodeAddress, nexthop NodeAddress) RoutingDecision {
+	return RoutingDecision{p.Hash(), p.Amount(), src, p.Destination(), nexthop}
+
 }
 
 // A routing handler takes care of relaying packets and produces notifications
@@ -72,7 +79,7 @@ func (r *routing) sendPacket(p Packet, src NodeAddress) error {
 }
 
 func (r *routing) notifyDecision(p Packet, src, next NodeAddress) {
-	r.routes <- RoutingDecision{p, src, next}
+	r.routes <- RoutingDecision{p.Hash(), p.Amount(), src, p.Destination(), next}
 }
 
 func (r *routing) Routes() <-chan RoutingDecision {
