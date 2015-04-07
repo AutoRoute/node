@@ -6,8 +6,8 @@ import (
 
 type RoutingDecision struct {
 	p       Packet
-	nexthop NodeAddress
 	source  NodeAddress
+	nexthop NodeAddress
 }
 
 // A routing handler takes care of relaying packets and produces notifications

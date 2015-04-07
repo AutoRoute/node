@@ -10,15 +10,8 @@ import (
 // on them via the ReceiptAction interface.
 type ReceiptHandler interface {
 	AddConnection(NodeAddress, ReceiptConnection)
-	AddSentPacket(p Packet, src, next NodeAddress)
 	SendReceipt(PacketReceipt)
 	PacketHashes() <-chan PacketHash
-}
-
-// The interface that something which wants to be informed about packet receipts
-// should take.
-type ReceiptAction interface {
-	Receipt(PacketHash)
 }
 
 type packetRecord struct {
@@ -36,8 +29,10 @@ type receipt struct {
 	outgoing    chan PacketHash
 }
 
-func newReceipt(id NodeAddress) ReceiptHandler {
-	return &receipt{make(map[NodeAddress]ReceiptConnection), make(map[PacketHash]packetRecord), &sync.Mutex{}, id, make(chan PacketHash)}
+func newReceipt(id NodeAddress, c <-chan RoutingDecision) ReceiptHandler {
+	r := &receipt{make(map[NodeAddress]ReceiptConnection), make(map[PacketHash]packetRecord), &sync.Mutex{}, id, make(chan PacketHash)}
+	go r.sentPackets(c)
+	return r
 }
 
 func (r *receipt) AddConnection(id NodeAddress, c ReceiptConnection) {
@@ -51,10 +46,12 @@ func (r *receipt) AddConnection(id NodeAddress, c ReceiptConnection) {
 	}()
 }
 
-func (r *receipt) AddSentPacket(p Packet, src, next NodeAddress) {
-	r.l.Lock()
-	defer r.l.Unlock()
-	r.packets[p.Hash()] = packetRecord{p.Destination(), src, next, p.Hash()}
+func (r *receipt) sentPackets(c <-chan RoutingDecision) {
+	for d := range c {
+		r.l.Lock()
+		r.packets[d.p.Hash()] = packetRecord{d.p.Destination(), d.source, d.nexthop, d.p.Hash()}
+		r.l.Unlock()
+	}
 }
 
 func (r *receipt) PacketHashes() <-chan PacketHash {

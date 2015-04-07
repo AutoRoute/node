@@ -9,7 +9,6 @@ import (
 // to send payments. It does not create payments on its own.
 type PaymentHandler interface {
 	AddConnection(NodeAddress, PaymentConnection)
-	AddSentPacket(p Packet, src, next NodeAddress)
 	SendPayment(Payment)
 	IncomingDebt(NodeAddress) int64
 	OutgoingDebt(NodeAddress) int64
@@ -28,7 +27,7 @@ type payment struct {
 	id            NodeAddress
 }
 
-func newPayment(id NodeAddress, c <-chan PacketHash) PaymentHandler {
+func newPayment(id NodeAddress, c <-chan PacketHash, d <-chan RoutingDecision) PaymentHandler {
 	p := &payment{
 		make(map[NodeAddress]int64),
 		make(map[NodeAddress]int64),
@@ -39,6 +38,7 @@ func newPayment(id NodeAddress, c <-chan PacketHash) PaymentHandler {
 		&sync.Mutex{},
 		id}
 	go p.handleReceipt(c)
+	go p.sentPackets(d)
 	return p
 }
 
@@ -87,12 +87,14 @@ func (p *payment) handleReceipt(c <-chan PacketHash) {
 	}
 }
 
-func (p *payment) AddSentPacket(pack Packet, src, next NodeAddress) {
-	p.l.Lock()
-	defer p.l.Unlock()
-	p.packetcost[pack.Hash()] = pack.Amount()
-	p.packetnext[pack.Hash()] = next
-	p.packetsrc[pack.Hash()] = src
+func (p *payment) sentPackets(c <-chan RoutingDecision) {
+	for d := range c {
+		p.l.Lock()
+		p.packetcost[d.p.Hash()] = d.p.Amount()
+		p.packetnext[d.p.Hash()] = d.nexthop
+		p.packetsrc[d.p.Hash()] = d.source
+		p.l.Unlock()
+	}
 }
 
 func (p *payment) SendPayment(y Payment) {

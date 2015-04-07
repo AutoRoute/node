@@ -70,22 +70,21 @@ func WaitForOutgoingDebt(t *testing.T, p PaymentHandler, a NodeAddress, m int64)
 func TestPaymentHandler(t *testing.T) {
 	h1, h2 := make(chan PacketHash), make(chan PacketHash)
 	c1, c2 := makePairedPaymentConnections()
-	a1 := NodeAddress("1")
-	a2 := NodeAddress("2")
-	p1 := newPayment(a1, h1)
-	p2 := newPayment(a2, h2)
+	a1, a2 := NodeAddress("1"), NodeAddress("2")
+	i1, i2 := make(chan RoutingDecision), make(chan RoutingDecision)
+	p1, p2 := newPayment(a1, h1, i1), newPayment(a2, h2, i2)
 	p1.AddConnection(a2, c1)
 	p2.AddConnection(a1, c2)
 
 	t1 := testPacket(a2)
-	p1.AddSentPacket(t1, a1, a2)
+	i1 <- RoutingDecision{t1, a1, a2}
 	WaitForIncomingDebt(t, p1, a1, 0)
 	WaitForOutgoingDebt(t, p1, a2, 0)
 	h1 <- t1.Hash()
 	WaitForIncomingDebt(t, p1, a1, 1)
 	WaitForOutgoingDebt(t, p1, a2, 1)
 
-	p2.AddSentPacket(t1, a1, a2)
+	i2 <- RoutingDecision{t1, a1, a2}
 	h2 <- t1.Hash()
 	WaitForIncomingDebt(t, p2, a1, 1)
 

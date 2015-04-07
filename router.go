@@ -24,17 +24,18 @@ type router struct {
 }
 
 func newRouter(pk PublicKey) Router {
-	receipt := newReceipt(pk.Hash())
 	reach := newReachability(pk.Hash())
-	router := &router{
+	routing := newRouting(pk, reach)
+	c1, c2 := SplitChannel(routing.Routes())
+	receipt := newReceipt(pk.Hash(), c1)
+	payment := newPayment(pk.Hash(), receipt.PacketHashes(), c2)
+	return &router{
 		pk,
 		make(map[NodeAddress]Connection),
 		reach,
-		newRouting(pk, reach),
+		routing,
 		receipt,
-		newPayment(pk.Hash(), receipt.PacketHashes())}
-	go router.shovelSent()
-	return router
+		payment}
 }
 
 func (r *router) GetAddress() PublicKey {
@@ -71,11 +72,4 @@ func (r *router) AddConnection(c Connection) {
 	r.reachability.AddConnection(id, c)
 	r.receipt.AddConnection(id, c)
 	r.payment.AddConnection(id, c)
-}
-
-func (r *router) shovelSent() {
-	for d := range r.routing.Routes() {
-		r.receipt.AddSentPacket(d.p, d.source, d.nexthop)
-		r.payment.AddSentPacket(d.p, d.source, d.nexthop)
-	}
 }
