@@ -5,37 +5,30 @@ import (
 	"sync"
 )
 
-// Takes care of recording which packets made it to the other side
+// Takes care of handling packet receipts, namely relaying them to other
+// interested hosts and sending them to any objects which want to take action
+// on them via the ReceiptAction interface.
 type ReceiptHandler interface {
 	AddConnection(NodeAddress, ReceiptConnection)
-	AddSentPacket(p Packet, src, next NodeAddress)
 	SendReceipt(PacketReceipt)
+	PacketHashes() <-chan PacketHash
 }
 
-type packetRecord struct {
-	destination NodeAddress
-	src         NodeAddress
-	next        NodeAddress
-	hash        PacketHash
-}
-
-type ReceiptAction interface {
-	Receipt(PacketHash)
-}
-
-type receiptImpl struct {
+type receipt struct {
 	connections map[NodeAddress]ReceiptConnection
-	packets     map[PacketHash]packetRecord
+	packets     map[PacketHash]RoutingDecision
 	l           *sync.Mutex
-	a           ReceiptAction
 	id          NodeAddress
+	outgoing    chan PacketHash
 }
 
-func newReceiptImpl(id NodeAddress, a ReceiptAction) ReceiptHandler {
-	return &receiptImpl{make(map[NodeAddress]ReceiptConnection), make(map[PacketHash]packetRecord), &sync.Mutex{}, a, id}
+func newReceipt(id NodeAddress, c <-chan RoutingDecision) ReceiptHandler {
+	r := &receipt{make(map[NodeAddress]ReceiptConnection), make(map[PacketHash]RoutingDecision), &sync.Mutex{}, id, make(chan PacketHash)}
+	go r.sentPackets(c)
+	return r
 }
 
-func (r *receiptImpl) AddConnection(id NodeAddress, c ReceiptConnection) {
+func (r *receipt) AddConnection(id NodeAddress, c ReceiptConnection) {
 	r.l.Lock()
 	r.connections[id] = c
 	r.l.Unlock()
@@ -46,17 +39,23 @@ func (r *receiptImpl) AddConnection(id NodeAddress, c ReceiptConnection) {
 	}()
 }
 
-func (r *receiptImpl) AddSentPacket(p Packet, src, next NodeAddress) {
-	r.l.Lock()
-	defer r.l.Unlock()
-	r.packets[p.Hash()] = packetRecord{p.Destination(), src, next, p.Hash()}
+func (r *receipt) sentPackets(c <-chan RoutingDecision) {
+	for d := range c {
+		r.l.Lock()
+		r.packets[d.hash] = d
+		r.l.Unlock()
+	}
 }
 
-func (r *receiptImpl) SendReceipt(receipt PacketReceipt) {
+func (r *receipt) PacketHashes() <-chan PacketHash {
+	return r.outgoing
+}
+
+func (r *receipt) SendReceipt(receipt PacketReceipt) {
 	r.sendReceipt(r.id, receipt)
 }
 
-func (r *receiptImpl) sendReceipt(id NodeAddress, receipt PacketReceipt) {
+func (r *receipt) sendReceipt(id NodeAddress, receipt PacketReceipt) {
 	if receipt.Verify() != nil {
 		log.Printf("Error verifying receipt: %q", receipt.Verify())
 		return
@@ -71,15 +70,14 @@ func (r *receiptImpl) sendReceipt(id NodeAddress, receipt PacketReceipt) {
 			continue
 		}
 		if record.destination != receipt.Source() {
-			log.Printf("Invalid source %q != %q", record.src, receipt.Source())
+			log.Printf("Invalid source %q != %q", record.source, receipt.Source())
 			continue
 		}
-		if record.next != id {
-			log.Printf("Received packet receipt from wrong host? %q != %q", id, record.next)
+		if record.nexthop != id {
+			log.Printf("Received packet receipt from wrong host? %q != %q", id, record.nexthop)
 		}
-		dest[record.src] = true
-		log.Printf("%q: Notifying action", r.id)
-		r.a.Receipt(hash)
+		dest[record.source] = true
+		r.outgoing <- hash
 	}
 	for addr, _ := range dest {
 		if addr != r.id {

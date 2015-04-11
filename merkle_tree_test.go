@@ -17,10 +17,10 @@ func TestMerkle(t *testing.T) {
 		t.Fatal(err)
 	}
 	if pr.Source() != k.PublicKey().Hash() {
-		t.Fatal("Expected %v got %v", pr.Source(), k.PublicKey().Hash())
+		t.Fatalf("Expected %v got %v", pr.Source(), k.PublicKey().Hash())
 	}
 	if len(pr.ListPackets()) != len(p) {
-		t.Fatal("Expected %v got %v", pr.ListPackets(), p)
+		t.Fatalf("Expected %v got %v", pr.ListPackets(), p)
 	}
 	for _, i := range pr.ListPackets() {
 		found := false
@@ -30,7 +30,7 @@ func TestMerkle(t *testing.T) {
 			}
 		}
 		if !found {
-			t.Fatal("Expected %v in %v", i, p)
+			t.Fatalf("Expected %v in %v", i, p)
 		}
 	}
 }

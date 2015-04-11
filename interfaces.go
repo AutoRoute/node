@@ -48,6 +48,7 @@ type PaymentConnection interface {
 type ControlConnection interface {
 	MapConnection
 	ReceiptConnection
+	PaymentConnection
 }
 
 // The actual data connection. Should be done at the layer two level in order to be able to send congestion signals

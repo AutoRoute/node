@@ -73,14 +73,9 @@ func hashstring(s string) string {
 }
 
 func (e ecdsaEncoding) Hash() NodeAddress {
-	t1, err := e.X.MarshalText()
-	if err != nil {
-		panic(err)
-	}
-	t2, err := e.Y.MarshalText()
-	if err != nil {
-		panic(err)
-	}
+	// Cannot error
+	t1, _ := e.X.MarshalText()
+	t2, _ := e.Y.MarshalText()
 	return NodeAddress(hashstring("ecdsa:P521:" + string(t1) + "," + string(t2)))
 }
 

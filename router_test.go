@@ -29,6 +29,7 @@ type testConnection struct {
 	DataConnection
 	MapConnection
 	ReceiptConnection
+	PaymentConnection
 	k PublicKey
 }
 
@@ -39,7 +40,8 @@ func makePairedConnections(k1, k2 PublicKey) (Connection, Connection) {
 	d1, d2 := makePairedDataConnections()
 	m1, m2 := makePairedMapConnections()
 	r1, r2 := makePairedReceiptConnections()
-	return testConnection{d1, m1, r1, k1}, testConnection{d2, m2, r2, k2}
+	p1, p2 := makePairedPaymentConnections()
+	return testConnection{d1, m1, r1, p1, k1}, testConnection{d2, m2, r2, p2, k2}
 }
 
 type testPacket NodeAddress
@@ -65,8 +67,8 @@ func TestDirectRouter(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r1 := newRouterImpl(k1)
-	r2 := newRouterImpl(k2)
+	r1 := newRouter(k1)
+	r2 := newRouter(k2)
 	a2 := k2.Hash()
 	LinkRouters(r1, r2)
 
@@ -110,9 +112,9 @@ func TestRelayRouter(t *testing.T) {
 		t.Fatal(err)
 	}
 	a3 := k3.Hash()
-	r1 := newRouterImpl(k1)
-	r2 := newRouterImpl(k2)
-	r3 := newRouterImpl(k3)
+	r1 := newRouter(k1)
+	r2 := newRouter(k2)
+	r3 := newRouter(k3)
 	LinkRouters(r1, r2)
 	LinkRouters(r2, r3)
 

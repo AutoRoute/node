@@ -1,7 +1,6 @@
 package node
 
 import (
-	"log"
 	"testing"
 )
 
@@ -24,12 +23,6 @@ func makePairedReceiptConnections() (ReceiptConnection, ReceiptConnection) {
 	return testReceiptConnection{one, two}, testReceiptConnection{two, one}
 }
 
-type ra chan PacketHash
-
-func (r ra) Receipt(h PacketHash) {
-	r <- h
-}
-
 type pr struct {
 	hash string
 	src  NodeAddress
@@ -40,26 +33,21 @@ func (p pr) Source() NodeAddress       { return p.src }
 func (p pr) Verify() error             { return nil }
 
 func TestReceiptHandler(t *testing.T) {
-	a1 := NodeAddress("1")
-	a2 := NodeAddress("2")
+	a1, a2 := NodeAddress("1"), NodeAddress("2")
+	i1, i2 := make(chan RoutingDecision), make(chan RoutingDecision)
+	ri1, ri2 := newReceipt(a1, i1), newReceipt(a2, i2)
 
 	c1, c2 := makePairedReceiptConnections()
-	ra1 := ra(make(chan PacketHash))
-	ra2 := ra(make(chan PacketHash))
-	ri1 := newReceiptImpl(a1, ra1)
 	ri1.AddConnection(a2, c1)
-	ri2 := newReceiptImpl(a2, ra2)
 	ri2.AddConnection(a1, c2)
 
 	p := testPacket("2")
 
-	ri1.AddSentPacket(p, a1, a2)
-	ri2.AddSentPacket(p, a1, a2)
+	i1 <- NewRoutingDecision(p, a1, a2)
+	i2 <- NewRoutingDecision(p, a1, a2)
 
 	go ri2.SendReceipt(pr{"2", a2})
 
-	<-ra2
-	log.Print("notified2")
-	<-ra1
-	log.Print("notified1")
+	<-ri2.PacketHashes()
+	<-ri1.PacketHashes()
 }
