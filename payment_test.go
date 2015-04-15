@@ -44,7 +44,7 @@ func WaitForIncomingDebt(t *testing.T, p PaymentHandler, a NodeAddress, m int64)
 			t.Fatalf("Timeout witing for IncomingDebt(%v) from %v in %v", m, a, p)
 			return
 		case _ = <-tick:
-			if p.IncomingDebt(a) == m {
+			if d, _ := p.IncomingDebt(a); d == m {
 				return
 			}
 		}
@@ -60,7 +60,7 @@ func WaitForOutgoingDebt(t *testing.T, p PaymentHandler, a NodeAddress, m int64)
 			t.Fatalf("Timeout witing for OutgoingDebt(%v) from %v in %v", m, a, p)
 			return
 		case _ = <-tick:
-			if p.OutgoingDebt(a) == m {
+			if d, _ := p.OutgoingDebt(a); d == m {
 				return
 			}
 		}
