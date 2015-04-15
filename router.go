@@ -1,5 +1,9 @@
 package node
 
+import (
+	"time"
+)
+
 // A router handles all routing tasks that don't involve the local machine
 // including connection management, reachability handling, packet receipt
 // relaying, and (outstanding) payment tracking. AKA anything which doesn't
@@ -10,6 +14,8 @@ type Router interface {
 	GetAddress() PublicKey
 	SendReceipt(PacketReceipt)
 	SendPayment(Payment)
+	IncomingDebt(NodeAddress) (int64, time.Time)
+	OutgoingDebt(NodeAddress) (int64, time.Time)
 }
 
 type router struct {
