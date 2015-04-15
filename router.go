@@ -17,10 +17,10 @@ type router struct {
 	// A map of public key hashes to connections
 	connections map[NodeAddress]Connection
 
-	reachability ReachabilityHandler
-	routing      RoutingHandler
-	receipt      ReceiptHandler
-	payment      PaymentHandler
+	ReachabilityHandler
+	RoutingHandler
+	ReceiptHandler
+	PaymentHandler
 }
 
 func newRouter(pk PublicKey) Router {
@@ -42,22 +42,6 @@ func (r *router) GetAddress() PublicKey {
 	return r.pk
 }
 
-func (r *router) SendReceipt(p PacketReceipt) {
-	r.receipt.SendReceipt(p)
-}
-
-func (r *router) SendPayment(p Payment) {
-	r.payment.SendPayment(p)
-}
-
-func (r *router) SendPacket(p Packet) error {
-	return r.routing.SendPacket(p)
-}
-
-func (r *router) Packets() <-chan Packet {
-	return r.routing.Packets()
-}
-
 func (r *router) AddConnection(c Connection) {
 	id := c.Key().Hash()
 	_, duplicate := r.connections[id]
@@ -68,8 +52,8 @@ func (r *router) AddConnection(c Connection) {
 	r.connections[id] = c
 
 	// Curry the id since the various sub connections don't know about it
-	r.routing.AddConnection(id, c)
-	r.reachability.AddConnection(id, c)
-	r.receipt.AddConnection(id, c)
-	r.payment.AddConnection(id, c)
+	r.RoutingHandler.AddConnection(id, c)
+	r.ReachabilityHandler.AddConnection(id, c)
+	r.ReceiptHandler.AddConnection(id, c)
+	r.PaymentHandler.AddConnection(id, c)
 }
