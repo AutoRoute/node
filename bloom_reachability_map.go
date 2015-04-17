@@ -6,11 +6,15 @@ import (
 )
 
 type BloomReachabilityMap struct {
-	f *bloom.BloomFilter
+	f        *bloom.BloomFilter
+	distance uint8
 }
 
 func NewBloomReachabilityMap() ReachabilityMap {
-	m := BloomReachabilityMap{f: bloom.New(1000, 4)}
+	m := BloomReachabilityMap{
+		f:        bloom.New(1000, 4),
+		distance: 0,
+	}
 	return m
 }
 
@@ -25,9 +29,8 @@ func (m BloomReachabilityMap) AddEntry(n NodeAddress) {
 	m.f.Add(entry)
 }
 
-// TODO: Figure out how to increment
 func (m BloomReachabilityMap) Increment() {
-	return
+	m.distance++
 }
 
 func (m BloomReachabilityMap) Merge(nr ReachabilityMap) error {
