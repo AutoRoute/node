@@ -8,8 +8,7 @@ type srmentry struct {
 type SimpleReachabilityMap map[NodeAddress]srmentry
 
 func NewSimpleReachabilityMap() ReachabilityMap {
-	m := make(map[NodeAddress]srmentry)
-	return SimpleReachabilityMap(m)
+	return make(SimpleReachabilityMap)
 }
 
 func (m SimpleReachabilityMap) IsReachable(n NodeAddress) bool {
@@ -33,6 +32,11 @@ func (m SimpleReachabilityMap) Merge(nr ReachabilityMap) error {
 	for k, v := range n {
 		m[k] = v
 	}
-
 	return nil
+}
+
+func (m SimpleReachabilityMap) Copy() ReachabilityMap {
+	m2 := NewSimpleReachabilityMap()
+	m2.Merge(m)
+	return m2
 }

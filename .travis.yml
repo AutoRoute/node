@@ -1,0 +1,8 @@
+language: go
+
+# 1.4 is not tip right now
+go:
+    - 1.4
+
+# Use faster container builds
+sudo: false

@@ -6,10 +6,11 @@ import (
 	"sync"
 )
 
-// Takes care of maintaining maps and insures that we know which interfaces are reachable where.
-type MapHandler interface {
+// Takes care of maintaining and relaying maps and insures that we know which
+// interfaces can reach which addresses.
+type ReachabilityHandler interface {
 	AddConnection(NodeAddress, MapConnection)
-	FindConnection(NodeAddress) (NodeAddress, error)
+	FindNextHop(NodeAddress) (NodeAddress, error)
 }
 
 type taggedMap struct {
@@ -17,46 +18,46 @@ type taggedMap struct {
 	new_map ReachabilityMap
 }
 
-type mapImpl struct {
+type reachability struct {
 	me         NodeAddress
-	mtx        *sync.Mutex
+	l          *sync.Mutex
 	conns      map[NodeAddress]MapConnection
 	maps       map[NodeAddress]ReachabilityMap
 	merged_map ReachabilityMap
 }
 
-func newMapImpl(me NodeAddress) MapHandler {
+func newReachability(me NodeAddress) ReachabilityHandler {
 	conns := make(map[NodeAddress]MapConnection)
 	maps := make(map[NodeAddress]ReachabilityMap)
-	impl := &mapImpl{me, &sync.Mutex{}, conns, maps, NewSimpleReachabilityMap()}
+	impl := &reachability{me, &sync.Mutex{}, conns, maps, NewSimpleReachabilityMap()}
 	impl.merged_map.AddEntry(me)
 	return impl
 }
 
-func (m *mapImpl) addMap(update taggedMap) {
-	m.mtx.Lock()
-	defer m.mtx.Unlock()
+func (m *reachability) addMap(update taggedMap) {
+	m.l.Lock()
+	defer m.l.Unlock()
 	m.maps[update.address].Merge(update.new_map)
 	m.merged_map.Merge(update.new_map)
 	for addr, conn := range m.conns {
 		if addr != update.address {
-			conn.SendMap(update.new_map)
+			conn.SendMap(update.new_map.Copy())
 		}
 	}
 }
 
-func (m *mapImpl) AddConnection(id NodeAddress, c MapConnection) {
+func (m *reachability) AddConnection(id NodeAddress, c MapConnection) {
 	// TODO(colin): This should be streamed. or something similar.
-	m.mtx.Lock()
-	defer m.mtx.Unlock()
+	m.l.Lock()
+	defer m.l.Unlock()
 	m.maps[id] = NewSimpleReachabilityMap()
 	m.conns[id] = c
 
 	// Send all our maps
 	go func() {
-		m.mtx.Lock()
-		defer m.mtx.Unlock()
-		err := c.SendMap(m.merged_map)
+		m.l.Lock()
+		defer m.l.Unlock()
+		err := c.SendMap(m.merged_map.Copy())
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -71,9 +72,9 @@ func (m *mapImpl) AddConnection(id NodeAddress, c MapConnection) {
 	}()
 }
 
-func (m *mapImpl) FindConnection(id NodeAddress) (NodeAddress, error) {
-	m.mtx.Lock()
-	defer m.mtx.Unlock()
+func (m *reachability) FindNextHop(id NodeAddress) (NodeAddress, error) {
+	m.l.Lock()
+	defer m.l.Unlock()
 	_, ok := m.conns[id]
 	if ok {
 		return id, nil
