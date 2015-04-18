@@ -48,7 +48,7 @@ type testPacket NodeAddress
 
 func (p testPacket) Destination() NodeAddress { return NodeAddress(p) }
 func (p testPacket) Hash() PacketHash         { return PacketHash(p) }
-func (p testPacket) Amount() int64            { return 1 }
+func (p testPacket) Amount() int64            { return 3 }
 
 func LinkRouters(a, b Router) {
 	c1, c2 := makePairedConnections(a.GetAddress(), b.GetAddress())

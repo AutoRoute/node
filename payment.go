@@ -30,15 +30,14 @@ func payDebt(debts []debt, amount int64) []debt {
 	for _, d := range debts {
 		if d.amount < amount {
 			// not needed since removing
-			d.amount = 0
 			amount -= d.amount
+			d.amount = 0
 			debts = debts[1:]
 			continue
-		} else {
-			d.amount -= amount
-			amount = 0
-			debts[0] = d
 		}
+		d.amount -= amount
+		amount = 0
+		debts[0] = d
 		break
 	}
 	if amount != 0 {
