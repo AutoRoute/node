@@ -4,6 +4,7 @@ import (
 	"log"
 )
 
+// Represents a permanent record of a routing decision.
 type RoutingDecision struct {
 	hash        PacketHash
 	amount      int64
@@ -14,14 +15,15 @@ type RoutingDecision struct {
 
 func NewRoutingDecision(p Packet, src NodeAddress, nexthop NodeAddress) RoutingDecision {
 	return RoutingDecision{p.Hash(), p.Amount(), src, p.Destination(), nexthop}
-
 }
 
 // A routing handler takes care of relaying packets and produces notifications
 // about it's routing decisions.
 type RoutingHandler interface {
 	AddConnection(NodeAddress, DataConnection)
+	// For thing which are routed to "us"
 	DataConnection
+	// The actions we've taken
 	Routes() <-chan RoutingDecision
 }
 

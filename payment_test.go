@@ -44,7 +44,7 @@ func WaitForIncomingDebt(t *testing.T, p PaymentHandler, a NodeAddress, m int64)
 			t.Fatalf("Timeout witing for IncomingDebt(%v) from %v in %v", m, a, p)
 			return
 		case _ = <-tick:
-			if p.IncomingDebt(a) == m {
+			if d, _ := p.IncomingDebt(a); d == m {
 				return
 			}
 		}
@@ -60,7 +60,7 @@ func WaitForOutgoingDebt(t *testing.T, p PaymentHandler, a NodeAddress, m int64)
 			t.Fatalf("Timeout witing for OutgoingDebt(%v) from %v in %v", m, a, p)
 			return
 		case _ = <-tick:
-			if p.OutgoingDebt(a) == m {
+			if d, _ := p.OutgoingDebt(a); d == m {
 				return
 			}
 		}
@@ -77,18 +77,34 @@ func TestPaymentHandler(t *testing.T) {
 	p2.AddConnection(a1, c2)
 
 	t1 := testPacket(a2)
+	t2 := testPacket(NodeAddress("3"))
 	i1 <- NewRoutingDecision(t1, a1, a2)
 	WaitForIncomingDebt(t, p1, a1, 0)
 	WaitForOutgoingDebt(t, p1, a2, 0)
 	h1 <- t1.Hash()
-	WaitForIncomingDebt(t, p1, a1, 1)
-	WaitForOutgoingDebt(t, p1, a2, 1)
+	owed := t1.Amount()
+	WaitForIncomingDebt(t, p1, a1, owed)
+	WaitForOutgoingDebt(t, p1, a2, owed)
 
 	i2 <- NewRoutingDecision(t1, a1, a2)
 	h2 <- t1.Hash()
-	WaitForIncomingDebt(t, p2, a1, 1)
+	WaitForIncomingDebt(t, p2, a1, owed)
 
-	payment := testPayment{a1, a2, 1}
+	i1 <- NewRoutingDecision(t2, a1, a2)
+	h1 <- t2.Hash()
+	owed += t2.Amount()
+	WaitForIncomingDebt(t, p1, a1, owed)
+	WaitForOutgoingDebt(t, p1, a2, owed)
+	i2 <- NewRoutingDecision(t2, a1, a2)
+	h2 <- t2.Hash()
+	WaitForIncomingDebt(t, p2, a1, owed)
+
+	payment := testPayment{a1, a2, 4}
+	p1.SendPayment(payment)
+	owed -= 4
+	WaitForIncomingDebt(t, p2, a1, owed)
+	WaitForOutgoingDebt(t, p1, a2, owed)
+	payment = testPayment{a1, a2, owed}
 	p1.SendPayment(payment)
 	WaitForIncomingDebt(t, p2, a1, 0)
 	WaitForOutgoingDebt(t, p1, a2, 0)
