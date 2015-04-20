@@ -25,15 +25,15 @@ type node struct {
 	m              Money
 }
 
-func NewNode(pk PrivateKey) Node {
+func NewNode(pk PrivateKey, r <-chan time.Time, p <-chan time.Time) Node {
 	n := &node{
 		newRouter(pk.PublicKey()),
 		&sync.Mutex{},
 		pk,
 		make(chan Packet),
 		nil,
-		time.Tick(100 * time.Millisecond),
-		time.Tick(100 * time.Millisecond),
+		r,
+		p,
 		fakeMoney{pk.PublicKey().Hash()},
 	}
 	go n.receivePackets()
