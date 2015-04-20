@@ -11,6 +11,7 @@ import (
 type Node interface {
 	AddConnection(Connection)
 	DataConnection
+	GetAddress() PublicKey
 }
 
 type node struct {
@@ -31,8 +32,8 @@ func NewNode(pk PrivateKey) Node {
 		pk,
 		make(chan Packet),
 		nil,
-		time.Tick(time.Second),
-		time.Tick(time.Second),
+		time.Tick(100 * time.Millisecond),
+		time.Tick(100 * time.Millisecond),
 		fakeMoney{pk.PublicKey().Hash()},
 	}
 	go n.receivePackets()
@@ -53,10 +54,12 @@ func (n *node) receivePackets() {
 func (n *node) sendReceipts() {
 	for range n.receipt_ticker {
 		n.l.Lock()
-		r := CreateMerkleReceipt(n.id, n.receipt_buffer)
-		n.receipt_buffer = nil
+		if len(n.receipt_buffer) > 0 {
+			r := CreateMerkleReceipt(n.id, n.receipt_buffer)
+			n.receipt_buffer = nil
+			n.Router.SendReceipt(r)
+		}
 		n.l.Unlock()
-		n.Router.SendReceipt(r)
 	}
 }
 

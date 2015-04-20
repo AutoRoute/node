@@ -68,6 +68,7 @@ func (r *routing) SendPacket(p Packet) error {
 func (r *routing) sendPacket(p Packet, src NodeAddress) error {
 	if p.Destination() == r.pk.Hash() {
 		r.incoming <- p
+		go r.notifyDecision(p, src, r.pk.Hash())
 		return nil
 	}
 	next, err := r.reachability.FindNextHop(p.Destination())
