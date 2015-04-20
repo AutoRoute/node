@@ -1,6 +1,7 @@
 package node
 
 import (
+	"log"
 	"sync"
 	"time"
 )
@@ -61,7 +62,19 @@ func (n *node) sendReceipts() {
 
 func (n *node) sendPayments() {
 	for range n.payment_ticker {
-		//TODO
+		n.l.Lock()
+		for _, c := range n.Router.Connections() {
+			owed, _ := n.Router.OutgoingDebt(c)
+			if owed > 0 {
+				p, err := n.m.MakePayment(owed, c)
+				if err != nil {
+					log.Print("Failed to make a payment to %d : %v", c, err)
+					break
+				}
+				n.Router.SendPayment(p)
+			}
+		}
+		n.l.Unlock()
 	}
 }
 

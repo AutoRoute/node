@@ -14,6 +14,7 @@ type Router interface {
 	GetAddress() PublicKey
 	SendReceipt(PacketReceipt)
 	SendPayment(Payment)
+	Connections() []NodeAddress
 	IncomingDebt(NodeAddress) (int64, time.Time)
 	OutgoingDebt(NodeAddress) (int64, time.Time)
 }
@@ -46,6 +47,14 @@ func newRouter(pk PublicKey) Router {
 
 func (r *router) GetAddress() PublicKey {
 	return r.pk
+}
+
+func (r *router) Connections() []NodeAddress {
+	c := make([]NodeAddress, 0, len(r.connections))
+	for k, _ := range r.connections {
+		c = append(c, k)
+	}
+	return c
 }
 
 func (r *router) AddConnection(c Connection) {
