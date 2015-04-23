@@ -6,43 +6,86 @@ import (
 )
 
 type BloomReachabilityMap struct {
-	f *bloom.BloomFilter
+	filters      []*bloom.BloomFilter
+	conglomerate *bloom.BloomFilter
 }
 
 func NewBloomReachabilityMap() ReachabilityMap {
-	m := BloomReachabilityMap{f: bloom.New(1000, 4)}
+	fs := make([]*bloom.BloomFilter, 1)
+	fs[0] = bloom.New(1000, 4)
+
+	m := BloomReachabilityMap{
+		filters:      fs,
+		conglomerate: fs[0].Copy(),
+	}
 	return m
 }
 
 func (m BloomReachabilityMap) IsReachable(n NodeAddress) bool {
 	entry := []byte(n)
-	res := m.f.Test(entry)
+	res := m.conglomerate.Test(entry)
 	return res
 }
 
 func (m BloomReachabilityMap) AddEntry(n NodeAddress) {
 	entry := []byte(n)
-	m.f.Add(entry)
+	m.filters[0].Add(entry)
+	m.conglomerate.Add(entry)
 }
 
-// TODO: Figure out how to increment
 func (m BloomReachabilityMap) Increment() {
-	return
+	newZeroth := make([]*bloom.BloomFilter, 1)
+	newZeroth[0] = bloom.New(1000, 4)
+	m.filters = append(newZeroth, m.filters...)
 }
 
 func (m BloomReachabilityMap) Merge(nr ReachabilityMap) error {
 	var err error
 
 	if n, ok := nr.(BloomReachabilityMap); ok {
-		err = m.f.Merge(n.f)
+		if len(m.filters) < len(n.filters) {
+			for k, v := range m.filters {
+				err = v.Merge(n.filters[k])
+				if err != nil {
+					return err
+				}
+			}
+			// append the remaining filters
+			m.filters = append(m.filters, n.filters[len(n.filters):]...)
+		} else {
+			for k, v := range n.filters {
+				err = m.filters[k].Merge(v)
+				if err != nil {
+					return err
+				}
+			}
+		}
 	} else {
 		err = fmt.Errorf("Mismatched reachability map types")
+		return err
 	}
-
+	// reconstruct the conglomerate
+	for _, v := range m.filters {
+		err = m.conglomerate.Merge(v)
+		if err != nil {
+			return err
+		}
+	}
 	return err
 }
 
-// TODO: Figure out how to copy
 func (m BloomReachabilityMap) Copy() ReachabilityMap {
-	return m
+	newFilters := make([]*bloom.BloomFilter, len(m.filters))
+
+	// copy each filter
+	for k, v := range m.filters {
+		newFilters[k] = v.Copy()
+	}
+	newConglomerate := m.conglomerate.Copy()
+
+	mc := BloomReachabilityMap{
+		filters:      newFilters,
+		conglomerate: newConglomerate,
+	}
+	return mc
 }

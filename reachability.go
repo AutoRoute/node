@@ -29,7 +29,7 @@ type reachability struct {
 func newReachability(me NodeAddress) ReachabilityHandler {
 	conns := make(map[NodeAddress]MapConnection)
 	maps := make(map[NodeAddress]ReachabilityMap)
-	impl := &reachability{me, &sync.Mutex{}, conns, maps, NewSimpleReachabilityMap()}
+	impl := &reachability{me, &sync.Mutex{}, conns, maps, NewBloomReachabilityMap()}
 	impl.merged_map.AddEntry(me)
 	return impl
 }
@@ -50,7 +50,7 @@ func (m *reachability) AddConnection(id NodeAddress, c MapConnection) {
 	// TODO(colin): This should be streamed. or something similar.
 	m.l.Lock()
 	defer m.l.Unlock()
-	m.maps[id] = NewSimpleReachabilityMap()
+	m.maps[id] = NewBloomReachabilityMap()
 	m.conns[id] = c
 
 	// Send all our maps
