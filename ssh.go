@@ -4,9 +4,9 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-struct SSHConnection {
-  address NodeAddress
-  session  *ssh.Session
+type SSHConnection struct {
+	address NodeAddress
+	session *ssh.Session
 }
 
 func (s SSHConnection) SendMap(ReachabilityMap) error {
@@ -61,8 +61,8 @@ func EstablishSSH(addresses []node.NodeAddress, key NodeAddress) []*SSHConnectio
 		if err != nil {
 			panic("Failed to create session: " + err.Error())
 		}
-    connection := SSHConnection{address: addresses[i], session: session}
-    connections = append(connections, &connection)
+		connection := SSHConnection{address: addresses[i], session: session}
+		connections = append(connections, &connection)
 	}
 	return connections
 }
