@@ -5,8 +5,8 @@ import (
 )
 
 struct SSHConnection {
-  addresses []NodeAddress
-  sessions  []*ssh.Session
+  address NodeAddress
+  session  *ssh.Session
 }
 
 func (s SSHConnection) SendMap(ReachabilityMap) error {
@@ -16,6 +16,9 @@ func (s SSHConnection) ReachabilityMaps() <-chan ReachabilityMap {
 }
 
 func (s SSHConnection) SendReceipts() <-chan PacketReceipt {
+}
+
+func (s SSHConnection) PacketReceipts() <-chan PacketReceipt {
 }
 
 func (s SSHConnection) SendPayment(Payment) error {
@@ -39,25 +42,7 @@ func (s SSHConnection) Close() error {
 	}
 }
 
-func getKeyFile() (key ssh.Signer, err error) {
-	usr, _ := user.Current()
-	file := usr.HomeDir + "/.ssh/id_rsa"
-	buf, err := ioutil.ReadFile(file)
-	if err != nil {
-		return
-	}
-	key, err = ssh.ParsePrivateKey(buf)
-	if err != nil {
-		return
-	}
-	return
-}
-
-func EstablishSSH(addresses []node.NodeAddress) []*ssh.Session {
-	key, err := getKeyFile()
-	if err != nil {
-		panic(err)
-	}
+func EstablishSSH(addresses []node.NodeAddress, key NodeAddress) []*SSHConnection {
 	username := "node-username"
 	config := &ssh.ClientConfig{
 		User: username,
@@ -66,7 +51,7 @@ func EstablishSSH(addresses []node.NodeAddress) []*ssh.Session {
 		},
 	}
 
-	var sessions []*ssh.Session
+	var connections []*SSHConnection
 	for i := 0; i < len(addresses); i++ {
 		client, err := ssh.Dial("tcp", fmt.Sprintf(string(addresses[i]), ":22"), config)
 		if err != nil {
@@ -76,7 +61,8 @@ func EstablishSSH(addresses []node.NodeAddress) []*ssh.Session {
 		if err != nil {
 			panic("Failed to create session: " + err.Error())
 		}
-		sessions = append(sessions, session)
+    connection := SSHConnection{address: addresses[i], session: session}
+    connections = append(connections, &connection)
 	}
-	return sessions
+	return connections
 }
