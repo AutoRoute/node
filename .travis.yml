@@ -6,3 +6,5 @@ go:
 
 # Use faster container builds
 sudo: false
+
+script: go test ./... -race
