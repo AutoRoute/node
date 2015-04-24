@@ -7,4 +7,4 @@ go:
 # Use faster container builds
 sudo: false
 
-script: go test ./... -race
+script: go test -v ./... -race
