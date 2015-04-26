@@ -53,11 +53,13 @@ func (m *reachability) AddConnection(id NodeAddress, c MapConnection) {
 	m.maps[id] = NewBloomReachabilityMap()
 	m.conns[id] = c
 
+	initial_map := m.merged_map.Copy()
+
 	// Send all our maps
 	go func() {
 		m.l.Lock()
 		defer m.l.Unlock()
-		err := c.SendMap(m.merged_map.Copy())
+		err := c.SendMap(initial_map)
 		if err != nil {
 			log.Fatal(err)
 		}
