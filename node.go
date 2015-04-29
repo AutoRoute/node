@@ -71,7 +71,7 @@ func (n *node) sendPayments() {
 			if owed > 0 {
 				p, err := n.m.MakePayment(owed, c)
 				if err != nil {
-					log.Print("Failed to make a payment to %d : %v", c, err)
+					log.Printf("Failed to make a payment to %d : %v", c, err)
 					break
 				}
 				n.Router.SendPayment(p)
