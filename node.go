@@ -71,14 +71,25 @@ func (n *node) sendPayments() {
 			if owed > 0 {
 				p, err := n.m.MakePayment(owed, c)
 				if err != nil {
-					log.Printf("Failed to make a payment to %d : %v", c, err)
+					log.Printf("Failed to make a payment to %s : %v", c, err)
 					break
 				}
 				n.Router.RecordPayment(Payment{n.id.PublicKey().Hash(), c, owed})
-				n.Router.SendPayment(c, p)
+				n.Router.SendPaymentHash(c, p)
 			}
 		}
 		n.l.Unlock()
+	}
+}
+
+func (n *node) receivePayments() {
+	for h := range n.Router.PaymentHashes() {
+		n.l.Lock()
+		c := n.m.AddPaymentHash(h)
+		go func() {
+			p := <-c
+			n.Router.RecordPayment(p)
+		}()
 	}
 }
 

@@ -8,8 +8,8 @@ import (
 // to send payments. It does not create payments on its own.
 type PaymentHandler interface {
 	AddConnection(NodeAddress, PaymentConnection)
-	SendPayment(NodeAddress, PaymentHash) error
-	Payments() <-chan PaymentHash
+	SendPaymentHash(NodeAddress, PaymentHash) error
+	PaymentHashes() <-chan PaymentHash
 }
 
 type payment struct {
@@ -28,7 +28,7 @@ func newPayment(id NodeAddress) PaymentHandler {
 	return p
 }
 
-func (p *payment) Payments() <-chan PaymentHash {
+func (p *payment) PaymentHashes() <-chan PaymentHash {
 	return p.c
 }
 
@@ -45,7 +45,7 @@ func (p *payment) handleConnection(c PaymentConnection) {
 	}
 }
 
-func (p *payment) SendPayment(id NodeAddress, y PaymentHash) error {
+func (p *payment) SendPaymentHash(id NodeAddress, y PaymentHash) error {
 	p.l.Lock()
 	defer p.l.Unlock()
 	return p.connections[id].SendPayment(y)

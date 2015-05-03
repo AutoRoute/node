@@ -30,9 +30,9 @@ func TestPaymentHandler(t *testing.T) {
 	p1.AddConnection(a2, c1)
 	p2.AddConnection(a1, c2)
 
-	go p1.SendPayment(a2, PaymentHash("hash"))
+	go p1.SendPaymentHash(a2, PaymentHash("hash"))
 
-	h := <-p2.Payments()
+	h := <-p2.PaymentHashes()
 	if string(h) != "hash" {
 		t.Fatalf("Expected %s == hash", string(h))
 	}

@@ -13,7 +13,8 @@ type Router interface {
 	DataConnection
 	GetAddress() PublicKey
 	SendReceipt(PacketReceipt)
-	SendPayment(NodeAddress, PaymentHash) error
+	SendPaymentHash(NodeAddress, PaymentHash) error
+	PaymentHashes() <-chan PaymentHash
 	RecordPayment(Payment)
 	Connections() []NodeAddress
 	IncomingDebt(NodeAddress) (int64, time.Time)
