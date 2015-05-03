@@ -32,8 +32,8 @@ type ReceiptConnection interface {
 	PacketReceipts() <-chan PacketReceipt
 }
 type PaymentConnection interface {
-	SendPayment(Payment) error
-	Payments() <-chan Payment
+	SendPayment(PaymentHash) error
+	Payments() <-chan PaymentHash
 }
 
 // While the two connections use different messages, a working ControlConnection has both interfaces

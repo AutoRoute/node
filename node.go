@@ -74,7 +74,8 @@ func (n *node) sendPayments() {
 					log.Printf("Failed to make a payment to %d : %v", c, err)
 					break
 				}
-				n.Router.SendPayment(p)
+				n.Router.RecordPayment(Payment{n.id.PublicKey().Hash(), c, owed})
+				n.Router.SendPayment(c, p)
 			}
 		}
 		n.l.Unlock()

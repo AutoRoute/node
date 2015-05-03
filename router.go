@@ -13,7 +13,8 @@ type Router interface {
 	DataConnection
 	GetAddress() PublicKey
 	SendReceipt(PacketReceipt)
-	SendPayment(Payment)
+	SendPayment(NodeAddress, PaymentHash) error
+	RecordPayment(Payment)
 	Connections() []NodeAddress
 	IncomingDebt(NodeAddress) (int64, time.Time)
 	OutgoingDebt(NodeAddress) (int64, time.Time)
@@ -28,6 +29,7 @@ type router struct {
 	RoutingHandler
 	ReceiptHandler
 	PaymentHandler
+	Ledger
 }
 
 func newRouter(pk PublicKey) Router {
@@ -35,14 +37,16 @@ func newRouter(pk PublicKey) Router {
 	routing := newRouting(pk, reach)
 	c1, c2 := SplitChannel(routing.Routes())
 	receipt := newReceipt(pk.Hash(), c1)
-	payment := newPayment(pk.Hash(), receipt.PacketHashes(), c2)
+	payment := newPayment(pk.Hash())
+	ledger := newLedger(pk.Hash(), receipt.PacketHashes(), c2)
 	return &router{
 		pk,
 		make(map[NodeAddress]Connection),
 		reach,
 		routing,
 		receipt,
-		payment}
+		payment,
+		ledger}
 }
 
 func (r *router) GetAddress() PublicKey {

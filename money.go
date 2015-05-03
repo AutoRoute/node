@@ -1,42 +1,41 @@
 package node
 
-// A type representing a payment that you can use
-type Payment interface {
-	Source() NodeAddress
-	Destination() NodeAddress
-	Verify() error
-	Amount() int64
+import (
+	"fmt"
+	"strconv"
+	"strings"
+)
+
+// A type representing information about a valid payment
+type Payment struct {
+	Source      NodeAddress
+	Destination NodeAddress
+	Amount      int64
 }
 
-type testPayment struct {
-	src NodeAddress
-	dst NodeAddress
-	amt int64
-}
-
-func (t testPayment) Source() NodeAddress      { return t.src }
-func (t testPayment) Destination() NodeAddress { return t.dst }
-func (t testPayment) Verify() error            { return nil }
-func (t testPayment) Amount() int64            { return t.amt }
+// A type representing a hash of a payment which you are telling the other side to use.
+type PaymentHash string
 
 // This represents a payment engine, which produces signed payments on demand
 type Money interface {
-	MakePayment(amount int64, destination NodeAddress) (Payment, error)
-	HandlePayment(Payment) chan error
+	MakePayment(amount int64, destination NodeAddress) (PaymentHash, error)
+	AddPaymentHash(PaymentHash) chan Payment
 }
 
 type fakeMoney struct {
 	id NodeAddress
 }
 
-func (f fakeMoney) MakePayment(amount int64, destination NodeAddress) (Payment, error) {
-	return testPayment{f.id, destination, amount}, nil
+func (f fakeMoney) MakePayment(amount int64, destination NodeAddress) (PaymentHash, error) {
+	return PaymentHash(fmt.Sprintf("%s:%d", destination, amount)), nil
 }
 
-func (f fakeMoney) HandlePayment(p Payment) chan error {
-	c := make(chan error)
+func (f fakeMoney) AddPaymentHash(p PaymentHash) chan Payment {
+	c := make(chan Payment)
+	v := strings.Split(string(p), ":")
+	a, _ := strconv.Atoi(v[1])
 	go func() {
-		c <- nil
+		c <- Payment{NodeAddress(v[0]), f.id, int64(a)}
 	}()
 	return c
 }
