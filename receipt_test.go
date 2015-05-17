@@ -23,17 +23,9 @@ func makePairedReceiptConnections() (ReceiptConnection, ReceiptConnection) {
 	return testReceiptConnection{one, two}, testReceiptConnection{two, one}
 }
 
-type pr struct {
-	hash string
-	src  NodeAddress
-}
-
-func (p pr) ListPackets() []PacketHash { return []PacketHash{PacketHash(p.hash)} }
-func (p pr) Source() NodeAddress       { return p.src }
-func (p pr) Verify() error             { return nil }
-
 func TestReceiptHandler(t *testing.T) {
-	a1, a2 := NodeAddress("1"), NodeAddress("2")
+	pk2, _ := NewECDSAKey()
+	a1, a2 := NodeAddress("1"), pk2.PublicKey().Hash()
 	i1, i2 := make(chan RoutingDecision), make(chan RoutingDecision)
 	ri1, ri2 := newReceipt(a1, i1), newReceipt(a2, i2)
 
@@ -41,12 +33,12 @@ func TestReceiptHandler(t *testing.T) {
 	ri1.AddConnection(a2, c1)
 	ri2.AddConnection(a1, c2)
 
-	p := testPacket("2")
+	p := testPacket(a2)
 
 	i1 <- NewRoutingDecision(p, a1, a2)
 	i2 <- NewRoutingDecision(p, a1, a2)
 
-	go ri2.SendReceipt(pr{"2", a2})
+	go ri2.SendReceipt(CreateMerkleReceipt(pk2, []PacketHash{p.Hash()}))
 
 	<-ri2.PacketHashes()
 	<-ri1.PacketHashes()
