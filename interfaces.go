@@ -22,14 +22,6 @@ type ReachabilityMap interface {
 	Copy() ReachabilityMap
 }
 
-// A type representing a payment that you can use
-type Payment interface {
-	Source() NodeAddress
-	Destination() NodeAddress
-	Verify() error
-	Amount() int64
-}
-
 // Layer three interfaces for network control traffic
 type MapConnection interface {
 	SendMap(ReachabilityMap) error

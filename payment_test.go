@@ -24,17 +24,6 @@ func makePairedPaymentConnections() (PaymentConnection, PaymentConnection) {
 	return testPaymentConnection{one, two}, testPaymentConnection{two, one}
 }
 
-type testPayment struct {
-	src NodeAddress
-	dst NodeAddress
-	amt int64
-}
-
-func (t testPayment) Source() NodeAddress      { return t.src }
-func (t testPayment) Destination() NodeAddress { return t.dst }
-func (t testPayment) Verify() error            { return nil }
-func (t testPayment) Amount() int64            { return t.amt }
-
 func WaitForIncomingDebt(t *testing.T, p PaymentHandler, a NodeAddress, m int64) {
 	timeout := time.After(time.Second)
 	tick := time.Tick(time.Millisecond * 5)

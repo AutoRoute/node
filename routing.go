@@ -67,15 +67,14 @@ func (r *routing) SendPacket(p Packet) error {
 
 func (r *routing) sendPacket(p Packet, src NodeAddress) error {
 	if p.Destination() == r.pk.Hash() {
-		log.Printf("%q: Routing packet to self", r.pk.Hash())
 		r.incoming <- p
+		go r.notifyDecision(p, src, r.pk.Hash())
 		return nil
 	}
 	next, err := r.reachability.FindNextHop(p.Destination())
 	if err != nil {
 		return err
 	}
-	log.Printf("%q: Routing packet to %q", r.pk.Hash(), next)
 	go r.notifyDecision(p, src, next)
 	return r.connections[next].SendPacket(p)
 }

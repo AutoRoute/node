@@ -42,7 +42,6 @@ func (n NeighborData) handleLink(mac []byte, frw l2.FrameReadWriter, c chan Node
 			log.Printf("Failure reading from connection %v, %v", frw, err)
 			return
 		}
-		log.Printf("%q: Received packet from %v sent to %v.\n", n.pk.Hash(), frame.Source(), frame.Destination())
 		// Throw away if protocols don't match
 		if frame.Type() != protocol {
 			log.Printf("%q: bad protocol", n.pk.Hash())
@@ -61,7 +60,6 @@ func (n NeighborData) handleLink(mac []byte, frw l2.FrameReadWriter, c chan Node
 			continue
 		}
 		response := l2.NewEthFrame(frame.Source(), mac, protocol, []byte(n.pk.Hash()))
-		log.Printf("%q: Sending response packet %v.\n", n.pk.Hash(), frame.Source())
 		err = frw.WriteFrame(response)
 		if err != nil {
 			log.Printf("Failure writing to connection %v, %v", frw, err)
@@ -73,7 +71,6 @@ func (n NeighborData) handleLink(mac []byte, frw l2.FrameReadWriter, c chan Node
 func (n NeighborData) Find(mac []byte, frw l2.FrameReadWriter) (<-chan NodeAddress, error) {
 	// Send initial packet
 	frame := l2.NewEthFrame(broadcast, mac, protocol, []byte(n.pk.Hash()))
-	log.Printf("%q: Broadcasting packet.\n", n.pk.Hash())
 	err := frw.WriteFrame(frame)
 	if err != nil {
 		return nil, err
