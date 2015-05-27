@@ -4,24 +4,15 @@ import (
 	"fmt"
 	"github.com/AutoRoute/l2"
 	"github.com/AutoRoute/node"
-	"golang.org/x/crypto/ssh"
-	"io/ioutil"
 	"log"
 	"net"
-	"os/user"
 	"sync"
 )
 
-func FindNeighbors(interfaces []net.Interface) []<-chan node.NodeAddress {
+func FindNeighbors(interfaces []net.Interface, public_key node.PublicKey) []<-chan node.NodeAddress {
 	var channels []<-chan node.NodeAddress
 	for i := 0; i < len(interfaces); i++ {
 		conn, err := l2.ConnectExistingDevice(interfaces[i].Name)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		k, err := node.NewECDSAKey()
-		public_key := k.PublicKey()
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -54,52 +45,14 @@ func ReadResponses(channels []<-chan node.NodeAddress) []node.NodeAddress {
 	return addresses
 }
 
-func getKeyFile() (key ssh.Signer, err error) {
-	usr, _ := user.Current()
-	file := usr.HomeDir + "/.ssh/id_rsa"
-	buf, err := ioutil.ReadFile(file)
-	if err != nil {
-		return
-	}
-	key, err = ssh.ParsePrivateKey(buf)
-	if err != nil {
-		return
-	}
-	return
-}
-
-func EstablishSSH(addresses []node.NodeAddress) []*ssh.Session {
-	key, err := getKeyFile()
-	if err != nil {
-		panic(err)
-	}
-	username := "node-username"
-	config := &ssh.ClientConfig{
-		User: username,
-		Auth: []ssh.AuthMethod{
-			ssh.PublicKeys(key),
-		},
-	}
-
-	var sessions []*ssh.Session
-	for i := 0; i < len(addresses); i++ {
-		client, err := ssh.Dial("tcp", fmt.Sprintf(string(addresses[i]), ":22"), config)
+func CloseConnections(connections []*node.SSHConnection) error {
+	for i := 0; i < len(connections); i++ {
+		err := connections[i].Close()
 		if err != nil {
-			panic("Failed to dial: " + err.Error())
+			return err
 		}
-		session, err := client.NewSession()
-		if err != nil {
-			panic("Failed to create session: " + err.Error())
-		}
-		sessions = append(sessions, session)
 	}
-	return sessions
-}
-
-func CloseSessions(sessions []*ssh.Session) {
-	for i := 0; i < len(sessions); i++ {
-		sessions[i].Close()
-	}
+	return nil
 }
 
 func main() {
@@ -109,13 +62,21 @@ func main() {
 		log.Fatal(err)
 	}
 
+	k, err := node.NewECDSAKey()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	public_key := k.PublicKey()
+
 	// find neighbors of each interface
-	channels := FindNeighbors(interfaces)
+	channels := FindNeighbors(interfaces, public_key)
 
 	// print responses and return addresses (public key hashes)
 	addresses := ReadResponses(channels)
 
 	// establish ssh connections
-	sessions := EstablishSSH(addresses)
-	defer CloseSessions(sessions)
+	connections := node.EstablishSSH(addresses, k)
+	defer CloseConnections(connections)
 }
