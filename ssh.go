@@ -43,7 +43,7 @@ func (s SSHConnection) Packets() <-chan Packet {
 }
 
 func (s SSHConnection) Key() PublicKey {
-	return nil
+	return PublicKey{}
 }
 
 func (s SSHConnection) Close() error {
@@ -51,8 +51,8 @@ func (s SSHConnection) Close() error {
 	return err
 }
 
-func EstablishSSH(addresses []NodeAddress, key PrivateKey) []*SSHConnection {
-	username := "node-username"
+func EstablishSSH(address NodeAddress, key PrivateKey) *SSHConnection {
+	username := string(key.PublicKey().Hash())
 	signer, err := ssh.NewSignerFromKey(key)
 	if err != nil {
 		panic("Failed to create signer from key")
@@ -64,18 +64,13 @@ func EstablishSSH(addresses []NodeAddress, key PrivateKey) []*SSHConnection {
 		},
 	}
 
-	var connections []*SSHConnection
-	for i := 0; i < len(addresses); i++ {
-		client, err := ssh.Dial("tcp", fmt.Sprintf(string(addresses[i]), ":22"), config)
-		if err != nil {
-			panic("Failed to dial: " + err.Error())
-		}
-		session, err := client.NewSession()
-		if err != nil {
-			panic("Failed to create session: " + err.Error())
-		}
-		connection := SSHConnection{address: addresses[i], session: session}
-		connections = append(connections, &connection)
+	client, err := ssh.Dial("tcp", fmt.Sprintf("%v:22", address), config)
+	if err != nil {
+		panic("Failed to dial: " + err.Error())
 	}
-	return connections
+	session, err := client.NewSession()
+	if err != nil {
+		panic("Failed to create session: " + err.Error())
+	}
+	return &SSHConnection{address: address, session: session}
 }
