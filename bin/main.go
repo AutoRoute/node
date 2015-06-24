@@ -40,7 +40,10 @@ func main() {
 		neighbours := FindNeighbors(dev, public_key)
 		for addr := range neighbours {
 			log.Printf("Neighbour Found %v", addr)
-			connection := node.EstablishSSH(addr, key)
+			connection, err := node.EstablishSSH("Dummy address", key)
+			if err != nil {
+				log.Printf("Error connecting: %v", err)
+			}
 			log.Printf("Connection established to %v %v", addr, connection)
 		}
 	}
