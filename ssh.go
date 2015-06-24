@@ -20,7 +20,7 @@ func (s SSHConnection) ReachabilityMaps() <-chan ReachabilityMap {
 	return nil
 }
 
-func (s SSHConnection) SendReceipts() <-chan PacketReceipt {
+func (s SSHConnection) SendReceipts(PacketReceipt) error {
 	return nil
 }
 
