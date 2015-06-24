@@ -1,13 +1,15 @@
 package node
 
 import (
-	"fmt"
+	"net"
+
 	"golang.org/x/crypto/ssh"
 )
 
 type SSHConnection struct {
-	address NodeAddress
-	session *ssh.Session
+	conn  ssh.Conn
+	chans <-chan ssh.NewChannel
+	reqs  <-chan *ssh.Request
 }
 
 func (s SSHConnection) SendMap(ReachabilityMap) error {
@@ -47,15 +49,67 @@ func (s SSHConnection) Key() PublicKey {
 }
 
 func (s SSHConnection) Close() error {
-	err := s.session.Close()
+	err := s.conn.Close()
 	return err
 }
 
-func EstablishSSH(address NodeAddress, key PrivateKey) *SSHConnection {
+type SSHListener struct {
+	err error
+	c   chan *SSHConnection
+}
+
+func (l *SSHListener) Error() error {
+	return l.err
+}
+
+func (l *SSHListener) Connections() <-chan *SSHConnection {
+	return l.c
+}
+
+func ListenSSH(address string, key PrivateKey) SSHListener {
+	l := SSHListener{nil, make(chan *SSHConnection)}
+	go l.listen(address, key)
+	return l
+}
+
+func (l *SSHListener) error(err error) {
+	l.err = err
+	close(l.c)
+	return
+}
+
+func (l *SSHListener) listen(address string, key PrivateKey) {
+	config := &ssh.ServerConfig{
+		PublicKeyCallback: func(conn ssh.ConnMetadata, key ssh.PublicKey) (*ssh.Permissions, error) {
+			return &ssh.Permissions{}, nil
+		},
+	}
+	s, err := net.Listen("tcp", address)
+	if err != nil {
+		l.error(err)
+		return
+	}
+	for {
+		c, err := s.Accept()
+		if err != nil {
+			l.error(err)
+			return
+		}
+
+		server, chans, reqs, err := ssh.NewServerConn(c, config)
+		if err != nil {
+			l.error(err)
+			return
+		}
+		l.c <- &SSHConnection{server, chans, reqs}
+	}
+}
+
+func EstablishSSH(address string, key PrivateKey) (*SSHConnection, error) {
 	username := string(key.PublicKey().Hash())
 	signer, err := ssh.NewSignerFromKey(key)
 	if err != nil {
-		panic("Failed to create signer from key")
+		return nil, err
 	}
 	config := &ssh.ClientConfig{
 		User: username,
@@ -64,13 +118,13 @@ func EstablishSSH(address NodeAddress, key PrivateKey) *SSHConnection {
 		},
 	}
 
-	client, err := ssh.Dial("tcp", fmt.Sprintf("%v:22", address), config)
+	c, err := net.Dial("tcp", address)
 	if err != nil {
-		panic("Failed to dial: " + err.Error())
+		return nil, err
 	}
-	session, err := client.NewSession()
+	client, chans, reqs, err := ssh.NewClientConn(c, address, config)
 	if err != nil {
-		panic("Failed to create session: " + err.Error())
+		return nil, err
 	}
-	return &SSHConnection{address: address, session: session}
+	return &SSHConnection{client, chans, reqs}, nil
 }
