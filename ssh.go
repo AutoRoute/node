@@ -1,13 +1,15 @@
 package node
 
 import (
-	"fmt"
+	"net"
+
 	"golang.org/x/crypto/ssh"
 )
 
 type SSHConnection struct {
-	address NodeAddress
-	session *ssh.Session
+	conn  ssh.Conn
+	chans <-chan ssh.NewChannel
+	reqs  <-chan *ssh.Request
 }
 
 func (s SSHConnection) SendMap(ReachabilityMap) error {
@@ -18,7 +20,7 @@ func (s SSHConnection) ReachabilityMaps() <-chan ReachabilityMap {
 	return nil
 }
 
-func (s SSHConnection) SendReceipts() <-chan PacketReceipt {
+func (s SSHConnection) SendReceipts(PacketReceipt) error {
 	return nil
 }
 
@@ -43,19 +45,71 @@ func (s SSHConnection) Packets() <-chan Packet {
 }
 
 func (s SSHConnection) Key() PublicKey {
-	return nil
+	return PublicKey{}
 }
 
 func (s SSHConnection) Close() error {
-	err := s.session.Close()
+	err := s.conn.Close()
 	return err
 }
 
-func EstablishSSH(addresses []NodeAddress, key PrivateKey) []*SSHConnection {
-	username := "node-username"
+type SSHListener struct {
+	err error
+	c   chan *SSHConnection
+}
+
+func (l *SSHListener) Error() error {
+	return l.err
+}
+
+func (l *SSHListener) Connections() <-chan *SSHConnection {
+	return l.c
+}
+
+func ListenSSH(address string, key PrivateKey) SSHListener {
+	l := SSHListener{nil, make(chan *SSHConnection)}
+	go l.listen(address, key)
+	return l
+}
+
+func (l *SSHListener) error(err error) {
+	l.err = err
+	close(l.c)
+	return
+}
+
+func (l *SSHListener) listen(address string, key PrivateKey) {
+	config := &ssh.ServerConfig{
+		PublicKeyCallback: func(conn ssh.ConnMetadata, key ssh.PublicKey) (*ssh.Permissions, error) {
+			return &ssh.Permissions{}, nil
+		},
+	}
+	s, err := net.Listen("tcp", address)
+	if err != nil {
+		l.error(err)
+		return
+	}
+	for {
+		c, err := s.Accept()
+		if err != nil {
+			l.error(err)
+			return
+		}
+
+		server, chans, reqs, err := ssh.NewServerConn(c, config)
+		if err != nil {
+			l.error(err)
+			return
+		}
+		l.c <- &SSHConnection{server, chans, reqs}
+	}
+}
+
+func EstablishSSH(address string, key PrivateKey) (*SSHConnection, error) {
+	username := string(key.PublicKey().Hash())
 	signer, err := ssh.NewSignerFromKey(key)
 	if err != nil {
-		panic("Failed to create signer from key")
+		return nil, err
 	}
 	config := &ssh.ClientConfig{
 		User: username,
@@ -64,18 +118,13 @@ func EstablishSSH(addresses []NodeAddress, key PrivateKey) []*SSHConnection {
 		},
 	}
 
-	var connections []*SSHConnection
-	for i := 0; i < len(addresses); i++ {
-		client, err := ssh.Dial("tcp", fmt.Sprintf(string(addresses[i]), ":22"), config)
-		if err != nil {
-			panic("Failed to dial: " + err.Error())
-		}
-		session, err := client.NewSession()
-		if err != nil {
-			panic("Failed to create session: " + err.Error())
-		}
-		connection := SSHConnection{address: addresses[i], session: session}
-		connections = append(connections, &connection)
+	c, err := net.Dial("tcp", address)
+	if err != nil {
+		return nil, err
 	}
-	return connections
+	client, chans, reqs, err := ssh.NewClientConn(c, address, config)
+	if err != nil {
+		return nil, err
+	}
+	return &SSHConnection{client, chans, reqs}, nil
 }

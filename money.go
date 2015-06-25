@@ -16,6 +16,15 @@ type Payment struct {
 // A type representing a hash of a payment which you are telling the other side to use.
 type PaymentHash string
 
+func (h PaymentHash) MarshalBinary() ([]byte, error) {
+	return []byte(h), nil
+}
+
+func (h *PaymentHash) UnmarshalBinary(data []byte) error {
+	*h = PaymentHash(string(data))
+	return nil
+}
+
 // This represents a payment engine, which produces signed payments on demand
 type Money interface {
 	MakePayment(amount int64, destination NodeAddress) (PaymentHash, error)

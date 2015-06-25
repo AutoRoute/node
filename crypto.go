@@ -10,69 +10,53 @@ import (
 	"math/big"
 )
 
-type PrivateKey interface {
-	PublicKey() PublicKey
-	Sign([]byte) Signature
-}
-
-type PublicKey interface {
-	Hash() NodeAddress
-}
-
-type Signature interface {
-	Key() PublicKey
-	Verify() error
-	Signed() []byte
-}
-
-type privateECDSAEncoding struct {
+type PrivateKey struct {
 	k *ecdsa.PrivateKey
 }
 
-func (p privateECDSAEncoding) PublicKey() PublicKey {
-	return ecdsaEncoding(p.k.PublicKey)
+func (p PrivateKey) PublicKey() PublicKey {
+	return PublicKey(p.k.PublicKey)
 }
 
-func (p privateECDSAEncoding) Sign(m []byte) Signature {
+func (p PrivateKey) Sign(m []byte) Signature {
 	r, s, err := ecdsa.Sign(rand.Reader, p.k, m)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	return ecdsaSignature{r, s, ecdsaEncoding(p.k.PublicKey), m}
+	return Signature{r, s, PublicKey(p.k.PublicKey), m}
 }
 
-type ecdsaSignature struct {
-	r *big.Int
-	s *big.Int
-	k ecdsaEncoding
-	m []byte
+type Signature struct {
+	R *big.Int
+	S *big.Int
+	K PublicKey
+	M []byte
 }
 
-func (e ecdsaSignature) Key() PublicKey {
-	return e.k
+func (e Signature) Key() PublicKey {
+	return e.K
 }
 
-func (e ecdsaSignature) Verify() error {
-	k := ecdsa.PublicKey(e.k)
-	if !ecdsa.Verify(&k, e.m, e.r, e.s) {
+func (e Signature) Verify() error {
+	k := ecdsa.PublicKey(e.K)
+	if !ecdsa.Verify(&k, e.M, e.R, e.S) {
 		return errors.New("Invalid Signature")
 	}
 	return nil
 }
 
-func (e ecdsaSignature) Signed() []byte {
-	return e.m
+func (e Signature) Signed() []byte {
+	return e.M
 }
 
-type ecdsaEncoding ecdsa.PublicKey
+type PublicKey ecdsa.PublicKey
 
 func hashstring(s string) string {
 	o := sha512.Sum512([]byte(s))
 	return string(o[0:sha512.Size])
 }
 
-func (e ecdsaEncoding) Hash() NodeAddress {
+func (e PublicKey) Hash() NodeAddress {
 	// Cannot error
 	t1, _ := e.X.MarshalText()
 	t2, _ := e.Y.MarshalText()
@@ -82,7 +66,7 @@ func (e ecdsaEncoding) Hash() NodeAddress {
 func NewECDSAKey() (PrivateKey, error) {
 	private, err := ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
 	if err != nil {
-		return nil, err
+		return PrivateKey{}, err
 	}
-	return privateECDSAEncoding{private}, nil
+	return PrivateKey{private}, nil
 }

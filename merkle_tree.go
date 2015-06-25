@@ -6,13 +6,6 @@ import (
 	"errors"
 )
 
-// A receipt listing packets which have been succesfully delivered
-type PacketReceipt interface {
-	ListPackets() []PacketHash
-	Source() NodeAddress
-	Verify() error
-}
-
 func CreateMerkleReceipt(key PrivateKey, packets []PacketHash) PacketReceipt {
 	old := make([]merklenode, 0)
 	for _, h := range packets {
@@ -34,54 +27,54 @@ func CreateMerkleReceipt(key PrivateKey, packets []PacketHash) PacketReceipt {
 		}
 		old = cur
 	}
-	return merklereceipt{old[0], key.Sign(old[0].Hash())}
+	return PacketReceipt{old[0], key.Sign(old[0].Hash())}
 }
 
-type merklereceipt struct {
-	tree      merklenode
-	signature Signature
+type PacketReceipt struct {
+	Tree      merklenode
+	Signature Signature
 }
 
-func (m merklereceipt) Verify() error {
-	if !bytes.Equal(m.signature.Signed(), m.tree.Hash()) {
+func (m PacketReceipt) Verify() error {
+	if !bytes.Equal(m.Signature.Signed(), m.Tree.Hash()) {
 		return errors.New("Signature does not match contents")
 	}
-	return m.signature.Verify()
+	return m.Signature.Verify()
 }
 
-func (m merklereceipt) Source() NodeAddress {
-	return m.signature.Key().Hash()
+func (m PacketReceipt) Source() NodeAddress {
+	return m.Signature.Key().Hash()
 }
 
-func (m merklereceipt) ListPackets() []PacketHash {
-	return m.tree.ListLeafs()
+func (m PacketReceipt) ListPackets() []PacketHash {
+	return m.Tree.ListLeafs()
 }
 
 type merklenode struct {
-	hash  PacketHash
-	left  *merklenode
-	right *merklenode
+	LeafHash PacketHash
+	Left     *merklenode
+	Right    *merklenode
 }
 
 func (m merklenode) ListLeafs() []PacketHash {
-	if len(m.hash) != 0 {
-		return []PacketHash{m.hash}
+	if len(m.LeafHash) != 0 {
+		return []PacketHash{m.LeafHash}
 	}
-	if m.right == nil {
-		return m.left.ListLeafs()
+	if m.Right == nil {
+		return m.Left.ListLeafs()
 	}
-	return append(m.left.ListLeafs(), m.right.ListLeafs()...)
+	return append(m.Left.ListLeafs(), m.Right.ListLeafs()...)
 }
 
 func (m merklenode) Hash() []byte {
-	if len(m.hash) != 0 {
-		s := sha512.Sum512([]byte(m.hash))
+	if len(m.LeafHash) != 0 {
+		s := sha512.Sum512([]byte(m.LeafHash))
 		return s[0:sha512.Size]
 	}
-	if m.right == nil {
-		s := sha512.Sum512(append(m.left.Hash()))
+	if m.Right == nil {
+		s := sha512.Sum512(append(m.Left.Hash()))
 		return s[0:sha512.Size]
 	}
-	s := sha512.Sum512(append(m.left.Hash(), m.right.Hash()...))
+	s := sha512.Sum512(append(m.Left.Hash(), m.Right.Hash()...))
 	return s[0:sha512.Size]
 }
