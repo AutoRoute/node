@@ -68,7 +68,7 @@ func (l *SSHListener) Connections() <-chan *SSHConnection {
 
 func ListenSSH(address string, key PrivateKey) SSHListener {
 	l := SSHListener{nil, make(chan *SSHConnection)}
-	go l.listen(address, key)
+	l.listen(address, key)
 	return l
 }
 
@@ -84,30 +84,38 @@ func (l *SSHListener) listen(address string, key PrivateKey) {
 			return &ssh.Permissions{}, nil
 		},
 	}
+	signer, err := ssh.NewSignerFromKey(key.k)
+	if err != nil {
+		l.error(err)
+		return
+	}
+	config.AddHostKey(signer)
 	s, err := net.Listen("tcp", address)
 	if err != nil {
 		l.error(err)
 		return
 	}
-	for {
-		c, err := s.Accept()
-		if err != nil {
-			l.error(err)
-			return
-		}
+	go func() {
+		for {
+			c, err := s.Accept()
+			if err != nil {
+				l.error(err)
+				return
+			}
 
-		server, chans, reqs, err := ssh.NewServerConn(c, config)
-		if err != nil {
-			l.error(err)
-			return
+			server, chans, reqs, err := ssh.NewServerConn(c, config)
+			if err != nil {
+				l.error(err)
+				return
+			}
+			l.c <- &SSHConnection{server, chans, reqs}
 		}
-		l.c <- &SSHConnection{server, chans, reqs}
-	}
+	}()
 }
 
 func EstablishSSH(address string, key PrivateKey) (*SSHConnection, error) {
 	username := string(key.PublicKey().Hash())
-	signer, err := ssh.NewSignerFromKey(key)
+	signer, err := ssh.NewSignerFromKey(key.k)
 	if err != nil {
 		return nil, err
 	}
