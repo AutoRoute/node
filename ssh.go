@@ -88,36 +88,76 @@ func (s SSHConnection) connect(name string) error {
 	return nil
 }
 
-func (s SSHConnection) SendMap(ReachabilityMap) error {
-	return nil
+func (s SSHConnection) SendMap(m ReachabilityMap) error {
+	return s.e["reachability"].Encode(m)
 }
 
 func (s SSHConnection) ReachabilityMaps() <-chan ReachabilityMap {
-	return nil
+	c := make(chan ReachabilityMap)
+	go func() {
+		var v ReachabilityMap
+		err := s.d["reachability"].Decode(&v)
+		if err != nil {
+			close(c)
+		} else {
+			c <- v
+		}
+	}()
+	return c
 }
 
-func (s SSHConnection) SendReceipts(PacketReceipt) error {
-	return nil
+func (s SSHConnection) SendReceipts(r PacketReceipt) error {
+	return s.e["receipt"].Encode(r)
 }
 
 func (s SSHConnection) PacketReceipts() <-chan PacketReceipt {
-	return nil
+	c := make(chan PacketReceipt)
+	go func() {
+		var v PacketReceipt
+		err := s.d["receipt"].Decode(&v)
+		if err != nil {
+			close(c)
+		} else {
+			c <- v
+		}
+	}()
+	return c
 }
 
-func (s SSHConnection) SendPayment(Payment) error {
-	return nil
+func (s SSHConnection) SendPayment(p Payment) error {
+	return s.e["payment"].Encode(p)
 }
 
 func (s SSHConnection) Payments() <-chan Payment {
-	return nil
+	c := make(chan Payment)
+	go func() {
+		var v Payment
+		err := s.d["payment"].Decode(&v)
+		if err != nil {
+			close(c)
+		} else {
+			c <- v
+		}
+	}()
+	return c
 }
 
-func (s SSHConnection) SendPacket(Packet) error {
-	return nil
+func (s SSHConnection) SendPacket(p Packet) error {
+	return s.e["packet"].Encode(p)
 }
 
 func (s SSHConnection) Packets() <-chan Packet {
-	return nil
+	c := make(chan Packet)
+	go func() {
+		var v Packet
+		err := s.d["packet"].Decode(&v)
+		if err != nil {
+			close(c)
+		} else {
+			c <- v
+		}
+	}()
+	return c
 }
 
 func (s SSHConnection) Key() PublicKey {
