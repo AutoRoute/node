@@ -1,6 +1,7 @@
 package node
 
 import (
+	"encoding/json"
 	"testing"
 )
 
@@ -32,5 +33,22 @@ func TestMerkle(t *testing.T) {
 		if !found {
 			t.Fatalf("Expected %v in %v", i, p)
 		}
+	}
+}
+
+func TestMerkleMarshalling(t *testing.T) {
+	sk1, _ := NewECDSAKey()
+	m := CreateMerkleReceipt(sk1, []PacketHash{PacketHash("hi")})
+	if m.Verify() != nil {
+		t.Fatalf("Error verifying generated receipt: %v", m.Verify())
+	}
+	b, err := json.Marshal(m)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var m2 PacketReceipt
+	err = json.Unmarshal(b, &m2)
+	if err != nil {
+		t.Fatal(err)
 	}
 }
