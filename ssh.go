@@ -8,11 +8,14 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
+// Represents a single ssh channel, which is being written to by a Encoder / Decoder.
 type SSHChannel struct {
 	c    ssh.Channel
 	reqs <-chan *ssh.Request
 }
 
+// Represents an active SSH connection with another host. Contains multiple
+// channels passing various message types. Satisfies the Connection interface.
 type SSHConnection struct {
 	conn  ssh.Conn
 	chans <-chan ssh.NewChannel
@@ -22,6 +25,9 @@ type SSHConnection struct {
 	d     map[string]*json.Decoder
 }
 
+// Constructs a new SSHConnection given the various items returned by the /x/c/ssh library.
+// Does *not* call listen() or connect() on the SSHConnection, which is required
+// to establish the various required channels.
 func NewSSHConnection(conn ssh.Conn, chans <-chan ssh.NewChannel, reqs <-chan *ssh.Request) *SSHConnection {
 	s := &SSHConnection{conn, chans, reqs, make(map[string]*SSHChannel), make(map[string]*json.Encoder), make(map[string]*json.Decoder)}
 	// Set up various session types we want.
@@ -32,23 +38,23 @@ func NewSSHConnection(conn ssh.Conn, chans <-chan ssh.NewChannel, reqs <-chan *s
 	return s
 }
 
-func (s SSHConnection) Connect() error {
-	err := s.connect("reachability")
+func (s *SSHConnection) connect() error {
+	err := s.connectChan("reachability")
 	if err != nil {
 		s.conn.Close()
 		return err
 	}
-	err = s.connect("receipt")
+	err = s.connectChan("receipt")
 	if err != nil {
 		s.conn.Close()
 		return err
 	}
-	err = s.connect("payment")
+	err = s.connectChan("payment")
 	if err != nil {
 		s.conn.Close()
 		return err
 	}
-	err = s.connect("packet")
+	err = s.connectChan("packet")
 	if err != nil {
 		s.conn.Close()
 		return err
@@ -56,7 +62,7 @@ func (s SSHConnection) Connect() error {
 	return nil
 }
 
-func (s SSHConnection) Listen() {
+func (s *SSHConnection) listen() {
 	for nc := range s.chans {
 		if _, ok := s.c[nc.ChannelType()]; !ok {
 			nc.Reject(ssh.UnknownChannelType, "Unknown channel type")
@@ -77,7 +83,7 @@ func (s SSHConnection) Listen() {
 	}
 }
 
-func (s SSHConnection) connect(name string) error {
+func (s *SSHConnection) connectChan(name string) error {
 	c, r, err := s.conn.OpenChannel(name, nil)
 	if err != nil {
 		return err
@@ -88,16 +94,17 @@ func (s SSHConnection) connect(name string) error {
 	return nil
 }
 
-func (s SSHConnection) SendMap(m ReachabilityMap) error {
+func (s *SSHConnection) SendMap(m ReachabilityMap) error {
 	return s.e["reachability"].Encode(m)
 }
 
-func (s SSHConnection) ReachabilityMaps() <-chan ReachabilityMap {
+func (s *SSHConnection) ReachabilityMaps() <-chan ReachabilityMap {
 	c := make(chan ReachabilityMap)
 	go func() {
-		var v ReachabilityMap
+		var v BloomReachabilityMap
 		err := s.d["reachability"].Decode(&v)
 		if err != nil {
+			log.Print(err)
 			close(c)
 		} else {
 			c <- v
@@ -106,16 +113,17 @@ func (s SSHConnection) ReachabilityMaps() <-chan ReachabilityMap {
 	return c
 }
 
-func (s SSHConnection) SendReceipts(r PacketReceipt) error {
+func (s *SSHConnection) SendReceipts(r PacketReceipt) error {
 	return s.e["receipt"].Encode(r)
 }
 
-func (s SSHConnection) PacketReceipts() <-chan PacketReceipt {
+func (s *SSHConnection) PacketReceipts() <-chan PacketReceipt {
 	c := make(chan PacketReceipt)
 	go func() {
 		var v PacketReceipt
 		err := s.d["receipt"].Decode(&v)
 		if err != nil {
+			log.Print(err)
 			close(c)
 		} else {
 			c <- v
@@ -124,16 +132,17 @@ func (s SSHConnection) PacketReceipts() <-chan PacketReceipt {
 	return c
 }
 
-func (s SSHConnection) SendPayment(p Payment) error {
+func (s *SSHConnection) SendPaymentHash(p PaymentHash) error {
 	return s.e["payment"].Encode(p)
 }
 
-func (s SSHConnection) Payments() <-chan Payment {
-	c := make(chan Payment)
+func (s *SSHConnection) PaymentHashes() <-chan PaymentHash {
+	c := make(chan PaymentHash)
 	go func() {
-		var v Payment
+		var v PaymentHash
 		err := s.d["payment"].Decode(&v)
 		if err != nil {
+			log.Print(err)
 			close(c)
 		} else {
 			c <- v
@@ -142,11 +151,11 @@ func (s SSHConnection) Payments() <-chan Payment {
 	return c
 }
 
-func (s SSHConnection) SendPacket(p Packet) error {
+func (s *SSHConnection) SendPacket(p Packet) error {
 	return s.e["packet"].Encode(p)
 }
 
-func (s SSHConnection) Packets() <-chan Packet {
+func (s *SSHConnection) Packets() <-chan Packet {
 	c := make(chan Packet)
 	go func() {
 		var v Packet
@@ -160,11 +169,11 @@ func (s SSHConnection) Packets() <-chan Packet {
 	return c
 }
 
-func (s SSHConnection) Key() PublicKey {
+func (s *SSHConnection) Key() PublicKey {
 	return PublicKey{}
 }
 
-func (s SSHConnection) Close() error {
+func (s *SSHConnection) Close() error {
 	err := s.conn.Close()
 	return err
 }
@@ -182,8 +191,8 @@ func (l *SSHListener) Connections() <-chan *SSHConnection {
 	return l.c
 }
 
-func ListenSSH(address string, key PrivateKey) SSHListener {
-	l := SSHListener{nil, make(chan *SSHConnection)}
+func ListenSSH(address string, key PrivateKey) *SSHListener {
+	l := &SSHListener{nil, make(chan *SSHConnection)}
 	l.listen(address, key)
 	return l
 }
@@ -225,7 +234,7 @@ func (l *SSHListener) listen(address string, key PrivateKey) {
 				return
 			}
 			sc := NewSSHConnection(server, chans, reqs)
-			go sc.Listen()
+			go sc.listen()
 			l.c <- sc
 		}
 	}()
@@ -253,6 +262,6 @@ func EstablishSSH(address string, key PrivateKey) (*SSHConnection, error) {
 		return nil, err
 	}
 	sc := NewSSHConnection(client, chans, reqs)
-	err = sc.Connect()
+	err = sc.connect()
 	return sc, err
 }
