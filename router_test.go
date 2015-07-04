@@ -44,11 +44,9 @@ func makePairedConnections(k1, k2 PublicKey) (Connection, Connection) {
 	return testConnection{d1, m1, r1, p1, k1}, testConnection{d2, m2, r2, p2, k2}
 }
 
-type testPacket NodeAddress
-
-func (p testPacket) Destination() NodeAddress { return NodeAddress(p) }
-func (p testPacket) Hash() PacketHash         { return PacketHash(p) }
-func (p testPacket) Amount() int64            { return 3 }
+func testPacket(n NodeAddress) Packet {
+	return Packet{n, 3, "test"}
+}
 
 type linkable interface {
 	GetAddress() PublicKey

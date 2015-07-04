@@ -7,12 +7,6 @@ import (
 type NodeAddress string
 type PacketHash string
 
-type Packet interface {
-	Destination() NodeAddress
-	Hash() PacketHash
-	Amount() int64
-}
-
 // A map of a fixed size representing an interfaces potential
 type ReachabilityMap interface {
 	IsReachable(s NodeAddress) bool

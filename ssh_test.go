@@ -104,3 +104,25 @@ func TestSSHReceiptTransmission(t *testing.T) {
 		t.Fatalf("Error verifying received receipt: %v", r.Verify())
 	}
 }
+
+func TestSSHPacketTransmission(t *testing.T) {
+	sk1, _ := NewECDSAKey()
+	sk2, _ := NewECDSAKey()
+	c1, c2, err := ConnectSSH(sk1, sk2)
+	if err != nil {
+		t.Fatalf("Problems establish ssh connection: %v", err)
+		return
+	}
+	defer c1.Close()
+	defer c2.Close()
+
+	p := Packet{NodeAddress("foo"), 3, "test"}
+	err = c1.SendPacket(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	p2 := <-c2.Packets()
+	if p2 != p {
+		t.Fatal("Different packets? %v != %v", p2, p)
+	}
+}
