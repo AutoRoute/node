@@ -113,7 +113,7 @@ func (s *SSHConnection) ReachabilityMaps() <-chan ReachabilityMap {
 	return c
 }
 
-func (s *SSHConnection) SendReceipts(r PacketReceipt) error {
+func (s *SSHConnection) SendReceipt(r PacketReceipt) error {
 	return s.e["receipt"].Encode(r)
 }
 
@@ -132,11 +132,11 @@ func (s *SSHConnection) PacketReceipts() <-chan PacketReceipt {
 	return c
 }
 
-func (s *SSHConnection) SendPaymentHash(p PaymentHash) error {
+func (s *SSHConnection) SendPayment(p PaymentHash) error {
 	return s.e["payment"].Encode(p)
 }
 
-func (s *SSHConnection) PaymentHashes() <-chan PaymentHash {
+func (s *SSHConnection) Payments() <-chan PaymentHash {
 	c := make(chan PaymentHash)
 	go func() {
 		var v PaymentHash

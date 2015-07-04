@@ -47,11 +47,11 @@ func TestSSHPaymentTransmission(t *testing.T) {
 	defer c2.Close()
 
 	h := PaymentHash("foo")
-	err = c1.SendPaymentHash(h)
+	err = c1.SendPayment(h)
 	if err != nil {
 		t.Fatal(err)
 	}
-	r := <-c2.PaymentHashes()
+	r := <-c2.Payments()
 	if r != h {
 		t.Fatalf("Error in relaying received %v, expected %v", r, h)
 	}
@@ -95,7 +95,7 @@ func TestSSHReceiptTransmission(t *testing.T) {
 	if m.Verify() != nil {
 		t.Fatalf("Error verifying generated receipt: %v", m.Verify())
 	}
-	err = c1.SendReceipts(m)
+	err = c1.SendReceipt(m)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -125,4 +125,8 @@ func TestSSHPacketTransmission(t *testing.T) {
 	if p2 != p {
 		t.Fatal("Different packets? %v != %v", p2, p)
 	}
+}
+
+func TestSSHSatisfiesConnection(t *testing.T) {
+	_ = Connection(&SSHConnection{})
 }
