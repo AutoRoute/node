@@ -125,8 +125,11 @@ func (s *SSHConnection) connectChan(name string) error {
 }
 
 func (s *SSHConnection) SendMap(m ReachabilityMap) error {
-	s.el["reachability"].Lock()
-	defer s.el["reachability"].Unlock()
+	s.lock.Lock()
+	l := s.el["reachability"]
+	s.lock.Unlock()
+	l.Lock()
+	defer l.Unlock()
 	return s.e["reachability"].Encode(m)
 }
 
@@ -154,8 +157,11 @@ func (s *SSHConnection) ReachabilityMaps() <-chan ReachabilityMap {
 }
 
 func (s *SSHConnection) SendReceipt(r PacketReceipt) error {
-	s.el["receipt"].Lock()
-	defer s.el["receipt"].Unlock()
+	s.lock.Lock()
+	l := s.el["receipt"]
+	s.lock.Unlock()
+	l.Lock()
+	defer l.Unlock()
 	return s.e["receipt"].Encode(r)
 }
 
@@ -183,8 +189,11 @@ func (s *SSHConnection) PacketReceipts() <-chan PacketReceipt {
 }
 
 func (s *SSHConnection) SendPayment(p PaymentHash) error {
-	s.el["payment"].Lock()
-	defer s.el["payment"].Unlock()
+	s.lock.Lock()
+	l := s.el["payment"]
+	s.lock.Unlock()
+	l.Lock()
+	defer l.Unlock()
 	return s.e["payment"].Encode(p)
 }
 
@@ -212,8 +221,11 @@ func (s *SSHConnection) Payments() <-chan PaymentHash {
 }
 
 func (s *SSHConnection) SendPacket(p Packet) error {
-	s.el["packet"].Lock()
-	defer s.el["packet"].Unlock()
+	s.lock.Lock()
+	l := s.el["packet"]
+	s.lock.Unlock()
+	l.Lock()
+	defer l.Unlock()
 	return s.e["packet"].Encode(p)
 }
 
