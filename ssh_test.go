@@ -76,7 +76,7 @@ func TestSSHMapTransmission(t *testing.T) {
 	}
 	m2 := <-c2.ReachabilityMaps()
 	if !m2.IsReachable(NodeAddress("1")) {
-		t.Fatal("1 not in %v", m2)
+		t.Fatalf("1 not in %v", m2)
 	}
 }
 
@@ -123,7 +123,7 @@ func TestSSHPacketTransmission(t *testing.T) {
 	}
 	p2 := <-c2.Packets()
 	if p2 != p {
-		t.Fatal("Different packets? %v != %v", p2, p)
+		t.Fatalf("Different packets? %v != %v", p2, p)
 	}
 }
 
