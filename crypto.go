@@ -5,6 +5,7 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/sha512"
+	"encoding/json"
 	"errors"
 	"log"
 	"math/big"
@@ -61,6 +62,27 @@ func (e PublicKey) Hash() NodeAddress {
 	t1, _ := e.X.MarshalText()
 	t2, _ := e.Y.MarshalText()
 	return NodeAddress(hashstring("ecdsa:P521:" + string(t1) + "," + string(t2)))
+}
+
+type encodedpk struct {
+	X *big.Int
+	Y *big.Int
+}
+
+func (e PublicKey) MarshalJSON() ([]byte, error) {
+	return json.Marshal(encodedpk{X: e.X, Y: e.Y})
+}
+
+func (e *PublicKey) UnmarshalJSON(b []byte) error {
+	var s encodedpk
+	err := json.Unmarshal(b, &s)
+	if err != nil {
+		return err
+	}
+	e.X = s.X
+	e.Y = s.Y
+	e.Curve = elliptic.P521()
+	return nil
 }
 
 func NewECDSAKey() (PrivateKey, error) {

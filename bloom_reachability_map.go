@@ -6,8 +6,8 @@ import (
 )
 
 type BloomReachabilityMap struct {
-	filters      []*bloom.BloomFilter
-	conglomerate *bloom.BloomFilter
+	Filters      []*bloom.BloomFilter
+	Conglomerate *bloom.BloomFilter
 }
 
 func NewBloomReachabilityMap() ReachabilityMap {
@@ -15,46 +15,46 @@ func NewBloomReachabilityMap() ReachabilityMap {
 	fs[0] = bloom.New(1000, 4)
 
 	m := BloomReachabilityMap{
-		filters:      fs,
-		conglomerate: fs[0].Copy(),
+		Filters:      fs,
+		Conglomerate: fs[0].Copy(),
 	}
 	return m
 }
 
 func (m BloomReachabilityMap) IsReachable(n NodeAddress) bool {
 	entry := []byte(n)
-	res := m.conglomerate.Test(entry)
+	res := m.Conglomerate.Test(entry)
 	return res
 }
 
 func (m BloomReachabilityMap) AddEntry(n NodeAddress) {
 	entry := []byte(n)
-	m.filters[0].Add(entry)
-	m.conglomerate.Add(entry)
+	m.Filters[0].Add(entry)
+	m.Conglomerate.Add(entry)
 }
 
 func (m BloomReachabilityMap) Increment() {
 	newZeroth := make([]*bloom.BloomFilter, 1)
 	newZeroth[0] = bloom.New(1000, 4)
-	m.filters = append(newZeroth, m.filters...)
+	m.Filters = append(newZeroth, m.Filters...)
 }
 
 func (m BloomReachabilityMap) Merge(nr ReachabilityMap) error {
 	var err error
 
 	if n, ok := nr.(BloomReachabilityMap); ok {
-		if len(m.filters) < len(n.filters) {
-			for k, v := range m.filters {
-				err = v.Merge(n.filters[k])
+		if len(m.Filters) < len(n.Filters) {
+			for k, v := range m.Filters {
+				err = v.Merge(n.Filters[k])
 				if err != nil {
 					return err
 				}
 			}
-			// append the remaining filters
-			m.filters = append(m.filters, n.filters[len(n.filters):]...)
+			// append the remaining Filters
+			m.Filters = append(m.Filters, n.Filters[len(n.Filters):]...)
 		} else {
-			for k, v := range n.filters {
-				err = m.filters[k].Merge(v)
+			for k, v := range n.Filters {
+				err = m.Filters[k].Merge(v)
 				if err != nil {
 					return err
 				}
@@ -64,9 +64,9 @@ func (m BloomReachabilityMap) Merge(nr ReachabilityMap) error {
 		err = fmt.Errorf("Mismatched reachability map types")
 		return err
 	}
-	// reconstruct the conglomerate
-	for _, v := range m.filters {
-		err = m.conglomerate.Merge(v)
+	// reconstruct the Conglomerate
+	for _, v := range m.Filters {
+		err = m.Conglomerate.Merge(v)
 		if err != nil {
 			return err
 		}
@@ -75,17 +75,17 @@ func (m BloomReachabilityMap) Merge(nr ReachabilityMap) error {
 }
 
 func (m BloomReachabilityMap) Copy() ReachabilityMap {
-	newFilters := make([]*bloom.BloomFilter, len(m.filters))
+	newFilters := make([]*bloom.BloomFilter, len(m.Filters))
 
 	// copy each filter
-	for k, v := range m.filters {
+	for k, v := range m.Filters {
 		newFilters[k] = v.Copy()
 	}
-	newConglomerate := m.conglomerate.Copy()
+	newConglomerate := m.Conglomerate.Copy()
 
 	mc := BloomReachabilityMap{
-		filters:      newFilters,
-		conglomerate: newConglomerate,
+		Filters:      newFilters,
+		Conglomerate: newConglomerate,
 	}
 	return mc
 }

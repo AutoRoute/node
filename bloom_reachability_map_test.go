@@ -1,6 +1,7 @@
 package node
 
 import (
+	"encoding/json"
 	"testing"
 )
 
@@ -36,5 +37,18 @@ func TestSBRM(t *testing.T) {
 	if !(bloomMap3.IsReachable(a)) {
 		t.Fatalf("expected %s to be reachable in %v", a, bloomMap3)
 	}
+}
 
+func TestBloomMarshalling(t *testing.T) {
+	m := NewBloomReachabilityMap()
+	m.AddEntry(NodeAddress("1"))
+	b, err := json.Marshal(m)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var m2 BloomReachabilityMap
+	err = json.Unmarshal(b, &m2)
+	if err != nil {
+		t.Fatal(err)
+	}
 }
