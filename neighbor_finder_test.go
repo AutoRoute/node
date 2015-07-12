@@ -1,10 +1,11 @@
 package node
 
 import (
-	"github.com/AutoRoute/l2"
 	"log"
 	"net"
 	"testing"
+
+	"github.com/AutoRoute/l2"
 )
 
 type testInterface struct {
