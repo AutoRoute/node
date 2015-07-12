@@ -3,6 +3,7 @@ package node
 import (
 	"bytes"
 	"log"
+	"net"
 
 	"github.com/AutoRoute/l2"
 )
@@ -26,11 +27,12 @@ type NeighborFinder interface {
 }
 
 type NeighborData struct {
-	pk PublicKey
+	pk                 PublicKey
+	link_local_address *net.IPAddr
 }
 
-func NewNeighborData(pk PublicKey) NeighborData {
-	return NeighborData{pk}
+func NewNeighborData(pk PublicKey, link_local_address *net.IPAddr) NeighborData {
+	return NeighborData{pk, link_local_address}
 }
 
 func (n NeighborData) handleLink(mac []byte, frw l2.FrameReadWriter, c chan NodeAddress) {

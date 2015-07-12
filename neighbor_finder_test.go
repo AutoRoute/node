@@ -3,6 +3,7 @@ package node
 import (
 	"github.com/AutoRoute/l2"
 	"log"
+	"net"
 	"testing"
 )
 
@@ -44,8 +45,13 @@ func TestBasicExchange(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	nf1 := NewNeighborData(pk1)
-	nf2 := NewNeighborData(pk2)
+	link_local_addr, err := net.ResolveIPAddr("ip6", "fe80::%0")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	nf1 := NewNeighborData(pk1, link_local_addr)
+	nf2 := NewNeighborData(pk2, link_local_addr)
 
 	one, two := CreatePairedInterface()
 	outone, err := nf1.Find(test_mac1, one)
