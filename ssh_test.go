@@ -2,18 +2,28 @@ package node
 
 import (
 	"fmt"
+	"net"
 	"testing"
 )
 
 var port = 10000
 
 func ConnectSSH(sk1, sk2 PrivateKey) (*SSHConnection, *SSHConnection, error) {
-	l := ListenSSH(fmt.Sprintf("127.0.0.1:%d", port), sk1)
+	addr := fmt.Sprintf("127.0.0.1:%d", port)
+	lt, err := net.Listen("tcp", addr)
+	if err != nil {
+		return nil, nil, err
+	}
+	l := ListenSSH(lt, sk1)
 	if l.Error() != nil {
 		return nil, nil, l.Error()
 	}
 
-	c1, err := EstablishSSH(fmt.Sprintf("127.0.0.1:%d", port), sk2)
+	ct, err := net.Dial("tcp", addr)
+	if err != nil {
+		return nil, nil, err
+	}
+	c1, err := EstablishSSH(ct, addr, sk2)
 	port += 1
 	if err != nil {
 		return nil, nil, err

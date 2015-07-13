@@ -39,8 +39,12 @@ func main() {
 	for _, dev := range devs {
 		neighbours := FindNeighbors(dev, public_key)
 		for addr := range neighbours {
-			log.Printf("Neighbour Found %v", addr)
-			connection, err := node.EstablishSSH("Dummy address", key)
+			log.Printf("Neighbour Found %v", string(addr))
+			c, err := net.Dial("tcp", string(addr))
+			if err != nil {
+				log.Printf("Error connecting %v", err)
+			}
+			connection, err := node.EstablishSSH(c, string(addr), key)
 			if err != nil {
 				log.Printf("Error connecting: %v", err)
 			}
