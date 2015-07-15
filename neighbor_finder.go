@@ -35,7 +35,12 @@ func NewNeighborData(pk PublicKey, link_local_address *net.IPAddr) NeighborData 
 	return NeighborData{pk, link_local_address}
 }
 
-func (n NeighborData) handleLink(mac []byte, frw l2.FrameReadWriter, c chan NodeAddress) {
+type FrameData struct {
+	NodeAddr  NodeAddress
+	LLAddrStr string
+}
+
+func (n NeighborData) handleLink(mac []byte, frw l2.FrameReadWriter, c chan *FrameData) {
 	// Handle received packets
 	defer close(c)
 	for {
@@ -56,7 +61,8 @@ func (n NeighborData) handleLink(mac []byte, frw l2.FrameReadWriter, c chan Node
 		// If the packet is to us or broadcast, record it.
 		if bytes.Equal(frame.Destination(), mac) ||
 			bytes.Equal(frame.Destination(), broadcast) {
-			c <- NodeAddress(string(frame.Data()))
+			data := FrameData{NodeAddress(frame.Data()[14:78]), string(frame.Data()[78:])}
+			c <- &data
 		}
 		if !bytes.Equal(frame.Destination(), broadcast) {
 			continue
@@ -70,7 +76,7 @@ func (n NeighborData) handleLink(mac []byte, frw l2.FrameReadWriter, c chan Node
 	}
 }
 
-func (n NeighborData) Find(mac []byte, frw l2.FrameReadWriter) (<-chan NodeAddress, error) {
+func (n NeighborData) Find(mac []byte, frw l2.FrameReadWriter) (<-chan *FrameData, error) {
 	// Send initial packet
 	frame := l2.NewEthFrame(broadcast, mac, protocol, []byte(n.pk.Hash()))
 	err := frw.WriteFrame(frame)
@@ -78,7 +84,7 @@ func (n NeighborData) Find(mac []byte, frw l2.FrameReadWriter) (<-chan NodeAddre
 		return nil, err
 	}
 
-	c := make(chan NodeAddress)
+	c := make(chan *FrameData)
 	go n.handleLink(mac, frw, c)
 	return c, nil
 }

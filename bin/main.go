@@ -28,7 +28,7 @@ func GetLinkLocalAddr(dev net.Interface) (*net.IPAddr, error) {
 	return resolved_ll_addr, nil
 }
 
-func FindNeighbors(dev net.Interface, ll_addr *net.IPAddr, key node.PublicKey) <-chan node.NodeAddress {
+func FindNeighbors(dev net.Interface, ll_addr *net.IPAddr, key node.PublicKey) <-chan *node.FrameData {
 	conn, err := l2.ConnectExistingDevice(dev.Name)
 	if err != nil {
 		log.Fatal(err)
@@ -62,14 +62,14 @@ func main() {
 			log.Fatal(err)
 		}
 
-		neighbours := FindNeighbors(dev, ll_addr, public_key)
-		for addr := range neighbours {
-			log.Printf("Neighbour Found %v", addr)
-			connection, err := node.EstablishSSH("Dummy address", key)
+		neighbors := FindNeighbors(dev, ll_addr, public_key)
+		for neighbor := range neighbors {
+			log.Printf("Neighbour Found %v", neighbor.NodeAddr)
+			connection, err := node.EstablishSSH(neighbor.LLAddrStr, key)
 			if err != nil {
 				log.Printf("Error connecting: %v", err)
 			}
-			log.Printf("Connection established to %v %v", addr, connection)
+			log.Printf("Connection established to %v %v", neighbor.NodeAddr, connection)
 		}
 	}
 }
