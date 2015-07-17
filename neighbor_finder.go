@@ -61,7 +61,7 @@ func (n NeighborData) handleLink(mac []byte, frw l2.FrameReadWriter, c chan *Fra
 		// If the packet is to us or broadcast, record it.
 		if bytes.Equal(frame.Destination(), mac) ||
 			bytes.Equal(frame.Destination(), broadcast) {
-			data := FrameData{NodeAddress(frame.Data()[14:78]), string(frame.Data()[78:])}
+			data := FrameData{NodeAddress(frame.Data()[:64]), string(frame.Data()[64:])}
 			c <- &data
 		}
 		if !bytes.Equal(frame.Destination(), broadcast) {

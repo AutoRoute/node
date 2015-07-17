@@ -67,19 +67,19 @@ func TestBasicExchange(t *testing.T) {
 	// We should receive the other side twice, once from broadcast, and once
 	// from directed response
 	msg := <-outone
-	if msg != pk2.Hash() {
-		log.Printf("Expected %q!=%q", pk2.Hash(), msg)
+	if msg.NodeAddr != pk2.Hash() {
+		log.Printf("Expected %q!=%q", pk2.Hash(), msg.NodeAddr)
 	}
 	msg = <-outtwo
-	if msg != pk1.Hash() {
-		log.Printf("Expected %q!=%q", pk1.Hash(), msg)
+	if msg.NodeAddr != pk1.Hash() {
+		log.Printf("Expected %q!=%q", pk1.Hash(), msg.NodeAddr)
 	}
 	msg = <-outone
-	if msg != pk2.Hash() {
-		log.Printf("Expected %q!=%q", pk2.Hash(), msg)
+	if msg.NodeAddr != pk2.Hash() {
+		log.Printf("Expected %q!=%q", pk2.Hash(), msg.NodeAddr)
 	}
 	msg = <-outtwo
-	if msg != pk1.Hash() {
-		log.Printf("Expected %q!=%q", pk1.Hash(), msg)
+	if msg.NodeAddr != pk1.Hash() {
+		log.Printf("Expected %q!=%q", pk1.Hash(), msg.NodeAddr)
 	}
 }
