@@ -57,6 +57,10 @@ func main() {
 
 	// find neighbors of each interface
 	for _, dev := range devs {
+		if dev.Name == "lo" {
+			continue
+		}
+
 		ll_addr, err := GetLinkLocalAddr(dev)
 		if err != nil {
 			log.Fatal(err)
