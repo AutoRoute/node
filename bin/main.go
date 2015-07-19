@@ -4,9 +4,20 @@ import (
 	"github.com/AutoRoute/l2"
 	"github.com/AutoRoute/node"
 
+	"flag"
 	"log"
 	"net"
+	"strings"
+	"time"
 )
+
+var listen = flag.String("listen", "127.0.0.1:34321",
+	"The address to listen to incoming connections on")
+var nolisten = flag.Bool("nolisten", false, "Disables listening")
+var connect = flag.String("connect", "",
+	"Comma separated list of addresses to connect to")
+var autodiscover = flag.Bool("auto", false,
+	"Whether we should try and find neighboring routers")
 
 func FindNeighbors(dev net.Interface, key node.PublicKey) <-chan node.NodeAddress {
 	conn, err := l2.ConnectExistingDevice(dev.Name)
@@ -22,17 +33,11 @@ func FindNeighbors(dev net.Interface, key node.PublicKey) <-chan node.NodeAddres
 	return channel
 }
 
-func main() {
+func Probe(key node.PrivateKey, n node.Node) {
 	devs, err := net.Interfaces()
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	key, err := node.NewECDSAKey()
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	public_key := key.PublicKey()
 
 	// find neighbors of each interface
@@ -49,6 +54,69 @@ func main() {
 				log.Printf("Error connecting: %v", err)
 			}
 			log.Printf("Connection established to %v %v", addr, connection)
+			n.AddConnection(connection)
 		}
 	}
+}
+
+func Connect(addr string, key node.PrivateKey) (*node.SSHConnection, error) {
+	c, err := net.Dial("tcp", addr)
+	if err != nil {
+		return nil, err
+	}
+	return node.EstablishSSH(c, addr, key)
+}
+
+func Listen(key node.PrivateKey, n node.Node) {
+	ln, err := net.Listen("tcp", *listen)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	l := node.ListenSSH(ln, key)
+	for c := range l.Connections() {
+		log.Printf("Incoming connection: %v", c)
+		n.AddConnection(c)
+	}
+	log.Printf("Closing error: %v", l.Error())
+}
+
+func main() {
+	log.Print("Starting")
+
+	flag.Parse()
+	quit := make(chan bool)
+
+	log.Print("Generating key")
+	key, err := node.NewECDSAKey()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	n := node.NewNode(key, time.Tick(time.Second), time.Tick(time.Second))
+
+	if *autodiscover {
+		log.Print("Starting Probing of all interfaces")
+		go Probe(key, n)
+	}
+
+	if !*nolisten {
+		log.Print("Starting Listening")
+		go Listen(key, n)
+	}
+
+	for _, ip := range strings.Split(*connect, ",") {
+		if len(ip) == 0 {
+			continue
+		}
+		c, err := Connect(ip, key)
+		if err != nil {
+			log.Printf("Error connecting to %s: %v", ip, err)
+		} else {
+			log.Printf("Outgoing connection: %v", c)
+		}
+		n.AddConnection(c)
+	}
+
+	<-quit
 }

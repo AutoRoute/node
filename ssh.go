@@ -2,6 +2,7 @@ package node
 
 import (
 	"encoding/json"
+	"io"
 	"log"
 	"net"
 	"sync"
@@ -144,7 +145,7 @@ func (s *SSHConnection) ReachabilityMaps() <-chan ReachabilityMap {
 			var v BloomReachabilityMap
 			err := s.d["reachability"].Decode(&v)
 			l.Unlock()
-			if err != nil {
+			if err != nil && err != io.EOF {
 				log.Print(err)
 				close(c)
 				return
@@ -176,7 +177,7 @@ func (s *SSHConnection) PacketReceipts() <-chan PacketReceipt {
 			var v PacketReceipt
 			err := s.d["receipt"].Decode(&v)
 			l.Unlock()
-			if err != nil {
+			if err != nil && err != io.EOF {
 				log.Print(err)
 				close(c)
 				return
@@ -208,7 +209,7 @@ func (s *SSHConnection) Payments() <-chan PaymentHash {
 			var v PaymentHash
 			err := s.d["payment"].Decode(&v)
 			l.Unlock()
-			if err != nil {
+			if err != nil && err != io.EOF {
 				log.Print(err)
 				close(c)
 				return
