@@ -8,6 +8,7 @@ import (
 	"log"
 	"net"
 	"strings"
+	"time"
 )
 
 var listen = flag.String("listen", "127.0.0.1:34321",
@@ -32,7 +33,7 @@ func FindNeighbors(dev net.Interface, key node.PublicKey) <-chan node.NodeAddres
 	return channel
 }
 
-func Prove(key node.PrivateKey, node node.Node) {
+func Probe(key node.PrivateKey, n node.Node) {
 	devs, err := net.Interfaces()
 	if err != nil {
 		log.Fatal(err)
@@ -53,6 +54,7 @@ func Prove(key node.PrivateKey, node node.Node) {
 				log.Printf("Error connecting: %v", err)
 			}
 			log.Printf("Connection established to %v %v", addr, connection)
+			n.AddConnection(connection)
 		}
 	}
 }
@@ -65,7 +67,7 @@ func Connect(addr string, key node.PrivateKey) (*node.SSHConnection, error) {
 	return node.EstablishSSH(c, addr, key)
 }
 
-func Listen(key node.PrivateKey, node node.Node) {
+func Listen(key node.PrivateKey, n node.Node) {
 	ln, err := net.Listen("tcp", *listen)
 	if err != nil {
 		log.Fatal(err)
@@ -74,7 +76,7 @@ func Listen(key node.PrivateKey, node node.Node) {
 	l := node.ListenSSH(ln, key)
 	for c := range l.Connections() {
 		log.Printf("Incoming connection: %v", c)
-		node.AddConnection(c)
+		n.AddConnection(c)
 	}
 	log.Printf("Closing error: %v", l.Error())
 }
@@ -91,7 +93,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	node := NewNode(key, time.Tick(time.Second), time.Tick(time.Second))
+	node := node.NewNode(key, time.Tick(time.Second), time.Tick(time.Second))
 
 	if *autodiscover {
 		log.Print("Starting Probing of all interfaces")
