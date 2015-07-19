@@ -93,16 +93,16 @@ func main() {
 		log.Fatal(err)
 	}
 
-	node := node.NewNode(key, time.Tick(time.Second), time.Tick(time.Second))
+	n := node.NewNode(key, time.Tick(time.Second), time.Tick(time.Second))
 
 	if *autodiscover {
 		log.Print("Starting Probing of all interfaces")
-		go Probe(key, node)
+		go Probe(key, n)
 	}
 
 	if !*nolisten {
 		log.Print("Starting Listening")
-		go Listen(key, node)
+		go Listen(key, n)
 	}
 
 	for _, ip := range strings.Split(*connect, ",") {
@@ -115,7 +115,7 @@ func main() {
 		} else {
 			log.Printf("Outgoing connection: %v", c)
 		}
-		node.AddConnection(c)
+		n.AddConnection(c)
 	}
 
 	<-quit
