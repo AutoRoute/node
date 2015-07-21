@@ -21,12 +21,22 @@ var autodiscover = flag.Bool("auto", false,
 	"Whether we should try and find neighboring routers")
 
 func GetLinkLocalAddr(dev net.Interface) (*net.IPAddr, error) {
-	cidr_ll_addr, err := dev.Addrs()
+	dev_addrs, err := dev.Addrs()
 	if err != nil {
 		return nil, err
 	}
 
-	ll_addr, _, err := net.ParseCIDR(cidr_ll_addr[1].String())
+	var cidr_ll_addr net.Addr
+
+	for _, addr := range dev_addrs {
+		prefix := addr.String()[:3]
+		if prefix == "fe8" || prefix == "fe9" || prefix == "fea" || prefix == "feb" {
+			cidr_ll_addr = addr
+			break
+		}
+	}
+
+	ll_addr, _, err := net.ParseCIDR(cidr_ll_addr.String())
 	if err != nil {
 		return nil, err
 	}
