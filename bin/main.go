@@ -26,19 +26,22 @@ func GetLinkLocalAddr(dev net.Interface) (*net.IPAddr, error) {
 		return nil, err
 	}
 
-	var cidr_ll_addr net.Addr
+	var ll_addr net.IP
 
-	for _, addr := range dev_addrs {
-		prefix := addr.String()[:3]
-		if prefix == "fe8" || prefix == "fe9" || prefix == "fea" || prefix == "feb" {
-			cidr_ll_addr = addr
+	for _, dev_addr := range dev_addrs {
+		addr, _, err := net.ParseCIDR(dev_addr.String())
+		if err != nil {
+			return nil, err
+		}
+
+		if addr.IsLinkLocalMulticast() || addr.IsLinkLocalUnicast() {
+			ll_addr = addr
 			break
 		}
 	}
 
-	ll_addr, _, err := net.ParseCIDR(cidr_ll_addr.String())
-	if err != nil {
-		return nil, err
+	if ll_addr == nil {
+		log.Fatalf("No link local addresses on interface %v", dev.Name)
 	}
 
 	ll_addr_zone := fmt.Sprintf("%s%%%s", ll_addr.String(), dev.Name)

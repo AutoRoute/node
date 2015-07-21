@@ -46,7 +46,7 @@ func TestBasicExchange(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	link_local_addr, err := net.ResolveIPAddr("ip6", "fe80::%0")
+	link_local_addr, err := net.ResolveIPAddr("ip6", "fe80::%dummy_zone")
 	if err != nil {
 		t.Fatal(err)
 	}
