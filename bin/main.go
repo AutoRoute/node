@@ -34,14 +34,14 @@ func GetLinkLocalAddr(dev net.Interface) (*net.IPAddr, error) {
 			return nil, err
 		}
 
-		if addr.IsLinkLocalMulticast() || addr.IsLinkLocalUnicast() {
+		if addr.IsLinkLocalUnicast() {
 			ll_addr = addr
 			break
 		}
 	}
 
 	if ll_addr == nil {
-		log.Fatalf("No link local addresses on interface %v", dev.Name)
+		log.Fatalf("Couldn't find interface link-local addresses %v", dev.Name)
 	}
 
 	ll_addr_zone := fmt.Sprintf("%s%%%s", ll_addr.String(), dev.Name)
