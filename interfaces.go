@@ -7,19 +7,10 @@ import (
 type NodeAddress string
 type PacketHash string
 
-// A map of a fixed size representing an interfaces potential
-type ReachabilityMap interface {
-	IsReachable(s NodeAddress) bool
-	AddEntry(n NodeAddress)
-	Increment()
-	Merge(n ReachabilityMap) error
-	Copy() ReachabilityMap
-}
-
 // Layer three interfaces for network control traffic
 type MapConnection interface {
-	SendMap(ReachabilityMap) error
-	ReachabilityMaps() <-chan ReachabilityMap
+	SendMap(BloomReachabilityMap) error
+	ReachabilityMaps() <-chan BloomReachabilityMap
 }
 type ReceiptConnection interface {
 	SendReceipt(PacketReceipt) error

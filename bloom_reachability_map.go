@@ -1,8 +1,6 @@
 package node
 
 import (
-	"fmt"
-
 	"github.com/AutoRoute/bloom"
 )
 
@@ -11,7 +9,7 @@ type BloomReachabilityMap struct {
 	Conglomerate *bloom.BloomFilter
 }
 
-func NewBloomReachabilityMap() ReachabilityMap {
+func NewBloomReachabilityMap() BloomReachabilityMap {
 	fs := make([]*bloom.BloomFilter, 1)
 	fs[0] = bloom.New(1000, 4)
 
@@ -40,42 +38,35 @@ func (m BloomReachabilityMap) Increment() {
 	m.Filters = append(newZeroth, m.Filters...)
 }
 
-func (m BloomReachabilityMap) Merge(nr ReachabilityMap) error {
-	var err error
-
-	if n, ok := nr.(BloomReachabilityMap); ok {
-		if len(m.Filters) < len(n.Filters) {
-			for k, v := range m.Filters {
-				err = v.Merge(n.Filters[k])
-				if err != nil {
-					return err
-				}
-			}
-			// append the remaining Filters
-			m.Filters = append(m.Filters, n.Filters[len(n.Filters):]...)
-		} else {
-			for k, v := range n.Filters {
-				err = m.Filters[k].Merge(v)
-				if err != nil {
-					return err
-				}
+func (m BloomReachabilityMap) Merge(n BloomReachabilityMap) error {
+	if len(m.Filters) < len(n.Filters) {
+		for k, v := range m.Filters {
+			err := v.Merge(n.Filters[k])
+			if err != nil {
+				return err
 			}
 		}
+		// append the remaining Filters
+		m.Filters = append(m.Filters, n.Filters[len(n.Filters):]...)
 	} else {
-		err = fmt.Errorf("Mismatched reachability map types")
-		return err
+		for k, v := range n.Filters {
+			err := m.Filters[k].Merge(v)
+			if err != nil {
+				return err
+			}
+		}
 	}
 	// reconstruct the Conglomerate
 	for _, v := range m.Filters {
-		err = m.Conglomerate.Merge(v)
+		err := m.Conglomerate.Merge(v)
 		if err != nil {
 			return err
 		}
 	}
-	return err
+	return nil
 }
 
-func (m BloomReachabilityMap) Copy() ReachabilityMap {
+func (m BloomReachabilityMap) Copy() BloomReachabilityMap {
 	newFilters := make([]*bloom.BloomFilter, len(m.Filters))
 
 	// copy each filter

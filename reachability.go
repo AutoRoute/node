@@ -12,19 +12,19 @@ type reachabilityHandler struct {
 	me         NodeAddress
 	l          *sync.Mutex
 	conns      map[NodeAddress]MapConnection
-	maps       map[NodeAddress]ReachabilityMap
-	merged_map ReachabilityMap
+	maps       map[NodeAddress]BloomReachabilityMap
+	merged_map BloomReachabilityMap
 }
 
 func newReachability(me NodeAddress) *reachabilityHandler {
 	conns := make(map[NodeAddress]MapConnection)
-	maps := make(map[NodeAddress]ReachabilityMap)
+	maps := make(map[NodeAddress]BloomReachabilityMap)
 	impl := &reachabilityHandler{me, &sync.Mutex{}, conns, maps, NewBloomReachabilityMap()}
 	impl.merged_map.AddEntry(me)
 	return impl
 }
 
-func (m *reachabilityHandler) addMap(address NodeAddress, new_map ReachabilityMap) {
+func (m *reachabilityHandler) addMap(address NodeAddress, new_map BloomReachabilityMap) {
 	m.l.Lock()
 	defer m.l.Unlock()
 	m.maps[address].Merge(new_map)
