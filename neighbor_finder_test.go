@@ -2,6 +2,7 @@ package node
 
 import (
 	"log"
+	"net"
 	"testing"
 
 	"github.com/AutoRoute/l2"
@@ -45,8 +46,13 @@ func TestBasicExchange(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	nf1 := NewNeighborData(pk1)
-	nf2 := NewNeighborData(pk2)
+	link_local_addr, err := net.ResolveIPAddr("ip6", "fe80::%dummy_zone")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	nf1 := NewNeighborData(pk1, link_local_addr)
+	nf2 := NewNeighborData(pk2, link_local_addr)
 
 	one, two := CreatePairedInterface()
 	outone, err := nf1.Find(test_mac1, one)
@@ -61,19 +67,19 @@ func TestBasicExchange(t *testing.T) {
 	// We should receive the other side twice, once from broadcast, and once
 	// from directed response
 	msg := <-outone
-	if msg != pk2.Hash() {
-		log.Printf("Expected %q!=%q", pk2.Hash(), msg)
+	if msg.NodeAddr != pk2.Hash() {
+		log.Printf("Expected %q!=%q", pk2.Hash(), msg.NodeAddr)
 	}
 	msg = <-outtwo
-	if msg != pk1.Hash() {
-		log.Printf("Expected %q!=%q", pk1.Hash(), msg)
+	if msg.NodeAddr != pk1.Hash() {
+		log.Printf("Expected %q!=%q", pk1.Hash(), msg.NodeAddr)
 	}
 	msg = <-outone
-	if msg != pk2.Hash() {
-		log.Printf("Expected %q!=%q", pk2.Hash(), msg)
+	if msg.NodeAddr != pk2.Hash() {
+		log.Printf("Expected %q!=%q", pk2.Hash(), msg.NodeAddr)
 	}
 	msg = <-outtwo
-	if msg != pk1.Hash() {
-		log.Printf("Expected %q!=%q", pk1.Hash(), msg)
+	if msg.NodeAddr != pk1.Hash() {
+		log.Printf("Expected %q!=%q", pk1.Hash(), msg.NodeAddr)
 	}
 }

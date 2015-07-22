@@ -5,6 +5,7 @@ import (
 	"github.com/AutoRoute/node"
 
 	"flag"
+	"fmt"
 	"log"
 	"net"
 	"strings"
@@ -19,13 +20,45 @@ var connect = flag.String("connect", "",
 var autodiscover = flag.Bool("auto", false,
 	"Whether we should try and find neighboring routers")
 
-func FindNeighbors(dev net.Interface, key node.PublicKey) <-chan node.NodeAddress {
+func GetLinkLocalAddr(dev net.Interface) (*net.IPAddr, error) {
+	dev_addrs, err := dev.Addrs()
+	if err != nil {
+		return nil, err
+	}
+
+	var ll_addr net.IP
+
+	for _, dev_addr := range dev_addrs {
+		addr, _, err := net.ParseCIDR(dev_addr.String())
+		if err != nil {
+			return nil, err
+		}
+
+		if addr.IsLinkLocalUnicast() {
+			ll_addr = addr
+			break
+		}
+	}
+
+	if ll_addr == nil {
+		log.Fatalf("Couldn't find interface link-local addresses %v", dev.Name)
+	}
+
+	ll_addr_zone := fmt.Sprintf("%s%%%s", ll_addr.String(), dev.Name)
+	resolved_ll_addr, err := net.ResolveIPAddr("ip6", ll_addr_zone)
+	if err != nil {
+		return nil, err
+	}
+	return resolved_ll_addr, nil
+}
+
+func FindNeighbors(dev net.Interface, ll_addr *net.IPAddr, key node.PublicKey) <-chan *node.FrameData {
 	conn, err := l2.ConnectExistingDevice(dev.Name)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	nf := node.NewNeighborData(key)
+	nf := node.NewNeighborData(key, ll_addr)
 	channel, err := nf.Find(dev.HardwareAddr, conn)
 	if err != nil {
 		log.Fatal(err)
@@ -42,18 +75,27 @@ func Probe(key node.PrivateKey, n node.Node) {
 
 	// find neighbors of each interface
 	for _, dev := range devs {
-		neighbours := FindNeighbors(dev, public_key)
-		for addr := range neighbours {
-			log.Printf("Neighbour Found %v", string(addr))
-			c, err := net.Dial("tcp", string(addr))
+		if dev.Name == "lo" {
+			continue
+		}
+
+		ll_addr, err := GetLinkLocalAddr(dev)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		neighbors := FindNeighbors(dev, ll_addr, public_key)
+		for neighbor := range neighbors {
+			log.Printf("Neighbour Found %v", neighbor.NodeAddr)
+			c, err := net.Dial("tcp", neighbor.LLAddrStr)
 			if err != nil {
 				log.Printf("Error connecting %v", err)
 			}
-			connection, err := node.EstablishSSH(c, string(addr), key)
+			connection, err := node.EstablishSSH(c, neighbor.LLAddrStr, key)
 			if err != nil {
 				log.Printf("Error connecting: %v", err)
 			}
-			log.Printf("Connection established to %v %v", addr, connection)
+			log.Printf("Connection established to %v %v", neighbor.NodeAddr, connection)
 			n.AddConnection(connection)
 		}
 	}
