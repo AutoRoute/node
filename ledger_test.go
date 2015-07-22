@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func WaitForIncomingDebt(t *testing.T, l Ledger, a NodeAddress, o int64) {
+func WaitForIncomingDebt(t *testing.T, l *ledger, a NodeAddress, o int64) {
 	timeout := time.After(time.Second)
 	tick := time.Tick(time.Millisecond)
 	d := int64(0)
@@ -23,7 +23,7 @@ func WaitForIncomingDebt(t *testing.T, l Ledger, a NodeAddress, o int64) {
 	}
 }
 
-func WaitForOutgoingDebt(t *testing.T, l Ledger, a NodeAddress, o int64) {
+func WaitForOutgoingDebt(t *testing.T, l *ledger, a NodeAddress, o int64) {
 	timeout := time.After(time.Second)
 	tick := time.Tick(time.Millisecond)
 	d := int64(0)

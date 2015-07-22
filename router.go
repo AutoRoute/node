@@ -30,7 +30,7 @@ type router struct {
 	*routingHandler
 	*receiptHandler
 	*paymentHandler
-	Ledger
+	*ledger
 }
 
 func newRouter(pk PublicKey) Router {
