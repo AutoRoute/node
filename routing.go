@@ -13,7 +13,7 @@ type routingDecision struct {
 	nexthop     NodeAddress
 }
 
-func NewRoutingDecision(p Packet, src NodeAddress, nexthop NodeAddress) routingDecision {
+func newRoutingDecision(p Packet, src NodeAddress, nexthop NodeAddress) routingDecision {
 	return routingDecision{p.Hash(), p.Amount(), src, p.Destination(), nexthop}
 }
 
