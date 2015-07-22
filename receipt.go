@@ -8,13 +8,7 @@ import (
 // Takes care of handling packet receipts, namely relaying them to other
 // interested hosts and sending them to any objects which want to take action
 // on them via the ReceiptAction interface.
-type ReceiptHandler interface {
-	AddConnection(NodeAddress, ReceiptConnection)
-	SendReceipt(PacketReceipt)
-	PacketHashes() <-chan PacketHash
-}
-
-type receipt struct {
+type receiptHandler struct {
 	connections map[NodeAddress]ReceiptConnection
 	packets     map[PacketHash]RoutingDecision
 	l           *sync.Mutex
@@ -22,13 +16,13 @@ type receipt struct {
 	outgoing    chan PacketHash
 }
 
-func newReceipt(id NodeAddress, c <-chan RoutingDecision) ReceiptHandler {
-	r := &receipt{make(map[NodeAddress]ReceiptConnection), make(map[PacketHash]RoutingDecision), &sync.Mutex{}, id, make(chan PacketHash)}
+func newReceipt(id NodeAddress, c <-chan RoutingDecision) *receiptHandler {
+	r := &receiptHandler{make(map[NodeAddress]ReceiptConnection), make(map[PacketHash]RoutingDecision), &sync.Mutex{}, id, make(chan PacketHash)}
 	go r.sentPackets(c)
 	return r
 }
 
-func (r *receipt) AddConnection(id NodeAddress, c ReceiptConnection) {
+func (r *receiptHandler) AddConnection(id NodeAddress, c ReceiptConnection) {
 	r.l.Lock()
 	r.connections[id] = c
 	r.l.Unlock()
@@ -39,7 +33,7 @@ func (r *receipt) AddConnection(id NodeAddress, c ReceiptConnection) {
 	}()
 }
 
-func (r *receipt) sentPackets(c <-chan RoutingDecision) {
+func (r *receiptHandler) sentPackets(c <-chan RoutingDecision) {
 	for d := range c {
 		r.l.Lock()
 		r.packets[d.hash] = d
@@ -47,15 +41,15 @@ func (r *receipt) sentPackets(c <-chan RoutingDecision) {
 	}
 }
 
-func (r *receipt) PacketHashes() <-chan PacketHash {
+func (r *receiptHandler) PacketHashes() <-chan PacketHash {
 	return r.outgoing
 }
 
-func (r *receipt) SendReceipt(receipt PacketReceipt) {
+func (r *receiptHandler) SendReceipt(receipt PacketReceipt) {
 	r.sendReceipt(r.id, receipt)
 }
 
-func (r *receipt) sendReceipt(id NodeAddress, receipt PacketReceipt) {
+func (r *receiptHandler) sendReceipt(id NodeAddress, receipt PacketReceipt) {
 	if receipt.Verify() != nil {
 		log.Printf("Error verifying receipt: %q", receipt.Verify())
 		return

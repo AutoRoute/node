@@ -26,9 +26,9 @@ type router struct {
 	// A map of public key hashes to connections
 	connections map[NodeAddress]Connection
 
-	ReachabilityHandler
+	*reachabilityHandler
 	RoutingHandler
-	ReceiptHandler
+	*receiptHandler
 	PaymentHandler
 	Ledger
 }
@@ -73,7 +73,7 @@ func (r *router) AddConnection(c Connection) {
 
 	// Curry the id since the various sub connections don't know about it
 	r.RoutingHandler.AddConnection(id, c)
-	r.ReachabilityHandler.AddConnection(id, c)
-	r.ReceiptHandler.AddConnection(id, c)
+	r.reachabilityHandler.AddConnection(id, c)
+	r.receiptHandler.AddConnection(id, c)
 	r.PaymentHandler.AddConnection(id, c)
 }

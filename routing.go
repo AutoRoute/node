@@ -34,10 +34,10 @@ type routing struct {
 	routes   chan RoutingDecision
 	// A map of public key hashes to connections
 	connections  map[NodeAddress]DataConnection
-	reachability ReachabilityHandler
+	reachability *reachabilityHandler
 }
 
-func newRouting(pk PublicKey, r ReachabilityHandler) RoutingHandler {
+func newRouting(pk PublicKey, r *reachabilityHandler) RoutingHandler {
 	return &routing{
 		pk,
 		make(chan Packet),
