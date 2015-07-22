@@ -29,7 +29,7 @@ type router struct {
 	*reachabilityHandler
 	*routingHandler
 	*receiptHandler
-	PaymentHandler
+	*paymentHandler
 	Ledger
 }
 
@@ -75,5 +75,5 @@ func (r *router) AddConnection(c Connection) {
 	r.routingHandler.AddConnection(id, c)
 	r.reachabilityHandler.AddConnection(id, c)
 	r.receiptHandler.AddConnection(id, c)
-	r.PaymentHandler.AddConnection(id, c)
+	r.paymentHandler.AddConnection(id, c)
 }
