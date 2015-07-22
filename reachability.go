@@ -8,45 +8,35 @@ import (
 
 // Takes care of maintaining and relaying maps and insures that we know which
 // interfaces can reach which addresses.
-type ReachabilityHandler interface {
-	AddConnection(NodeAddress, MapConnection)
-	FindNextHop(NodeAddress) (NodeAddress, error)
-}
-
-type taggedMap struct {
-	address NodeAddress
-	new_map ReachabilityMap
-}
-
-type reachability struct {
+type reachabilityHandler struct {
 	me         NodeAddress
 	l          *sync.Mutex
 	conns      map[NodeAddress]MapConnection
-	maps       map[NodeAddress]ReachabilityMap
-	merged_map ReachabilityMap
+	maps       map[NodeAddress]BloomReachabilityMap
+	merged_map BloomReachabilityMap
 }
 
-func newReachability(me NodeAddress) ReachabilityHandler {
+func newReachability(me NodeAddress) *reachabilityHandler {
 	conns := make(map[NodeAddress]MapConnection)
-	maps := make(map[NodeAddress]ReachabilityMap)
-	impl := &reachability{me, &sync.Mutex{}, conns, maps, NewBloomReachabilityMap()}
+	maps := make(map[NodeAddress]BloomReachabilityMap)
+	impl := &reachabilityHandler{me, &sync.Mutex{}, conns, maps, NewBloomReachabilityMap()}
 	impl.merged_map.AddEntry(me)
 	return impl
 }
 
-func (m *reachability) addMap(update taggedMap) {
+func (m *reachabilityHandler) addMap(address NodeAddress, new_map BloomReachabilityMap) {
 	m.l.Lock()
 	defer m.l.Unlock()
-	m.maps[update.address].Merge(update.new_map)
-	m.merged_map.Merge(update.new_map)
+	m.maps[address].Merge(new_map)
+	m.merged_map.Merge(new_map)
 	for addr, conn := range m.conns {
-		if addr != update.address {
-			conn.SendMap(update.new_map.Copy())
+		if addr != address {
+			conn.SendMap(new_map.Copy())
 		}
 	}
 }
 
-func (m *reachability) AddConnection(id NodeAddress, c MapConnection) {
+func (m *reachabilityHandler) AddConnection(id NodeAddress, c MapConnection) {
 	// TODO(colin): This should be streamed. or something similar.
 	m.l.Lock()
 	defer m.l.Unlock()
@@ -69,12 +59,12 @@ func (m *reachability) AddConnection(id NodeAddress, c MapConnection) {
 	go func() {
 		for rmap := range c.ReachabilityMaps() {
 			rmap.Increment()
-			m.addMap(taggedMap{id, rmap})
+			m.addMap(id, rmap)
 		}
 	}()
 }
 
-func (m *reachability) FindNextHop(id NodeAddress) (NodeAddress, error) {
+func (m *reachabilityHandler) FindNextHop(id NodeAddress) (NodeAddress, error) {
 	m.l.Lock()
 	defer m.l.Unlock()
 	_, ok := m.conns[id]

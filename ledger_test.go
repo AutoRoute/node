@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func WaitForIncomingDebt(t *testing.T, l Ledger, a NodeAddress, o int64) {
+func WaitForIncomingDebt(t *testing.T, l *ledger, a NodeAddress, o int64) {
 	timeout := time.After(time.Second)
 	tick := time.Tick(time.Millisecond)
 	d := int64(0)
@@ -23,7 +23,7 @@ func WaitForIncomingDebt(t *testing.T, l Ledger, a NodeAddress, o int64) {
 	}
 }
 
-func WaitForOutgoingDebt(t *testing.T, l Ledger, a NodeAddress, o int64) {
+func WaitForOutgoingDebt(t *testing.T, l *ledger, a NodeAddress, o int64) {
 	timeout := time.After(time.Second)
 	tick := time.Tick(time.Millisecond)
 	d := int64(0)
@@ -45,14 +45,14 @@ func TestLedger(t *testing.T) {
 	delivered := make(chan PacketHash)
 	a1, a2, a3 := NodeAddress("1"), NodeAddress("2"), NodeAddress("3")
 
-	routed := make(chan RoutingDecision)
+	routed := make(chan routingDecision)
 
 	ledger := newLedger(a1, delivered, routed)
 
 	t1 := testPacket(a2)
 	t2 := testPacket(a3)
-	routed <- NewRoutingDecision(t1, a1, a2)
-	routed <- NewRoutingDecision(t2, a1, a2)
+	routed <- newRoutingDecision(t1, a1, a2)
+	routed <- newRoutingDecision(t2, a1, a2)
 
 	owed := int64(0)
 	WaitForIncomingDebt(t, ledger, a1, owed)

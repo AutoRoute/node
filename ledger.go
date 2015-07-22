@@ -6,18 +6,6 @@ import (
 	"time"
 )
 
-// This keeps track of our outstanding owed payments and provides an interface
-// to send payments. It does not create payments on its own.
-type Ledger interface {
-	RecordPayment(Payment)
-	// There are really only a few interesting pieces of data you will want to
-	// know about. How much we should pay someone, and how much debt + how long
-	// it has been since someone paid us (aka stop relaying to them if they haven't
-	// paid recently enough or the outstanding balance is too high).
-	IncomingDebt(NodeAddress) (int64, time.Time)
-	OutgoingDebt(NodeAddress) (int64, time.Time)
-}
-
 // Debt is recorded as amount + time. The assumption is that debt is payed
 // oldest first.
 type debt struct {
@@ -25,6 +13,7 @@ type debt struct {
 	amount int64
 }
 
+// Pays debt, removing the oldest first.
 func payDebt(debts []debt, amount int64) []debt {
 	for _, d := range debts {
 		if d.amount < amount {
@@ -46,6 +35,7 @@ func payDebt(debts []debt, amount int64) []debt {
 	return debts
 }
 
+// Sums the debt and returns the earliest time.
 func sumDebt(debts []debt) (int64, time.Time) {
 	var s time.Time
 	a := int64(0)
@@ -58,21 +48,27 @@ func sumDebt(debts []debt) (int64, time.Time) {
 	return a, s
 }
 
+// This keeps track of our outstanding owed payments and provides an interface
+// to send payments. It does not create payments on its own.
+// There are really only a few interesting pieces of data you will want to
+// know about. How much we should pay someone, and how much debt + how long
+// it has been since someone paid us (aka stop relaying to them if they haven't
+// paid recently enough or the outstanding balance is too high).
 type ledger struct {
 	// debt that other people will pay us
 	incoming_debt map[NodeAddress][]debt
 	// debt that we will pay other people
 	outgoing_debt map[NodeAddress][]debt
-	packets       map[PacketHash]RoutingDecision
+	packets       map[PacketHash]routingDecision
 	l             *sync.Mutex
 	id            NodeAddress
 }
 
-func newLedger(id NodeAddress, c <-chan PacketHash, d <-chan RoutingDecision) Ledger {
+func newLedger(id NodeAddress, c <-chan PacketHash, d <-chan routingDecision) *ledger {
 	p := &ledger{
 		make(map[NodeAddress][]debt),
 		make(map[NodeAddress][]debt),
-		make(map[PacketHash]RoutingDecision),
+		make(map[PacketHash]routingDecision),
 		&sync.Mutex{},
 		id}
 	go p.handleReceipt(c)
@@ -108,7 +104,7 @@ func (p *ledger) handleReceipt(c <-chan PacketHash) {
 	}
 }
 
-func (p *ledger) sentPackets(c <-chan RoutingDecision) {
+func (p *ledger) sentPackets(c <-chan routingDecision) {
 	for d := range c {
 		p.l.Lock()
 		p.packets[d.hash] = d

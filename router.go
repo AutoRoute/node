@@ -1,42 +1,25 @@
 package node
 
-import (
-	"time"
-)
-
 // A router handles all routing tasks that don't involve the local machine
 // including connection management, reachability handling, packet receipt
 // relaying, and (outstanding) payment tracking. AKA anything which doesn't
 // need the private key.
-type Router interface {
-	AddConnection(Connection)
-	DataConnection
-	GetAddress() PublicKey
-	SendReceipt(PacketReceipt)
-	SendPaymentHash(NodeAddress, PaymentHash) error
-	PaymentHashes() <-chan PaymentHash
-	RecordPayment(Payment)
-	Connections() []NodeAddress
-	IncomingDebt(NodeAddress) (int64, time.Time)
-	OutgoingDebt(NodeAddress) (int64, time.Time)
-}
-
 type router struct {
 	pk PublicKey
 	// A map of public key hashes to connections
 	connections map[NodeAddress]Connection
 
-	ReachabilityHandler
-	RoutingHandler
-	ReceiptHandler
-	PaymentHandler
-	Ledger
+	*reachabilityHandler
+	*routingHandler
+	*receiptHandler
+	*paymentHandler
+	*ledger
 }
 
-func newRouter(pk PublicKey) Router {
+func newRouter(pk PublicKey) *router {
 	reach := newReachability(pk.Hash())
 	routing := newRouting(pk, reach)
-	c1, c2 := SplitChannel(routing.Routes())
+	c1, c2 := splitChannel(routing.Routes())
 	receipt := newReceipt(pk.Hash(), c1)
 	payment := newPayment(pk.Hash())
 	ledger := newLedger(pk.Hash(), receipt.PacketHashes(), c2)
@@ -72,8 +55,8 @@ func (r *router) AddConnection(c Connection) {
 	r.connections[id] = c
 
 	// Curry the id since the various sub connections don't know about it
-	r.RoutingHandler.AddConnection(id, c)
-	r.ReachabilityHandler.AddConnection(id, c)
-	r.ReceiptHandler.AddConnection(id, c)
-	r.PaymentHandler.AddConnection(id, c)
+	r.routingHandler.AddConnection(id, c)
+	r.reachabilityHandler.AddConnection(id, c)
+	r.receiptHandler.AddConnection(id, c)
+	r.paymentHandler.AddConnection(id, c)
 }

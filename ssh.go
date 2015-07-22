@@ -125,7 +125,7 @@ func (s *SSHConnection) connectChan(name string) error {
 	return nil
 }
 
-func (s *SSHConnection) SendMap(m ReachabilityMap) error {
+func (s *SSHConnection) SendMap(m BloomReachabilityMap) error {
 	s.lock.Lock()
 	l := s.el["reachability"]
 	s.lock.Unlock()
@@ -134,8 +134,8 @@ func (s *SSHConnection) SendMap(m ReachabilityMap) error {
 	return s.e["reachability"].Encode(m)
 }
 
-func (s *SSHConnection) ReachabilityMaps() <-chan ReachabilityMap {
-	c := make(chan ReachabilityMap)
+func (s *SSHConnection) ReachabilityMaps() <-chan BloomReachabilityMap {
+	c := make(chan BloomReachabilityMap)
 	go func() {
 		s.lock.Lock()
 		l := s.dl["reachability"]
