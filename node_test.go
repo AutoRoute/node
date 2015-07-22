@@ -24,7 +24,7 @@ func TestNode(t *testing.T) {
 	<-n2.Packets()
 
 	for range time.Tick(25 * time.Millisecond) {
-		if amt, _ := n1.(*node).Router.OutgoingDebt(sk2.PublicKey().Hash()); amt != 0 {
+		if amt, _ := n1.Router.OutgoingDebt(sk2.PublicKey().Hash()); amt != 0 {
 			break
 		}
 	}
@@ -32,7 +32,7 @@ func TestNode(t *testing.T) {
 	c <- time.Now()
 
 	for range time.Tick(25 * time.Millisecond) {
-		if amt, _ := n1.(*node).Router.OutgoingDebt(sk2.PublicKey().Hash()); amt == 0 {
+		if amt, _ := n1.Router.OutgoingDebt(sk2.PublicKey().Hash()); amt == 0 {
 			return
 		}
 	}

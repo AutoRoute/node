@@ -8,13 +8,7 @@ import (
 
 // A Node is the highest level abstraction over the network. You receive packets
 // from it and send packets to it, and it takes care of everything else.
-type Node interface {
-	AddConnection(Connection)
-	DataConnection
-	GetAddress() PublicKey
-}
-
-type node struct {
+type Node struct {
 	Router
 	l              *sync.Mutex
 	id             PrivateKey
@@ -25,8 +19,8 @@ type node struct {
 	m              Money
 }
 
-func NewNode(pk PrivateKey, receipt_ticker <-chan time.Time, payment_ticker <-chan time.Time) Node {
-	n := &node{
+func NewNode(pk PrivateKey, receipt_ticker <-chan time.Time, payment_ticker <-chan time.Time) *Node {
+	n := &Node{
 		newRouter(pk.PublicKey()),
 		&sync.Mutex{},
 		pk,
@@ -42,7 +36,7 @@ func NewNode(pk PrivateKey, receipt_ticker <-chan time.Time, payment_ticker <-ch
 	return n
 }
 
-func (n *node) receivePackets() {
+func (n *Node) receivePackets() {
 	for p := range n.Router.Packets() {
 		n.l.Lock()
 		n.receipt_buffer = append(n.receipt_buffer, p.Hash())
@@ -51,7 +45,7 @@ func (n *node) receivePackets() {
 	}
 }
 
-func (n *node) sendReceipts() {
+func (n *Node) sendReceipts() {
 	for range n.receipt_ticker {
 		n.l.Lock()
 		if len(n.receipt_buffer) > 0 {
@@ -63,7 +57,7 @@ func (n *node) sendReceipts() {
 	}
 }
 
-func (n *node) sendPayments() {
+func (n *Node) sendPayments() {
 	for range n.payment_ticker {
 		n.l.Lock()
 		for _, c := range n.Router.Connections() {
@@ -82,7 +76,7 @@ func (n *node) sendPayments() {
 	}
 }
 
-func (n *node) receivePayments() {
+func (n *Node) receivePayments() {
 	for h := range n.Router.PaymentHashes() {
 		n.l.Lock()
 		c := n.m.AddPaymentHash(h)
@@ -93,10 +87,10 @@ func (n *node) receivePayments() {
 	}
 }
 
-func (n *node) SendPacket(p Packet) error {
+func (n *Node) SendPacket(p Packet) error {
 	return n.Router.SendPacket(p)
 }
 
-func (n *node) Packets() <-chan Packet {
+func (n *Node) Packets() <-chan Packet {
 	return n.outgoing
 }

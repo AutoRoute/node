@@ -66,7 +66,7 @@ func FindNeighbors(dev net.Interface, ll_addr *net.IPAddr, key node.PublicKey) <
 	return channel
 }
 
-func Probe(key node.PrivateKey, n node.Node) {
+func Probe(key node.PrivateKey, n *node.Node) {
 	devs, err := net.Interfaces()
 	if err != nil {
 		log.Fatal(err)
@@ -109,7 +109,7 @@ func Connect(addr string, key node.PrivateKey) (*node.SSHConnection, error) {
 	return node.EstablishSSH(c, addr, key)
 }
 
-func Listen(key node.PrivateKey, n node.Node) {
+func Listen(key node.PrivateKey, n *node.Node) {
 	ln, err := net.Listen("tcp", *listen)
 	if err != nil {
 		log.Fatal(err)
