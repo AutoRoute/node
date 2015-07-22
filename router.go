@@ -19,7 +19,7 @@ type router struct {
 func newRouter(pk PublicKey) *router {
 	reach := newReachability(pk.Hash())
 	routing := newRouting(pk, reach)
-	c1, c2 := SplitChannel(routing.Routes())
+	c1, c2 := splitChannel(routing.Routes())
 	receipt := newReceipt(pk.Hash(), c1)
 	payment := newPayment(pk.Hash())
 	ledger := newLedger(pk.Hash(), receipt.PacketHashes(), c2)

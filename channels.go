@@ -1,6 +1,6 @@
 package node
 
-func SplitChannel(c <-chan routingDecision) (<-chan routingDecision, <-chan routingDecision) {
+func splitChannel(c <-chan routingDecision) (<-chan routingDecision, <-chan routingDecision) {
 	c1, c2 := make(chan routingDecision), make(chan routingDecision)
 	go func() {
 		for d := range c {
