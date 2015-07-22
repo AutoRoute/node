@@ -1,26 +1,9 @@
 package node
 
-import (
-	"time"
-)
-
 // A router handles all routing tasks that don't involve the local machine
 // including connection management, reachability handling, packet receipt
 // relaying, and (outstanding) payment tracking. AKA anything which doesn't
 // need the private key.
-type Router interface {
-	AddConnection(Connection)
-	DataConnection
-	GetAddress() PublicKey
-	SendReceipt(PacketReceipt)
-	SendPaymentHash(NodeAddress, PaymentHash) error
-	PaymentHashes() <-chan PaymentHash
-	RecordPayment(Payment)
-	Connections() []NodeAddress
-	IncomingDebt(NodeAddress) (int64, time.Time)
-	OutgoingDebt(NodeAddress) (int64, time.Time)
-}
-
 type router struct {
 	pk PublicKey
 	// A map of public key hashes to connections
@@ -33,7 +16,7 @@ type router struct {
 	*ledger
 }
 
-func newRouter(pk PublicKey) Router {
+func newRouter(pk PublicKey) *router {
 	reach := newReachability(pk.Hash())
 	routing := newRouting(pk, reach)
 	c1, c2 := SplitChannel(routing.Routes())

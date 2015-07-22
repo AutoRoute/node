@@ -9,7 +9,7 @@ import (
 // A Node is the highest level abstraction over the network. You receive packets
 // from it and send packets to it, and it takes care of everything else.
 type Node struct {
-	Router
+	*router
 	l              *sync.Mutex
 	id             PrivateKey
 	outgoing       chan Packet
@@ -37,7 +37,7 @@ func NewNode(pk PrivateKey, receipt_ticker <-chan time.Time, payment_ticker <-ch
 }
 
 func (n *Node) receivePackets() {
-	for p := range n.Router.Packets() {
+	for p := range n.router.Packets() {
 		n.l.Lock()
 		n.receipt_buffer = append(n.receipt_buffer, p.Hash())
 		n.l.Unlock()
@@ -51,7 +51,7 @@ func (n *Node) sendReceipts() {
 		if len(n.receipt_buffer) > 0 {
 			r := CreateMerkleReceipt(n.id, n.receipt_buffer)
 			n.receipt_buffer = nil
-			n.Router.SendReceipt(r)
+			n.router.SendReceipt(r)
 		}
 		n.l.Unlock()
 	}
@@ -60,16 +60,16 @@ func (n *Node) sendReceipts() {
 func (n *Node) sendPayments() {
 	for range n.payment_ticker {
 		n.l.Lock()
-		for _, c := range n.Router.Connections() {
-			owed, _ := n.Router.OutgoingDebt(c)
+		for _, c := range n.router.Connections() {
+			owed, _ := n.router.OutgoingDebt(c)
 			if owed > 0 {
 				p, err := n.m.MakePayment(owed, c)
 				if err != nil {
 					log.Printf("Failed to make a payment to %s : %v", c, err)
 					break
 				}
-				n.Router.RecordPayment(Payment{n.id.PublicKey().Hash(), c, owed})
-				n.Router.SendPaymentHash(c, p)
+				n.router.RecordPayment(Payment{n.id.PublicKey().Hash(), c, owed})
+				n.router.SendPaymentHash(c, p)
 			}
 		}
 		n.l.Unlock()
@@ -77,18 +77,18 @@ func (n *Node) sendPayments() {
 }
 
 func (n *Node) receivePayments() {
-	for h := range n.Router.PaymentHashes() {
+	for h := range n.router.PaymentHashes() {
 		n.l.Lock()
 		c := n.m.AddPaymentHash(h)
 		go func() {
 			p := <-c
-			n.Router.RecordPayment(p)
+			n.router.RecordPayment(p)
 		}()
 	}
 }
 
 func (n *Node) SendPacket(p Packet) error {
-	return n.Router.SendPacket(p)
+	return n.router.SendPacket(p)
 }
 
 func (n *Node) Packets() <-chan Packet {
