@@ -5,7 +5,7 @@ import (
 )
 
 // Represents a permanent record of a routing decision.
-type RoutingDecision struct {
+type routingDecision struct {
 	hash        PacketHash
 	amount      int64
 	source      NodeAddress
@@ -13,8 +13,8 @@ type RoutingDecision struct {
 	nexthop     NodeAddress
 }
 
-func NewRoutingDecision(p Packet, src NodeAddress, nexthop NodeAddress) RoutingDecision {
-	return RoutingDecision{p.Hash(), p.Amount(), src, p.Destination(), nexthop}
+func NewRoutingDecision(p Packet, src NodeAddress, nexthop NodeAddress) routingDecision {
+	return routingDecision{p.Hash(), p.Amount(), src, p.Destination(), nexthop}
 }
 
 // A routing handler takes care of relaying packets and produces notifications
@@ -24,14 +24,14 @@ type RoutingHandler interface {
 	// For thing which are routed to "us"
 	DataConnection
 	// The actions we've taken
-	Routes() <-chan RoutingDecision
+	Routes() <-chan routingDecision
 }
 
 type routing struct {
 	pk PublicKey
 	// A chan down which we send packets destined for ourselves.
 	incoming chan Packet
-	routes   chan RoutingDecision
+	routes   chan routingDecision
 	// A map of public key hashes to connections
 	connections  map[NodeAddress]DataConnection
 	reachability *reachabilityHandler
@@ -41,7 +41,7 @@ func newRouting(pk PublicKey, r *reachabilityHandler) RoutingHandler {
 	return &routing{
 		pk,
 		make(chan Packet),
-		make(chan RoutingDecision),
+		make(chan routingDecision),
 		make(map[NodeAddress]DataConnection),
 		r}
 }
@@ -80,10 +80,10 @@ func (r *routing) sendPacket(p Packet, src NodeAddress) error {
 }
 
 func (r *routing) notifyDecision(p Packet, src, next NodeAddress) {
-	r.routes <- RoutingDecision{p.Hash(), p.Amount(), src, p.Destination(), next}
+	r.routes <- routingDecision{p.Hash(), p.Amount(), src, p.Destination(), next}
 }
 
-func (r *routing) Routes() <-chan RoutingDecision {
+func (r *routing) Routes() <-chan routingDecision {
 	return r.routes
 }
 

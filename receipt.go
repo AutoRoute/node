@@ -10,14 +10,14 @@ import (
 // on them via the ReceiptAction interface.
 type receiptHandler struct {
 	connections map[NodeAddress]ReceiptConnection
-	packets     map[PacketHash]RoutingDecision
+	packets     map[PacketHash]routingDecision
 	l           *sync.Mutex
 	id          NodeAddress
 	outgoing    chan PacketHash
 }
 
-func newReceipt(id NodeAddress, c <-chan RoutingDecision) *receiptHandler {
-	r := &receiptHandler{make(map[NodeAddress]ReceiptConnection), make(map[PacketHash]RoutingDecision), &sync.Mutex{}, id, make(chan PacketHash)}
+func newReceipt(id NodeAddress, c <-chan routingDecision) *receiptHandler {
+	r := &receiptHandler{make(map[NodeAddress]ReceiptConnection), make(map[PacketHash]routingDecision), &sync.Mutex{}, id, make(chan PacketHash)}
 	go r.sentPackets(c)
 	return r
 }
@@ -33,7 +33,7 @@ func (r *receiptHandler) AddConnection(id NodeAddress, c ReceiptConnection) {
 	}()
 }
 
-func (r *receiptHandler) sentPackets(c <-chan RoutingDecision) {
+func (r *receiptHandler) sentPackets(c <-chan routingDecision) {
 	for d := range c {
 		r.l.Lock()
 		r.packets[d.hash] = d

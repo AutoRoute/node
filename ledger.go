@@ -63,16 +63,16 @@ type ledger struct {
 	incoming_debt map[NodeAddress][]debt
 	// debt that we will pay other people
 	outgoing_debt map[NodeAddress][]debt
-	packets       map[PacketHash]RoutingDecision
+	packets       map[PacketHash]routingDecision
 	l             *sync.Mutex
 	id            NodeAddress
 }
 
-func newLedger(id NodeAddress, c <-chan PacketHash, d <-chan RoutingDecision) Ledger {
+func newLedger(id NodeAddress, c <-chan PacketHash, d <-chan routingDecision) Ledger {
 	p := &ledger{
 		make(map[NodeAddress][]debt),
 		make(map[NodeAddress][]debt),
-		make(map[PacketHash]RoutingDecision),
+		make(map[PacketHash]routingDecision),
 		&sync.Mutex{},
 		id}
 	go p.handleReceipt(c)
@@ -108,7 +108,7 @@ func (p *ledger) handleReceipt(c <-chan PacketHash) {
 	}
 }
 
-func (p *ledger) sentPackets(c <-chan RoutingDecision) {
+func (p *ledger) sentPackets(c <-chan routingDecision) {
 	for d := range c {
 		p.l.Lock()
 		p.packets[d.hash] = d

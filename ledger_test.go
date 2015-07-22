@@ -45,7 +45,7 @@ func TestLedger(t *testing.T) {
 	delivered := make(chan PacketHash)
 	a1, a2, a3 := NodeAddress("1"), NodeAddress("2"), NodeAddress("3")
 
-	routed := make(chan RoutingDecision)
+	routed := make(chan routingDecision)
 
 	ledger := newLedger(a1, delivered, routed)
 
