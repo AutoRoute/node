@@ -27,7 +27,7 @@ type router struct {
 	connections map[NodeAddress]Connection
 
 	*reachabilityHandler
-	RoutingHandler
+	*routingHandler
 	*receiptHandler
 	PaymentHandler
 	Ledger
@@ -72,7 +72,7 @@ func (r *router) AddConnection(c Connection) {
 	r.connections[id] = c
 
 	// Curry the id since the various sub connections don't know about it
-	r.RoutingHandler.AddConnection(id, c)
+	r.routingHandler.AddConnection(id, c)
 	r.reachabilityHandler.AddConnection(id, c)
 	r.receiptHandler.AddConnection(id, c)
 	r.PaymentHandler.AddConnection(id, c)

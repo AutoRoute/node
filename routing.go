@@ -19,15 +19,7 @@ func NewRoutingDecision(p Packet, src NodeAddress, nexthop NodeAddress) routingD
 
 // A routing handler takes care of relaying packets and produces notifications
 // about it's routing decisions.
-type RoutingHandler interface {
-	AddConnection(NodeAddress, DataConnection)
-	// For thing which are routed to "us"
-	DataConnection
-	// The actions we've taken
-	Routes() <-chan routingDecision
-}
-
-type routing struct {
+type routingHandler struct {
 	pk PublicKey
 	// A chan down which we send packets destined for ourselves.
 	incoming chan Packet
@@ -37,8 +29,8 @@ type routing struct {
 	reachability *reachabilityHandler
 }
 
-func newRouting(pk PublicKey, r *reachabilityHandler) RoutingHandler {
-	return &routing{
+func newRouting(pk PublicKey, r *reachabilityHandler) *routingHandler {
+	return &routingHandler{
 		pk,
 		make(chan Packet),
 		make(chan routingDecision),
@@ -46,12 +38,12 @@ func newRouting(pk PublicKey, r *reachabilityHandler) RoutingHandler {
 		r}
 }
 
-func (r *routing) AddConnection(id NodeAddress, c DataConnection) {
+func (r *routingHandler) AddConnection(id NodeAddress, c DataConnection) {
 	r.connections[id] = c
 	go r.handleData(id, c)
 }
 
-func (r *routing) handleData(id NodeAddress, p DataConnection) {
+func (r *routingHandler) handleData(id NodeAddress, p DataConnection) {
 	for packet := range p.Packets() {
 		err := r.sendPacket(packet, id)
 		if err != nil {
@@ -61,11 +53,11 @@ func (r *routing) handleData(id NodeAddress, p DataConnection) {
 	}
 }
 
-func (r *routing) SendPacket(p Packet) error {
+func (r *routingHandler) SendPacket(p Packet) error {
 	return r.sendPacket(p, r.pk.Hash())
 }
 
-func (r *routing) sendPacket(p Packet, src NodeAddress) error {
+func (r *routingHandler) sendPacket(p Packet, src NodeAddress) error {
 	if p.Destination() == r.pk.Hash() {
 		r.incoming <- p
 		go r.notifyDecision(p, src, r.pk.Hash())
@@ -79,14 +71,14 @@ func (r *routing) sendPacket(p Packet, src NodeAddress) error {
 	return r.connections[next].SendPacket(p)
 }
 
-func (r *routing) notifyDecision(p Packet, src, next NodeAddress) {
+func (r *routingHandler) notifyDecision(p Packet, src, next NodeAddress) {
 	r.routes <- routingDecision{p.Hash(), p.Amount(), src, p.Destination(), next}
 }
 
-func (r *routing) Routes() <-chan routingDecision {
+func (r *routingHandler) Routes() <-chan routingDecision {
 	return r.routes
 }
 
-func (r *routing) Packets() <-chan Packet {
+func (r *routingHandler) Packets() <-chan Packet {
 	return r.incoming
 }
