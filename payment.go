@@ -44,3 +44,8 @@ func (p *paymentHandler) SendPaymentHash(id NodeAddress, y PaymentHash) error {
 	defer p.l.Unlock()
 	return p.connections[id].SendPayment(y)
 }
+
+func (p *paymentHandler) Close() error {
+	close(p.c)
+	return nil
+}

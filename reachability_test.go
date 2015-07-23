@@ -17,8 +17,12 @@ func (c testMapConnection) SendMap(m BloomReachabilityMap) error {
 func (c testMapConnection) ReachabilityMaps() <-chan BloomReachabilityMap {
 	return c.in
 }
+func (c testMapConnection) Close() error {
+	close(c.in)
+	return nil
+}
 
-func makePairedMapConnections() (MapConnection, MapConnection) {
+func makePairedMapConnections() (testMapConnection, testMapConnection) {
 	one := make(chan BloomReachabilityMap)
 	two := make(chan BloomReachabilityMap)
 	return testMapConnection{one, two}, testMapConnection{two, one}

@@ -60,14 +60,14 @@ func (r *routingHandler) SendPacket(p Packet) error {
 func (r *routingHandler) sendPacket(p Packet, src NodeAddress) error {
 	if p.Destination() == r.pk.Hash() {
 		r.incoming <- p
-		go r.notifyDecision(p, src, r.pk.Hash())
+		r.notifyDecision(p, src, r.pk.Hash())
 		return nil
 	}
 	next, err := r.reachability.FindNextHop(p.Destination())
 	if err != nil {
 		return err
 	}
-	go r.notifyDecision(p, src, next)
+	r.notifyDecision(p, src, next)
 	return r.connections[next].SendPacket(p)
 }
 
@@ -81,4 +81,10 @@ func (r *routingHandler) Routes() <-chan routingDecision {
 
 func (r *routingHandler) Packets() <-chan Packet {
 	return r.incoming
+}
+
+func (r *routingHandler) Close() error {
+	close(r.incoming)
+	close(r.routes)
+	return nil
 }
