@@ -28,13 +28,13 @@ func makePairedPaymentConnections() (testPaymentConnection, testPaymentConnectio
 }
 
 func TestPaymentHandler(t *testing.T) {
-	c1, c2 := makePairedPaymentConnections()
-	defer c1.Close()
-	defer c2.Close()
 	a1, a2 := NodeAddress("1"), NodeAddress("2")
 	p1, p2 := newPayment(a1), newPayment(a2)
 	defer p1.Close()
 	defer p2.Close()
+	c1, c2 := makePairedPaymentConnections()
+	defer c1.Close()
+	defer c2.Close()
 	p1.AddConnection(a2, c1)
 	p2.AddConnection(a1, c2)
 
@@ -44,5 +44,4 @@ func TestPaymentHandler(t *testing.T) {
 	if string(h) != "hash" {
 		t.Fatalf("Expected %s == hash", string(h))
 	}
-
 }
