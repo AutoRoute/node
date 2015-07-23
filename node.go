@@ -31,6 +31,7 @@ func NewNode(pk PrivateKey, receipt_ticker <-chan time.Time, payment_ticker <-ch
 		fakeMoney{pk.PublicKey().Hash()},
 	}
 	go n.receivePackets()
+	go n.receivePayments()
 	go n.sendReceipts()
 	go n.sendPayments()
 	return n
@@ -93,4 +94,8 @@ func (n *Node) SendPacket(p Packet) error {
 
 func (n *Node) Packets() <-chan Packet {
 	return n.outgoing
+}
+
+func (n *Node) Close() error {
+	return n.router.Close()
 }

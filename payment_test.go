@@ -16,17 +16,25 @@ func (c testPaymentConnection) SendPayment(p PaymentHash) error {
 func (c testPaymentConnection) Payments() <-chan PaymentHash {
 	return c.in
 }
+func (c testPaymentConnection) Close() error {
+	close(c.in)
+	return nil
+}
 
-func makePairedPaymentConnections() (PaymentConnection, PaymentConnection) {
+func makePairedPaymentConnections() (testPaymentConnection, testPaymentConnection) {
 	one := make(chan PaymentHash)
 	two := make(chan PaymentHash)
 	return testPaymentConnection{one, two}, testPaymentConnection{two, one}
 }
 
 func TestPaymentHandler(t *testing.T) {
-	c1, c2 := makePairedPaymentConnections()
 	a1, a2 := NodeAddress("1"), NodeAddress("2")
 	p1, p2 := newPayment(a1), newPayment(a2)
+	defer p1.Close()
+	defer p2.Close()
+	c1, c2 := makePairedPaymentConnections()
+	defer c1.Close()
+	defer c2.Close()
 	p1.AddConnection(a2, c1)
 	p2.AddConnection(a1, c2)
 
@@ -36,5 +44,4 @@ func TestPaymentHandler(t *testing.T) {
 	if string(h) != "hash" {
 		t.Fatalf("Expected %s == hash", string(h))
 	}
-
 }

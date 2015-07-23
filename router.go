@@ -60,3 +60,13 @@ func (r *router) AddConnection(c Connection) {
 	r.receiptHandler.AddConnection(id, c)
 	r.paymentHandler.AddConnection(id, c)
 }
+
+func (r *router) Close() error {
+	for _, v := range r.connections {
+		v.Close()
+	}
+	r.routingHandler.Close()
+	r.receiptHandler.Close()
+	r.paymentHandler.Close()
+	return nil
+}

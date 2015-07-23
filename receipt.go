@@ -79,3 +79,8 @@ func (r *receiptHandler) sendReceipt(id NodeAddress, receipt PacketReceipt) {
 		}
 	}
 }
+
+func (r *receiptHandler) Close() error {
+	close(r.outgoing)
+	return nil
+}

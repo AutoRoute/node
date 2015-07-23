@@ -7,6 +7,8 @@ func splitChannel(c <-chan routingDecision) (<-chan routingDecision, <-chan rout
 			c1 <- d
 			c2 <- d
 		}
+		close(c1)
+		close(c2)
 	}()
 	return c1, c2
 }

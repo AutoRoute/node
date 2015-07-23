@@ -18,22 +18,33 @@ func (c testDataConnection) SendPacket(m Packet) error {
 func (c testDataConnection) Packets() <-chan Packet {
 	return c.in
 }
+func (c testDataConnection) Close() error {
+	close(c.in)
+	return nil
+}
 
-func makePairedDataConnections() (DataConnection, DataConnection) {
+func makePairedDataConnections() (testDataConnection, testDataConnection) {
 	one := make(chan Packet)
 	two := make(chan Packet)
 	return testDataConnection{one, two}, testDataConnection{two, one}
 }
 
 type testConnection struct {
-	DataConnection
-	MapConnection
-	ReceiptConnection
-	PaymentConnection
+	testDataConnection
+	testMapConnection
+	testReceiptConnection
+	testPaymentConnection
 	k PublicKey
 }
 
-func (t testConnection) Close() error   { return nil }
+func (t testConnection) Close() error {
+	t.testDataConnection.Close()
+	t.testMapConnection.Close()
+	t.testReceiptConnection.Close()
+	t.testPaymentConnection.Close()
+	return nil
+}
+
 func (t testConnection) Key() PublicKey { return t.k }
 
 func makePairedConnections(k1, k2 PublicKey) (Connection, Connection) {
@@ -66,6 +77,8 @@ func TestDirectRouter(t *testing.T) {
 	k2 := sk2.PublicKey()
 	r1 := newRouter(k1)
 	r2 := newRouter(k2)
+	defer r1.Close()
+	defer r2.Close()
 	a2 := k2.Hash()
 	link(r1, r2)
 
@@ -112,12 +125,17 @@ func TestRelayRouter(t *testing.T) {
 	r1 := newRouter(k1)
 	r2 := newRouter(k2)
 	r3 := newRouter(k3)
+	defer r1.Close()
+	defer r2.Close()
+	defer r3.Close()
 	link(r1, r2)
 	link(r2, r3)
 
 	// Send a test packet over the connection
 	p3 := testPacket(a3)
+	clean := make(chan bool)
 	go func() {
+		defer close(clean)
 		tries := time.Tick(10 * time.Millisecond)
 		timeout := time.After(time.Second)
 		for {
@@ -125,7 +143,7 @@ func TestRelayRouter(t *testing.T) {
 			case <-tries:
 				err := r1.SendPacket(p3)
 				if err == nil {
-					break
+					return
 				}
 			case <-timeout:
 				log.Fatal("Timed out waiting for succesful send")
@@ -137,4 +155,5 @@ func TestRelayRouter(t *testing.T) {
 	if received != p3 {
 		t.Fatalf("%q != %q", received, p3)
 	}
+	<-clean
 }
