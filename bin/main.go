@@ -9,7 +9,6 @@ import (
 	"log"
 	"net"
 	"strings"
-	"time"
 )
 
 var listen = flag.String("listen", "127.0.0.1:34321",
@@ -57,7 +56,6 @@ func FindNeighbors(dev net.Interface, ll_addr *net.IPAddr, key node.PublicKey) <
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	nf := node.NewNeighborData(key, ll_addr)
 	channel, err := nf.Find(dev.HardwareAddr, conn)
 	if err != nil {
@@ -66,7 +64,7 @@ func FindNeighbors(dev net.Interface, ll_addr *net.IPAddr, key node.PublicKey) <
 	return channel
 }
 
-func Probe(key node.PrivateKey, n *node.Node) {
+func Probe(key node.PrivateKey, n *node.Server) {
 	devs, err := net.Interfaces()
 	if err != nil {
 		log.Fatal(err)
@@ -85,42 +83,18 @@ func Probe(key node.PrivateKey, n *node.Node) {
 		}
 
 		neighbors := FindNeighbors(dev, ll_addr, public_key)
-		for neighbor := range neighbors {
-			log.Printf("Neighbour Found %v", neighbor.NodeAddr)
-			c, err := net.Dial("tcp", neighbor.LLAddrStr)
-			if err != nil {
-				log.Printf("Error connecting %v", err)
+		go func() {
+			for neighbor := range neighbors {
+				log.Printf("Neighbour Found %v", neighbor.NodeAddr)
+				err := n.Connect(neighbor.LLAddrStr)
+				if err != nil {
+					log.Printf("Error connecting: %v", err)
+					continue
+				}
+				log.Printf("Connection established to %v", neighbor.NodeAddr)
 			}
-			connection, err := node.EstablishSSH(c, neighbor.LLAddrStr, key)
-			if err != nil {
-				log.Printf("Error connecting: %v", err)
-			}
-			log.Printf("Connection established to %v %v", neighbor.NodeAddr, connection)
-			n.AddConnection(connection)
-		}
+		}()
 	}
-}
-
-func Connect(addr string, key node.PrivateKey) (*node.SSHConnection, error) {
-	c, err := net.Dial("tcp", addr)
-	if err != nil {
-		return nil, err
-	}
-	return node.EstablishSSH(c, addr, key)
-}
-
-func Listen(key node.PrivateKey, n *node.Node) {
-	ln, err := net.Listen("tcp", *listen)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	l := node.ListenSSH(ln, key)
-	for c := range l.Connections() {
-		log.Printf("Incoming connection: %v", c)
-		n.AddConnection(c)
-	}
-	log.Printf("Closing error: %v", l.Error())
 }
 
 func main() {
@@ -135,7 +109,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	n := node.NewNode(key, time.Tick(time.Second), time.Tick(time.Second))
+	n := node.NewServer(key)
 
 	if *autodiscover {
 		log.Print("Starting Probing of all interfaces")
@@ -144,20 +118,20 @@ func main() {
 
 	if !*nolisten {
 		log.Print("Starting Listening")
-		go Listen(key, n)
+		err := n.Listen(*listen)
+		if err != nil {
+			log.Printf("Error listening: %v", err)
+		}
 	}
 
 	for _, ip := range strings.Split(*connect, ",") {
 		if len(ip) == 0 {
 			continue
 		}
-		c, err := Connect(ip, key)
+		err := n.Connect(ip)
 		if err != nil {
 			log.Printf("Error connecting to %s: %v", ip, err)
-		} else {
-			log.Printf("Outgoing connection: %v", c)
 		}
-		n.AddConnection(c)
 	}
 
 	<-quit

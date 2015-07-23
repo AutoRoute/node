@@ -27,7 +27,9 @@ type SSHConnection struct {
 	el    map[string]*sync.Mutex
 	d     map[string]*json.Decoder
 	dl    map[string]*sync.Mutex
-	lock  *sync.Mutex
+	// Channel to allow blocking until ssh channels are established
+	sync chan bool
+	lock *sync.Mutex
 }
 
 // Constructs a new SSHConnection given the various items returned by the /x/c/ssh library.
@@ -42,68 +44,67 @@ func NewSSHConnection(conn ssh.Conn, chans <-chan ssh.NewChannel, reqs <-chan *s
 		make(map[string]*sync.Mutex),
 		make(map[string]*json.Decoder),
 		make(map[string]*sync.Mutex),
-		&sync.Mutex{}}
+		make(chan bool),
+		&sync.Mutex{},
+	}
 	// Set up various session types we want.
-	s.c["reachability"] = nil
-	s.c["receipt"] = nil
-	s.c["payment"] = nil
-	s.c["packet"] = nil
+	for _, k := range []string{"reachability", "receipt", "payment", "packet"} {
+		s.c[k] = nil
+		s.el[k] = &sync.Mutex{}
+		s.dl[k] = &sync.Mutex{}
+	}
 	return s
 }
 
 func (s *SSHConnection) connect() error {
-	err := s.connectChan("reachability")
-	if err != nil {
-		s.conn.Close()
-		return err
-	}
-	err = s.connectChan("receipt")
-	if err != nil {
-		s.conn.Close()
-		return err
-	}
-	err = s.connectChan("payment")
-	if err != nil {
-		s.conn.Close()
-		return err
-	}
-	err = s.connectChan("packet")
-	if err != nil {
-		s.conn.Close()
-		return err
+	for _, k := range []string{"reachability", "receipt", "payment", "packet"} {
+		err := s.connectChan(k)
+		if err != nil {
+			s.conn.Close()
+			return err
+		}
 	}
 	return nil
 }
 
 func (s *SSHConnection) listen() {
-	for nc := range s.chans {
-		s.lock.Lock()
-		if _, ok := s.c[nc.ChannelType()]; !ok {
-			nc.Reject(ssh.UnknownChannelType, "Unknown channel type")
-			s.lock.Unlock()
-			continue
-		}
-		if s.c[nc.ChannelType()] == nil {
-			c, r, err := nc.Accept()
-			if err != nil {
-				log.Printf("Error accepting channel request: %v", err)
+	go func() {
+		for nc := range s.chans {
+			s.lock.Lock()
+			if _, ok := s.c[nc.ChannelType()]; !ok {
+				nc.Reject(ssh.UnknownChannelType, "Unknown channel type")
 				s.lock.Unlock()
 				continue
 			}
-			s.c[nc.ChannelType()] = &SSHChannel{c, r}
-			s.el[nc.ChannelType()] = &sync.Mutex{}
-			s.el[nc.ChannelType()].Lock()
-			s.e[nc.ChannelType()] = json.NewEncoder(c)
-			s.el[nc.ChannelType()].Unlock()
-			s.dl[nc.ChannelType()] = &sync.Mutex{}
-			s.dl[nc.ChannelType()].Lock()
-			s.d[nc.ChannelType()] = json.NewDecoder(c)
-			s.dl[nc.ChannelType()].Unlock()
-		} else {
-			nc.Reject(ssh.ConnectionFailed, "Connection already established")
+			if s.c[nc.ChannelType()] == nil {
+				c, r, err := nc.Accept()
+				if err != nil {
+					log.Printf("Error accepting channel request: %v", err)
+					s.lock.Unlock()
+					continue
+				}
+				s.c[nc.ChannelType()] = &SSHChannel{c, r}
+				s.el[nc.ChannelType()].Lock()
+				s.e[nc.ChannelType()] = json.NewEncoder(c)
+				s.el[nc.ChannelType()].Unlock()
+				s.dl[nc.ChannelType()].Lock()
+				s.d[nc.ChannelType()] = json.NewDecoder(c)
+				s.dl[nc.ChannelType()].Unlock()
+				s.sync <- true
+			} else {
+				nc.Reject(ssh.ConnectionFailed, "Connection already established")
+			}
+			s.lock.Unlock()
 		}
-		s.lock.Unlock()
-	}
+	}()
+	<-s.sync
+	<-s.sync
+	<-s.sync
+	<-s.sync
+	go func() {
+		for range s.sync {
+		}
+	}()
 }
 
 func (s *SSHConnection) connectChan(name string) error {
@@ -114,11 +115,9 @@ func (s *SSHConnection) connectChan(name string) error {
 		return err
 	}
 	s.c[name] = &SSHChannel{c, r}
-	s.el[name] = &sync.Mutex{}
 	s.el[name].Lock()
 	s.e[name] = json.NewEncoder(c)
 	s.el[name].Unlock()
-	s.dl[name] = &sync.Mutex{}
 	s.dl[name].Lock()
 	s.d[name] = json.NewDecoder(c)
 	s.dl[name].Unlock()
@@ -312,7 +311,7 @@ func (l *SSHListener) listen(s net.Listener, key PrivateKey) {
 				return
 			}
 			sc := NewSSHConnection(server, chans, reqs)
-			go sc.listen()
+			sc.listen()
 			l.c <- sc
 		}
 	}()
