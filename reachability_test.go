@@ -30,6 +30,8 @@ func TestMapHandler(t *testing.T) {
 	a2 := NodeAddress("2")
 	m1 := newReachability(a1)
 	m2 := newReachability(a1)
+	defer m1.Close()
+	defer m2.Close()
 	m1.AddConnection(a2, c2)
 	m2.AddConnection(a1, c1)
 
@@ -64,6 +66,9 @@ func TestRelayMapHandler(t *testing.T) {
 	m1 := newReachability(a1)
 	m2 := newReachability(a2)
 	m3 := newReachability(a3)
+	defer m1.Close()
+	defer m2.Close()
+	defer m3.Close()
 	m1.AddConnection(a2, c2)
 	m2.AddConnection(a1, c1)
 	m2.AddConnection(a3, c3)

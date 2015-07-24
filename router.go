@@ -20,12 +20,13 @@ type router struct {
 	*ledger
 
 	lock *sync.Mutex
+	quit chan bool
 }
 
 func newRouter(pk PublicKey) *router {
 	reach := newReachability(pk.Hash())
 	routing := newRouting(pk, reach)
-	c1, c2 := splitChannel(routing.Routes())
+	c1, c2, quit := splitChannel(routing.Routes())
 	receipt := newReceipt(pk.Hash(), c1)
 	payment := newPayment(pk.Hash())
 	ledger := newLedger(pk.Hash(), receipt.PacketHashes(), c2)
@@ -38,6 +39,7 @@ func newRouter(pk PublicKey) *router {
 		payment,
 		ledger,
 		&sync.Mutex{},
+		quit,
 	}
 }
 
@@ -71,4 +73,14 @@ func (r *router) AddConnection(c Connection) {
 	r.reachabilityHandler.AddConnection(id, c)
 	r.receiptHandler.AddConnection(id, c)
 	r.paymentHandler.AddConnection(id, c)
+}
+
+func (r *router) Close() error {
+	r.reachabilityHandler.Close()
+	r.routingHandler.Close()
+	r.receiptHandler.Close()
+	r.paymentHandler.Close()
+	r.ledger.Close()
+	close(r.quit)
+	return nil
 }

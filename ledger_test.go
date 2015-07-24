@@ -48,6 +48,7 @@ func TestLedger(t *testing.T) {
 	routed := make(chan routingDecision)
 
 	ledger := newLedger(a1, delivered, routed)
+	defer ledger.Close()
 
 	t1 := testPacket(a2)
 	t2 := testPacket(a3)

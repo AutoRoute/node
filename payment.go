@@ -11,6 +11,7 @@ type paymentHandler struct {
 	c           chan PaymentHash
 	l           *sync.Mutex
 	id          NodeAddress
+	quit        chan bool
 }
 
 func newPayment(id NodeAddress) *paymentHandler {
@@ -18,7 +19,9 @@ func newPayment(id NodeAddress) *paymentHandler {
 		make(map[NodeAddress]PaymentConnection),
 		make(chan PaymentHash),
 		&sync.Mutex{},
-		id}
+		id,
+		make(chan bool),
+	}
 	return p
 }
 
@@ -34,8 +37,13 @@ func (p *paymentHandler) AddConnection(id NodeAddress, c PaymentConnection) {
 }
 
 func (p *paymentHandler) handleConnection(c PaymentConnection) {
-	for hash := range c.Payments() {
-		p.c <- hash
+	for {
+		select {
+		case hash := <-c.Payments():
+			p.c <- hash
+		case <-p.quit:
+			return
+		}
 	}
 }
 
@@ -43,4 +51,9 @@ func (p *paymentHandler) SendPaymentHash(id NodeAddress, y PaymentHash) error {
 	p.l.Lock()
 	defer p.l.Unlock()
 	return p.connections[id].SendPayment(y)
+}
+
+func (p *paymentHandler) Close() error {
+	close(p.quit)
+	return nil
 }

@@ -17,6 +17,8 @@ func TestNode(t *testing.T) {
 	c := make(chan time.Time)
 	n1 := NewNode(sk1, time.Tick(100*time.Millisecond), c)
 	n2 := NewNode(sk2, time.Tick(100*time.Millisecond), time.Tick(100*time.Millisecond))
+	defer n1.Close()
+	defer n2.Close()
 	link(n1, n2)
 
 	p2 := testPacket(sk2.PublicKey().Hash())
