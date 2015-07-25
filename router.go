@@ -1,5 +1,9 @@
 package node
 
+import (
+	"sync"
+)
+
 // A router handles all routing tasks that don't involve the local machine
 // including connection management, reachability handling, packet receipt
 // relaying, and (outstanding) payment tracking. AKA anything which doesn't
@@ -14,6 +18,8 @@ type router struct {
 	*receiptHandler
 	*paymentHandler
 	*ledger
+
+	lock *sync.Mutex
 }
 
 func newRouter(pk PublicKey) *router {
@@ -30,7 +36,9 @@ func newRouter(pk PublicKey) *router {
 		routing,
 		receipt,
 		payment,
-		ledger}
+		ledger,
+		&sync.Mutex{},
+	}
 }
 
 func (r *router) GetAddress() PublicKey {
@@ -38,6 +46,8 @@ func (r *router) GetAddress() PublicKey {
 }
 
 func (r *router) Connections() []NodeAddress {
+	r.lock.Lock()
+	defer r.lock.Unlock()
 	c := make([]NodeAddress, 0, len(r.connections))
 	for k, _ := range r.connections {
 		c = append(c, k)
@@ -46,6 +56,8 @@ func (r *router) Connections() []NodeAddress {
 }
 
 func (r *router) AddConnection(c Connection) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
 	id := c.Key().Hash()
 	_, duplicate := r.connections[id]
 	if duplicate {
