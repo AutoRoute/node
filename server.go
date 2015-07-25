@@ -26,7 +26,7 @@ func (s *Server) Connect(addr string) error {
 	if err != nil {
 		return err
 	}
-	log.Printf("Outgoing connection: %v", sc)
+	log.Printf("Outgoing connection: %x", sc.Key().Hash())
 	s.n.AddConnection(sc)
 	return nil
 }
@@ -44,7 +44,7 @@ func (s *Server) Listen(addr string) error {
 	s.listeners[addr] = l
 	go func() {
 		for c := range l.Connections() {
-			log.Printf("Incoming connection: %v", c)
+			log.Printf("Incoming connection: %x", c.Key().Hash())
 			s.n.AddConnection(c)
 		}
 	}()
