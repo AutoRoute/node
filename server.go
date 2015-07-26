@@ -58,3 +58,7 @@ func (s *Server) AddConnection(c *SSHConnection) {
 func (s *Server) Node() *Node {
 	return s.n
 }
+
+func (s *Server) Close() error {
+	return s.n.Close()
+}

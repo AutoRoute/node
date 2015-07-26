@@ -11,7 +11,9 @@ func TestConnection(t *testing.T) {
 	key2, _ := NewECDSAKey()
 
 	n1 := NewServer(key1)
+	defer n1.Close()
 	n2 := NewServer(key2)
+	defer n2.Close()
 
 	err := n1.Listen("127.0.0.1:16543")
 	if err != nil {
@@ -44,7 +46,9 @@ func TestDataTransmission(t *testing.T) {
 	key2, _ := NewECDSAKey()
 
 	n1 := NewServer(key1)
+	defer n1.Close()
 	n2 := NewServer(key2)
+	defer n2.Close()
 	err := n1.Listen("127.0.0.1:16544")
 	if err != nil {
 		t.Fatalf("Error listening %v", err)
