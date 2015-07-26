@@ -125,3 +125,8 @@ func (n *Node) Close() error {
 	close(n.quit)
 	return nil
 }
+
+func (n *Node) IsReachable(addr NodeAddress) bool {
+	_, err := n.router.FindNextHop(addr)
+	return err == nil
+}
