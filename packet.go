@@ -1,5 +1,9 @@
 package node
 
+import (
+	"fmt"
+)
+
 type Packet struct {
 	Dest NodeAddress
 	Amt  int64
@@ -16,4 +20,8 @@ func (p Packet) Hash() PacketHash {
 
 func (p Packet) Amount() int64 {
 	return p.Amt
+}
+
+func (p Packet) String() string {
+	return fmt.Sprintf("{%x %v %v}", p.Dest, p.Amt, p.Data)
 }

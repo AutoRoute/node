@@ -90,11 +90,16 @@ func (m *reachabilityHandler) FindNextHop(id NodeAddress) (NodeAddress, error) {
 		return id, nil
 	}
 
+	if id == m.me {
+		return id, nil
+	}
+
 	for rid, rmap := range m.maps {
 		if rmap.IsReachable(id) {
 			return rid, nil
 		}
 	}
+
 	return "", errors.New("Unable to find host")
 }
 

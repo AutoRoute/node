@@ -55,7 +55,7 @@ func (r *routingHandler) handleData(id NodeAddress, p DataConnection) {
 			}
 			err := r.sendPacket(packet, id)
 			if err != nil {
-				log.Printf("%q: Dropping packet destined to %q: %q", r.pk.Hash(), packet.Destination(), err)
+				log.Printf("%x: Dropping packet destined to %x: %x", r.pk.Hash(), packet.Destination(), err)
 			}
 		case <-r.quit:
 			return

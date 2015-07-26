@@ -54,3 +54,7 @@ func (s *Server) Listen(addr string) error {
 func (s *Server) AddConnection(c *SSHConnection) {
 	s.n.AddConnection(c)
 }
+
+func (s *Server) Node() *Node {
+	return s.n
+}

@@ -1,10 +1,22 @@
 package node
 
 import (
+	"encoding/hex"
 	"io"
 )
 
 type NodeAddress string
+
+func (n NodeAddress) MarshalText() ([]byte, error) {
+	s := hex.EncodeToString([]byte(n))
+	return []byte(s), nil
+}
+func (n *NodeAddress) UnmarshalText(b []byte) error {
+	s, err := hex.DecodeString(string(b))
+	*n = NodeAddress(string(s))
+	return err
+}
+
 type PacketHash string
 
 // Layer three interfaces for network control traffic
