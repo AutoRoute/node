@@ -14,7 +14,7 @@ func ConnectSSH(sk1, sk2 PrivateKey) (*SSHConnection, *SSHConnection, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	l := ListenSSH(lt, sk1)
+	l := ListenSSH(lt, sk2)
 	if l.Error() != nil {
 		return nil, nil, l.Error()
 	}
@@ -23,7 +23,7 @@ func ConnectSSH(sk1, sk2 PrivateKey) (*SSHConnection, *SSHConnection, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	c1, err := EstablishSSH(ct, addr, sk2)
+	c1, err := EstablishSSH(ct, addr, sk1)
 	port += 1
 	if err != nil {
 		return nil, nil, err
@@ -139,4 +139,22 @@ func TestSSHPacketTransmission(t *testing.T) {
 
 func TestSSHSatisfiesConnection(t *testing.T) {
 	_ = Connection(&SSHConnection{})
+}
+
+func TestSSHKeysAreCorrect(t *testing.T) {
+	sk1, _ := NewECDSAKey()
+	sk2, _ := NewECDSAKey()
+	c1, c2, err := ConnectSSH(sk1, sk2)
+	if err != nil {
+		t.Fatalf("Problems establish ssh connection: %v", err)
+		return
+	}
+	if c1.Key().Hash() != sk2.PublicKey().Hash() {
+		t.Fatalf("Hashes don't match %x != %x", c1.Key().Hash(), sk2.PublicKey().Hash())
+	}
+	if c2.Key().Hash() != sk1.PublicKey().Hash() {
+		t.Fatalf("Hashes don't match %x != %x", c2.Key().Hash(), sk1.PublicKey().Hash())
+	}
+	c1.Close()
+	c2.Close()
 }
