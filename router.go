@@ -1,5 +1,9 @@
 package node
 
+import (
+	"sync"
+)
+
 // A router handles all routing tasks that don't involve the local machine
 // including connection management, reachability handling, packet receipt
 // relaying, and (outstanding) payment tracking. AKA anything which doesn't
@@ -14,12 +18,15 @@ type router struct {
 	*receiptHandler
 	*paymentHandler
 	*ledger
+
+	lock *sync.Mutex
+	quit chan bool
 }
 
 func newRouter(pk PublicKey) *router {
 	reach := newReachability(pk.Hash())
 	routing := newRouting(pk, reach)
-	c1, c2 := splitChannel(routing.Routes())
+	c1, c2, quit := splitChannel(routing.Routes())
 	receipt := newReceipt(pk.Hash(), c1)
 	payment := newPayment(pk.Hash())
 	ledger := newLedger(pk.Hash(), receipt.PacketHashes(), c2)
@@ -30,7 +37,10 @@ func newRouter(pk PublicKey) *router {
 		routing,
 		receipt,
 		payment,
-		ledger}
+		ledger,
+		&sync.Mutex{},
+		quit,
+	}
 }
 
 func (r *router) GetAddress() PublicKey {
@@ -38,6 +48,8 @@ func (r *router) GetAddress() PublicKey {
 }
 
 func (r *router) Connections() []NodeAddress {
+	r.lock.Lock()
+	defer r.lock.Unlock()
 	c := make([]NodeAddress, 0, len(r.connections))
 	for k, _ := range r.connections {
 		c = append(c, k)
@@ -46,6 +58,8 @@ func (r *router) Connections() []NodeAddress {
 }
 
 func (r *router) AddConnection(c Connection) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
 	id := c.Key().Hash()
 	_, duplicate := r.connections[id]
 	if duplicate {
@@ -59,4 +73,14 @@ func (r *router) AddConnection(c Connection) {
 	r.reachabilityHandler.AddConnection(id, c)
 	r.receiptHandler.AddConnection(id, c)
 	r.paymentHandler.AddConnection(id, c)
+}
+
+func (r *router) Close() error {
+	r.reachabilityHandler.Close()
+	r.routingHandler.Close()
+	r.receiptHandler.Close()
+	r.paymentHandler.Close()
+	r.ledger.Close()
+	close(r.quit)
+	return nil
 }

@@ -14,10 +14,18 @@ type receiptHandler struct {
 	l           *sync.Mutex
 	id          NodeAddress
 	outgoing    chan PacketHash
+	quit        chan bool
 }
 
 func newReceipt(id NodeAddress, c <-chan routingDecision) *receiptHandler {
-	r := &receiptHandler{make(map[NodeAddress]ReceiptConnection), make(map[PacketHash]routingDecision), &sync.Mutex{}, id, make(chan PacketHash)}
+	r := &receiptHandler{
+		make(map[NodeAddress]ReceiptConnection),
+		make(map[PacketHash]routingDecision),
+		&sync.Mutex{},
+		id,
+		make(chan PacketHash),
+		make(chan bool),
+	}
 	go r.sentPackets(c)
 	return r
 }
@@ -26,18 +34,30 @@ func (r *receiptHandler) AddConnection(id NodeAddress, c ReceiptConnection) {
 	r.l.Lock()
 	r.connections[id] = c
 	r.l.Unlock()
-	go func() {
-		for receipt := range c.PacketReceipts() {
+	go r.handleConnection(id, c)
+}
+
+func (r *receiptHandler) handleConnection(id NodeAddress, c ReceiptConnection) {
+	for {
+		select {
+		case receipt := <-c.PacketReceipts():
 			r.sendReceipt(id, receipt)
+		case <-r.quit:
+			return
 		}
-	}()
+	}
 }
 
 func (r *receiptHandler) sentPackets(c <-chan routingDecision) {
-	for d := range c {
-		r.l.Lock()
-		r.packets[d.hash] = d
-		r.l.Unlock()
+	for {
+		select {
+		case d := <-c:
+			r.l.Lock()
+			r.packets[d.hash] = d
+			r.l.Unlock()
+		case <-r.quit:
+			return
+		}
 	}
 }
 
@@ -78,4 +98,9 @@ func (r *receiptHandler) sendReceipt(id NodeAddress, receipt PacketReceipt) {
 			r.connections[addr].SendReceipt(receipt)
 		}
 	}
+}
+
+func (r *receiptHandler) Close() error {
+	close(r.quit)
+	return nil
 }

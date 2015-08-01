@@ -27,6 +27,7 @@ type routingHandler struct {
 	// A map of public key hashes to connections
 	connections  map[NodeAddress]DataConnection
 	reachability *reachabilityHandler
+	quit         chan bool
 }
 
 func newRouting(pk PublicKey, r *reachabilityHandler) *routingHandler {
@@ -35,7 +36,9 @@ func newRouting(pk PublicKey, r *reachabilityHandler) *routingHandler {
 		make(chan Packet),
 		make(chan routingDecision),
 		make(map[NodeAddress]DataConnection),
-		r}
+		r,
+		make(chan bool),
+	}
 }
 
 func (r *routingHandler) AddConnection(id NodeAddress, c DataConnection) {
@@ -44,11 +47,18 @@ func (r *routingHandler) AddConnection(id NodeAddress, c DataConnection) {
 }
 
 func (r *routingHandler) handleData(id NodeAddress, p DataConnection) {
-	for packet := range p.Packets() {
-		err := r.sendPacket(packet, id)
-		if err != nil {
-			log.Printf("%q: Dropping packet destined to %q: %q", r.pk.Hash(), packet.Destination(), err)
-			continue
+	for {
+		select {
+		case packet, ok := <-p.Packets():
+			if !ok {
+				return
+			}
+			err := r.sendPacket(packet, id)
+			if err != nil {
+				log.Printf("%x: Dropping packet destined to %x: %x", r.pk.Hash(), packet.Destination(), err)
+			}
+		case <-r.quit:
+			return
 		}
 	}
 }
@@ -60,14 +70,14 @@ func (r *routingHandler) SendPacket(p Packet) error {
 func (r *routingHandler) sendPacket(p Packet, src NodeAddress) error {
 	if p.Destination() == r.pk.Hash() {
 		r.incoming <- p
-		go r.notifyDecision(p, src, r.pk.Hash())
+		r.notifyDecision(p, src, r.pk.Hash())
 		return nil
 	}
 	next, err := r.reachability.FindNextHop(p.Destination())
 	if err != nil {
 		return err
 	}
-	go r.notifyDecision(p, src, next)
+	r.notifyDecision(p, src, next)
 	return r.connections[next].SendPacket(p)
 }
 
@@ -81,4 +91,9 @@ func (r *routingHandler) Routes() <-chan routingDecision {
 
 func (r *routingHandler) Packets() <-chan Packet {
 	return r.incoming
+}
+
+func (r *routingHandler) Close() error {
+	close(r.quit)
+	return nil
 }

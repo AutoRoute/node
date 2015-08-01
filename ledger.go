@@ -62,6 +62,7 @@ type ledger struct {
 	packets       map[PacketHash]routingDecision
 	l             *sync.Mutex
 	id            NodeAddress
+	quit          chan bool
 }
 
 func newLedger(id NodeAddress, c <-chan PacketHash, d <-chan routingDecision) *ledger {
@@ -70,7 +71,9 @@ func newLedger(id NodeAddress, c <-chan PacketHash, d <-chan routingDecision) *l
 		make(map[NodeAddress][]debt),
 		make(map[PacketHash]routingDecision),
 		&sync.Mutex{},
-		id}
+		id,
+		make(chan bool),
+	}
 	go p.handleReceipt(c)
 	go p.sentPackets(d)
 	return p
@@ -89,26 +92,36 @@ func (p *ledger) OutgoingDebt(n NodeAddress) (int64, time.Time) {
 }
 
 func (p *ledger) handleReceipt(c <-chan PacketHash) {
-	for h := range c {
-		p.l.Lock()
-		i, ok := p.packets[h]
-		if !ok {
-			log.Printf("unrecognized hash")
+	for {
+		select {
+		case h := <-c:
+			p.l.Lock()
+			i, ok := p.packets[h]
+			if !ok {
+				log.Printf("unrecognized hash")
+				p.l.Unlock()
+				continue
+			}
+			d := debt{time.Now(), i.amount}
+			p.incoming_debt[i.source] = append(p.incoming_debt[i.source], d)
+			p.outgoing_debt[i.nexthop] = append(p.outgoing_debt[i.nexthop], d)
 			p.l.Unlock()
-			continue
+		case <-p.quit:
+			return
 		}
-		d := debt{time.Now(), i.amount}
-		p.incoming_debt[i.source] = append(p.incoming_debt[i.source], d)
-		p.outgoing_debt[i.nexthop] = append(p.outgoing_debt[i.nexthop], d)
-		p.l.Unlock()
 	}
 }
 
 func (p *ledger) sentPackets(c <-chan routingDecision) {
-	for d := range c {
-		p.l.Lock()
-		p.packets[d.hash] = d
-		p.l.Unlock()
+	for {
+		select {
+		case d := <-c:
+			p.l.Lock()
+			p.packets[d.hash] = d
+			p.l.Unlock()
+		case <-p.quit:
+			return
+		}
 	}
 }
 
@@ -117,4 +130,9 @@ func (p *ledger) RecordPayment(y Payment) {
 	defer p.l.Unlock()
 	p.incoming_debt[y.Source] = payDebt(p.incoming_debt[y.Source], y.Amount)
 	p.outgoing_debt[y.Destination] = payDebt(p.outgoing_debt[y.Destination], y.Amount)
+}
+
+func (p *ledger) Close() error {
+	close(p.quit)
+	return nil
 }

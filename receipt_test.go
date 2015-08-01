@@ -28,6 +28,8 @@ func TestReceiptHandler(t *testing.T) {
 	a1, a2 := NodeAddress("1"), pk2.PublicKey().Hash()
 	i1, i2 := make(chan routingDecision), make(chan routingDecision)
 	ri1, ri2 := newReceipt(a1, i1), newReceipt(a2, i2)
+	defer ri1.Close()
+	defer ri2.Close()
 
 	c1, c2 := makePairedReceiptConnections()
 	ri1.AddConnection(a2, c1)

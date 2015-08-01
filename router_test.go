@@ -66,6 +66,8 @@ func TestDirectRouter(t *testing.T) {
 	k2 := sk2.PublicKey()
 	r1 := newRouter(k1)
 	r2 := newRouter(k2)
+	defer r1.Close()
+	defer r2.Close()
 	a2 := k2.Hash()
 	link(r1, r2)
 
@@ -112,6 +114,9 @@ func TestRelayRouter(t *testing.T) {
 	r1 := newRouter(k1)
 	r2 := newRouter(k2)
 	r3 := newRouter(k3)
+	defer r1.Close()
+	defer r2.Close()
+	defer r3.Close()
 	link(r1, r2)
 	link(r2, r3)
 

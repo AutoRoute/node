@@ -14,12 +14,20 @@ type reachabilityHandler struct {
 	conns      map[NodeAddress]MapConnection
 	maps       map[NodeAddress]BloomReachabilityMap
 	merged_map BloomReachabilityMap
+	quit       chan bool
 }
 
 func newReachability(me NodeAddress) *reachabilityHandler {
 	conns := make(map[NodeAddress]MapConnection)
 	maps := make(map[NodeAddress]BloomReachabilityMap)
-	impl := &reachabilityHandler{me, &sync.Mutex{}, conns, maps, NewBloomReachabilityMap()}
+	impl := &reachabilityHandler{
+		me,
+		&sync.Mutex{},
+		conns,
+		maps,
+		NewBloomReachabilityMap(),
+		make(chan bool),
+	}
 	impl.merged_map.AddEntry(me)
 	return impl
 }
@@ -56,12 +64,22 @@ func (m *reachabilityHandler) AddConnection(id NodeAddress, c MapConnection) {
 	}()
 
 	// Store all received maps
-	go func() {
-		for rmap := range c.ReachabilityMaps() {
+	go m.HandleConnection(id, c)
+}
+
+func (m *reachabilityHandler) HandleConnection(id NodeAddress, c MapConnection) {
+	for {
+		select {
+		case rmap, ok := <-c.ReachabilityMaps():
+			if !ok {
+				return
+			}
 			rmap.Increment()
 			m.addMap(id, rmap)
+		case <-m.quit:
+			return
 		}
-	}()
+	}
 }
 
 func (m *reachabilityHandler) FindNextHop(id NodeAddress) (NodeAddress, error) {
@@ -72,10 +90,20 @@ func (m *reachabilityHandler) FindNextHop(id NodeAddress) (NodeAddress, error) {
 		return id, nil
 	}
 
+	if id == m.me {
+		return id, nil
+	}
+
 	for rid, rmap := range m.maps {
 		if rmap.IsReachable(id) {
 			return rid, nil
 		}
 	}
+
 	return "", errors.New("Unable to find host")
+}
+
+func (m *reachabilityHandler) Close() error {
+	close(m.quit)
+	return nil
 }

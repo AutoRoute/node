@@ -6,7 +6,8 @@ import (
 )
 
 func TestPacketMarshalling(t *testing.T) {
-	m := Packet{NodeAddress("foo"), 3, "test"}
+	sk, _ := NewECDSAKey()
+	m := Packet{sk.PublicKey().Hash(), 3, "test"}
 	b, err := json.Marshal(m)
 	if err != nil {
 		t.Fatal(err)
