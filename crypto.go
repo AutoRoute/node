@@ -15,6 +15,25 @@ type PrivateKey struct {
 	k *ecdsa.PrivateKey
 }
 
+type encodedprivk struct {
+	D  *big.Int
+	PK PublicKey
+}
+
+func (e PrivateKey) MarshalJSON() ([]byte, error) {
+	return json.Marshal(encodedprivk{D: e.k.D, PK: e.PublicKey()})
+}
+
+func (e *PrivateKey) UnmarshalJSON(b []byte) error {
+	var s encodedprivk
+	err := json.Unmarshal(b, &s)
+	if err != nil {
+		return err
+	}
+	e.k = &ecdsa.PrivateKey{ecdsa.PublicKey(s.PK), s.D}
+	return nil
+}
+
 func (p PrivateKey) PublicKey() PublicKey {
 	return PublicKey(p.k.PublicKey)
 }
