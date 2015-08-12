@@ -71,7 +71,8 @@ func (r *receiptHandler) SendReceipt(receipt PacketReceipt) {
 
 func (r *receiptHandler) sendReceipt(id NodeAddress, receipt PacketReceipt) {
 	if err := receipt.Verify(); err != nil {
-		log.Printf("Error verifying receipt: %q", err)
+		log.Printf("Error verifying receipt from %x: %q", id, err)
+		log.Print(receipt)
 		return
 	}
 	dest := make(map[NodeAddress]bool)
