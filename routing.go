@@ -76,7 +76,6 @@ func (r *routingHandler) sendPacket(p Packet, src NodeAddress) error {
 	}
 	next, err := r.reachability.FindNextHop(p.Destination())
 	if err != nil {
-		log.Printf("error finding nexthop: %v", err)
 		return err
 	}
 	go r.notifyDecision(p, src, next)
