@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"runtime"
 	"strings"
 )
 
@@ -104,6 +105,9 @@ func Probe(key node.PrivateKey, n *node.Server) {
 }
 
 func main() {
+
+	runtime.GOMAXPROCS(runtime.NumCPU())
+
 	log.Print("Starting")
 
 	flag.Parse()

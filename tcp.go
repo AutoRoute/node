@@ -36,7 +36,6 @@ func (t *TCP) readtun() {
 		default:
 		}
 		p, err := t.tun.ReadPacket()
-		log.Printf("READ FROM TUN")
 		if err != nil {
 			log.Print(err)
 			t.err = err
@@ -44,7 +43,6 @@ func (t *TCP) readtun() {
 		}
 		if p.Truncated {
 			t.err = errors.New("truncated packet?")
-			log.Print("TRUNC")
 			continue
 		}
 		b, err := json.Marshal(p)
@@ -55,7 +53,6 @@ func (t *TCP) readtun() {
 		}
 		ep := Packet{t.dest, t.amt, string(b)}
 		err = t.data.SendPacket(ep)
-		log.Printf("WRITE TO NET")
 		if err != nil {
 			log.Print(err)
 			t.err = err
@@ -68,7 +65,6 @@ func (t *TCP) writetun() {
 	for {
 		select {
 		case p := <-t.data.Packets():
-			log.Printf("READ FROM NET")
 			ep := &tuntap.Packet{}
 			err := json.Unmarshal([]byte(p.Data), ep)
 			if err != nil {
@@ -77,7 +73,6 @@ func (t *TCP) writetun() {
 				return
 			}
 			err = t.tun.WritePacket(ep)
-			log.Printf("WRITE TO TUN")
 			if err != nil {
 				log.Print(err)
 				t.err = err

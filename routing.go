@@ -47,15 +47,17 @@ func (r *routingHandler) AddConnection(id NodeAddress, c DataConnection) {
 }
 
 func (r *routingHandler) handleData(id NodeAddress, p DataConnection) {
+	packet_chan := p.Packets()
 	for {
 		select {
-		case packet, ok := <-p.Packets():
+		case packet, ok := <-packet_chan:
 			if !ok {
+				log.Printf("Packet channel closed, exiting")
 				return
 			}
 			err := r.sendPacket(packet, id)
 			if err != nil {
-				log.Printf("%x: Dropping packet destined to %x: %x", r.pk.Hash(), packet.Destination(), err)
+				log.Printf("%x: Dropping packet destined to %x: %v", r.pk.Hash(), packet.Destination(), err)
 			}
 		case <-r.quit:
 			return
@@ -70,14 +72,15 @@ func (r *routingHandler) SendPacket(p Packet) error {
 func (r *routingHandler) sendPacket(p Packet, src NodeAddress) error {
 	if p.Destination() == r.pk.Hash() {
 		r.incoming <- p
-		r.notifyDecision(p, src, r.pk.Hash())
+		go r.notifyDecision(p, src, r.pk.Hash())
 		return nil
 	}
 	next, err := r.reachability.FindNextHop(p.Destination())
 	if err != nil {
+		log.Printf("error finding nexthop: %v", err)
 		return err
 	}
-	r.notifyDecision(p, src, next)
+	go r.notifyDecision(p, src, next)
 	return r.connections[next].SendPacket(p)
 }
 

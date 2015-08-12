@@ -13,7 +13,7 @@ type Server struct {
 }
 
 func NewServer(key PrivateKey) *Server {
-	n := NewNode(key, time.Tick(time.Second), time.Tick(time.Second))
+	n := NewNode(key, time.Tick(30*time.Second), time.Tick(30*time.Second))
 	return &Server{n, make(map[string]*SSHListener)}
 }
 
