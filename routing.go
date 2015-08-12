@@ -47,10 +47,9 @@ func (r *routingHandler) AddConnection(id NodeAddress, c DataConnection) {
 }
 
 func (r *routingHandler) handleData(id NodeAddress, p DataConnection) {
-	packet_chan := p.Packets()
 	for {
 		select {
-		case packet, ok := <-packet_chan:
+		case packet, ok := <-p.Packets():
 			if !ok {
 				log.Printf("Packet channel closed, exiting")
 				return
