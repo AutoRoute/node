@@ -5,27 +5,44 @@ import (
 
 	"encoding/json"
 	"errors"
-	"log"
 )
 
 type TCP struct {
 	data DataConnection
-	tun  *tuntap.Interface
+	tun  TCPTun
 	dest NodeAddress
 	amt  int64
 	quit chan bool
-	err  error
+	err  chan error
 }
 
-func NewTCPTunnel(tun *tuntap.Interface, d DataConnection, dest NodeAddress, amt int64) *TCP {
-	t := &TCP{d, tun, dest, amt, make(chan bool), nil}
+type TCPTun interface {
+	Close() error
+	Name() string
+	ReadPacket() (*tuntap.Packet, error)
+	WritePacket(p *tuntap.Packet) error
+}
+
+var truncated_error error = errors.New("truncated packet")
+
+func NewTCPTunnel(tun TCPTun, d DataConnection, dest NodeAddress, amt int64) *TCP {
+	t := &TCP{d, tun, dest, amt, make(chan bool), make(chan error, 2)}
 	go t.readtun()
 	go t.writetun()
 	return t
 }
 
 func (t *TCP) Close() {
-	t.quit <- true
+	close(t.quit)
+}
+
+func (t *TCP) Error() error {
+	select {
+	case err := <-t.err:
+		return err
+	default:
+		return nil
+	}
 }
 
 func (t *TCP) readtun() {
@@ -37,25 +54,22 @@ func (t *TCP) readtun() {
 		}
 		p, err := t.tun.ReadPacket()
 		if err != nil {
-			log.Print(err)
-			t.err = err
+			t.err <- err
 			return
 		}
 		if p.Truncated {
-			t.err = errors.New("truncated packet?")
-			continue
+			t.err <- truncated_error
+			return
 		}
 		b, err := json.Marshal(p)
 		if err != nil {
-			log.Print(err)
-			t.err = err
+			t.err <- err
 			return
 		}
 		ep := Packet{t.dest, t.amt, string(b)}
 		err = t.data.SendPacket(ep)
 		if err != nil {
-			log.Print(err)
-			t.err = err
+			t.err <- err
 			return
 		}
 	}
@@ -68,14 +82,12 @@ func (t *TCP) writetun() {
 			ep := &tuntap.Packet{}
 			err := json.Unmarshal([]byte(p.Data), ep)
 			if err != nil {
-				log.Print(err)
-				t.err = err
+				t.err <- err
 				return
 			}
 			err = t.tun.WritePacket(ep)
 			if err != nil {
-				log.Print(err)
-				t.err = err
+				t.err <- err
 				return
 			}
 		case <-t.quit:
