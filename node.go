@@ -35,6 +35,7 @@ func NewNode(pk PrivateKey, receipt_ticker <-chan time.Time, payment_ticker <-ch
 	go n.receivePackets()
 	go n.sendReceipts()
 	go n.sendPayments()
+	go n.receivePayments()
 	return n
 }
 
