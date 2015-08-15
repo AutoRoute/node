@@ -38,32 +38,22 @@ func (m BloomReachabilityMap) Increment() {
 	m.Filters = append(newZeroth, m.Filters...)
 }
 
-func (m BloomReachabilityMap) Merge(n BloomReachabilityMap) error {
+func (m BloomReachabilityMap) Merge(n BloomReachabilityMap) {
 	if len(m.Filters) < len(n.Filters) {
 		for k, v := range m.Filters {
-			err := v.Merge(n.Filters[k])
-			if err != nil {
-				return err
-			}
+			v.Merge(n.Filters[k])
 		}
 		// append the remaining Filters
 		m.Filters = append(m.Filters, n.Filters[len(n.Filters):]...)
 	} else {
 		for k, v := range n.Filters {
-			err := m.Filters[k].Merge(v)
-			if err != nil {
-				return err
-			}
+			m.Filters[k].Merge(v)
 		}
 	}
 	// reconstruct the Conglomerate
 	for _, v := range m.Filters {
-		err := m.Conglomerate.Merge(v)
-		if err != nil {
-			return err
-		}
+		m.Conglomerate.Merge(v)
 	}
-	return nil
 }
 
 func (m BloomReachabilityMap) Copy() BloomReachabilityMap {
