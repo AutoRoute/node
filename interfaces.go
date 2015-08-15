@@ -31,8 +31,8 @@ func (n *PacketHash) UnmarshalText(b []byte) error {
 
 // Layer three interfaces for network control traffic
 type MapConnection interface {
-	SendMap(BloomReachabilityMap) error
-	ReachabilityMaps() <-chan BloomReachabilityMap
+	SendMap(*BloomReachabilityMap) error
+	ReachabilityMaps() <-chan *BloomReachabilityMap
 }
 type ReceiptConnection interface {
 	SendReceipt(PacketReceipt) error

@@ -31,6 +31,15 @@ func TestSBRM(t *testing.T) {
 	if !(bloomMap3.IsReachable(a)) {
 		t.Fatalf("expected %s to be reachable in %v", a, bloomMap3)
 	}
+
+	// Test Merge after Increment, other direction
+	bloomMap2.Increment()
+	bloomMap4 := NewBloomReachabilityMap()
+	bloomMap4.Merge(bloomMap2)
+
+	if !(bloomMap4.IsReachable(a)) {
+		t.Fatalf("expected %s to be reachable in %v", a, bloomMap3)
+	}
 }
 
 func TestBloomMarshalling(t *testing.T) {

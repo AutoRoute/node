@@ -6,21 +6,21 @@ import (
 )
 
 type testMapConnection struct {
-	in  chan BloomReachabilityMap
-	out chan BloomReachabilityMap
+	in  chan *BloomReachabilityMap
+	out chan *BloomReachabilityMap
 }
 
-func (c testMapConnection) SendMap(m BloomReachabilityMap) error {
+func (c testMapConnection) SendMap(m *BloomReachabilityMap) error {
 	c.out <- m
 	return nil
 }
-func (c testMapConnection) ReachabilityMaps() <-chan BloomReachabilityMap {
+func (c testMapConnection) ReachabilityMaps() <-chan *BloomReachabilityMap {
 	return c.in
 }
 
 func makePairedMapConnections() (MapConnection, MapConnection) {
-	one := make(chan BloomReachabilityMap)
-	two := make(chan BloomReachabilityMap)
+	one := make(chan *BloomReachabilityMap)
+	two := make(chan *BloomReachabilityMap)
 	return testMapConnection{one, two}, testMapConnection{two, one}
 }
 

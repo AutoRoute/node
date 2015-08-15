@@ -29,7 +29,7 @@ type SSHConnection struct {
 	reach_enc_l    *sync.Mutex
 	reach_dec      *json.Decoder
 	reach_dec_l    *sync.Mutex
-	reach_chan     chan BloomReachabilityMap
+	reach_chan     chan *BloomReachabilityMap
 
 	// receipt
 	receipt_ssh_chan *SSHChannel
@@ -68,7 +68,7 @@ func NewSSHConnection(conn ssh.Conn, chans <-chan ssh.NewChannel, reqs <-chan *s
 	s := &SSHConnection{conn,
 		chans,
 		reqs,
-		nil, nil, &sync.Mutex{}, nil, &sync.Mutex{}, make(chan BloomReachabilityMap),
+		nil, nil, &sync.Mutex{}, nil, &sync.Mutex{}, make(chan *BloomReachabilityMap),
 		nil, nil, &sync.Mutex{}, nil, &sync.Mutex{}, make(chan PacketReceipt),
 		nil, nil, &sync.Mutex{}, nil, &sync.Mutex{}, make(chan PaymentHash),
 		nil, nil, &sync.Mutex{}, nil, &sync.Mutex{}, make(chan Packet),
@@ -283,7 +283,7 @@ func (s *SSHConnection) connect() error {
 	return nil
 }
 
-func (s *SSHConnection) SendMap(m BloomReachabilityMap) error {
+func (s *SSHConnection) SendMap(m *BloomReachabilityMap) error {
 	s.reach_enc_l.Lock()
 	defer s.reach_enc_l.Unlock()
 	return s.reach_enc.Encode(m)
@@ -298,13 +298,13 @@ func (s *SSHConnection) handleMaps() {
 			close(s.reach_chan)
 			return
 		} else {
-			s.reach_chan <- v
+			s.reach_chan <- &v
 		}
 		s.reach_dec_l.Unlock()
 	}
 }
 
-func (s *SSHConnection) ReachabilityMaps() <-chan BloomReachabilityMap {
+func (s *SSHConnection) ReachabilityMaps() <-chan *BloomReachabilityMap {
 	return s.reach_chan
 }
 
