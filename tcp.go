@@ -36,13 +36,8 @@ func (t *TCP) Close() {
 	close(t.quit)
 }
 
-func (t *TCP) Error() error {
-	select {
-	case err := <-t.err:
-		return err
-	default:
-		return nil
-	}
+func (t *TCP) Error() chan error {
+	return t.err
 }
 
 func (t *TCP) readtun() {

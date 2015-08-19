@@ -66,9 +66,10 @@ func TestTCPTunToData(t *testing.T) {
 		t.Fatalf("%v != %v", p, p_after)
 	}
 
-	err = tcp.Error()
-	if err != nil {
+	select {
+	case err := <-tcp.Error():
 		t.Fatal(err)
+	default:
 	}
 }
 
@@ -86,7 +87,7 @@ func TestTCPTunReadError(t *testing.T) {
 	tun.out <- &p
 
 	// Make sure the error appears
-	err := tcp.Error()
+	err := <-tcp.Error()
 	if err != read_error {
 		t.Fatalf("%v != %v", read_error, err)
 	}
@@ -105,7 +106,7 @@ func TestTCPTunReadTruncated(t *testing.T) {
 	tun.out <- &p
 
 	// Make sure the error appears
-	err := tcp.Error()
+	err := <-tcp.Error()
 	if err != truncated_error {
 		t.Fatalf("%v != %v", truncated_error, err)
 	}
@@ -125,7 +126,7 @@ func TestTCPTunReadWriteFails(t *testing.T) {
 	tun.out <- &p
 
 	// Make sure the error appears
-	err := tcp.Error()
+	err := <-tcp.Error()
 	if err != write_error {
 		t.Fatalf("%v != %v", write_error, err)
 	}
@@ -175,7 +176,7 @@ func TestTCPTunWriteSendError(t *testing.T) {
 	p_in := Packet{dest, amt, string(b)}
 	data.out <- p_in
 
-	err = tcp.Error()
+	err = <-tcp.Error()
 	if err != write_error {
 		t.Fatalf("%v != %v", err, write_error)
 	}
@@ -193,7 +194,7 @@ func TestTCPTunWriteUnmarshalError(t *testing.T) {
 	p_in := Packet{dest, amt, string("NOTJSON")}
 	data.out <- p_in
 
-	err := tcp.Error()
+	err := <-tcp.Error()
 	if err == nil {
 		t.Fatalf("v != nil", err, nil)
 	}
