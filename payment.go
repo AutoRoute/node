@@ -39,7 +39,10 @@ func (p *paymentHandler) AddConnection(id NodeAddress, c PaymentConnection) {
 func (p *paymentHandler) handleConnection(c PaymentConnection) {
 	for {
 		select {
-		case hash := <-c.Payments():
+		case hash, ok := <-c.Payments():
+			if !ok {
+				return
+			}
 			p.c <- hash
 		case <-p.quit:
 			return

@@ -40,7 +40,10 @@ func (r *receiptHandler) AddConnection(id NodeAddress, c ReceiptConnection) {
 func (r *receiptHandler) handleConnection(id NodeAddress, c ReceiptConnection) {
 	for {
 		select {
-		case receipt := <-c.PacketReceipts():
+		case receipt, ok := <-c.PacketReceipts():
+			if !ok {
+				return
+			}
 			r.sendReceipt(id, receipt)
 		case <-r.quit:
 			return
