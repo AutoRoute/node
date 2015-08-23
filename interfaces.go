@@ -19,10 +19,20 @@ func (n *NodeAddress) UnmarshalText(b []byte) error {
 
 type PacketHash string
 
+func (n PacketHash) MarshalText() ([]byte, error) {
+	s := hex.EncodeToString([]byte(n))
+	return []byte(s), nil
+}
+func (n *PacketHash) UnmarshalText(b []byte) error {
+	s, err := hex.DecodeString(string(b))
+	*n = PacketHash(string(s))
+	return err
+}
+
 // Layer three interfaces for network control traffic
 type MapConnection interface {
-	SendMap(BloomReachabilityMap) error
-	ReachabilityMaps() <-chan BloomReachabilityMap
+	SendMap(*BloomReachabilityMap) error
+	ReachabilityMaps() <-chan *BloomReachabilityMap
 }
 type ReceiptConnection interface {
 	SendReceipt(PacketReceipt) error

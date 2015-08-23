@@ -40,7 +40,10 @@ func (r *receiptHandler) AddConnection(id NodeAddress, c ReceiptConnection) {
 func (r *receiptHandler) handleConnection(id NodeAddress, c ReceiptConnection) {
 	for {
 		select {
-		case receipt := <-c.PacketReceipts():
+		case receipt, ok := <-c.PacketReceipts():
+			if !ok {
+				return
+			}
 			r.sendReceipt(id, receipt)
 		case <-r.quit:
 			return
@@ -70,8 +73,9 @@ func (r *receiptHandler) SendReceipt(receipt PacketReceipt) {
 }
 
 func (r *receiptHandler) sendReceipt(id NodeAddress, receipt PacketReceipt) {
-	if receipt.Verify() != nil {
-		log.Printf("Error verifying receipt: %q", receipt.Verify())
+	if err := receipt.Verify(); err != nil {
+		log.Printf("Error verifying receipt from %x: %q", id, err)
+		log.Print(receipt)
 		return
 	}
 	dest := make(map[NodeAddress]bool)

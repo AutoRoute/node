@@ -2,6 +2,7 @@ package node
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 )
@@ -64,21 +65,22 @@ func TestDataTransmission(t *testing.T) {
 		t.Fatalf("Error waiting for information %v", err)
 	}
 
-	p2 := testPacket(key2.PublicKey().Hash())
-	err = n1.Node().SendPacket(p2)
-	if err != nil {
-		t.Fatalf("Error sending packet: %v", err)
-	}
+	for i := 0; i < 10; i++ {
+		p2 := Packet{key2.PublicKey().Hash(), 3, fmt.Sprintf("test%d", i)}
+		err = n1.Node().SendPacket(p2)
+		if err != nil {
+			t.Fatalf("Error sending packet: %v", err)
+		}
 
-	timeout := time.After(10 * time.Second)
-	for found := false; found != true; {
-		select {
-		case <-n2.Node().Packets():
-			found = true
-			break
-		case <-timeout:
-			t.Fatal("Timeout waiting for packets")
+		timeout := time.After(10 * time.Second)
+		for found := false; found != true; {
+			select {
+			case <-n2.Node().Packets():
+				found = true
+				break
+			case <-timeout:
+				t.Fatal("Timeout waiting for packets")
+			}
 		}
 	}
-
 }

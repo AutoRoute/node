@@ -35,13 +35,17 @@ func NewNode(pk PrivateKey, receipt_ticker <-chan time.Time, payment_ticker <-ch
 	go n.receivePackets()
 	go n.sendReceipts()
 	go n.sendPayments()
+	go n.receivePayments()
 	return n
 }
 
 func (n *Node) receivePackets() {
 	for {
 		select {
-		case p := <-n.router.Packets():
+		case p, ok := <-n.router.Packets():
+			if !ok {
+				return
+			}
 			n.l.Lock()
 			n.receipt_buffer = append(n.receipt_buffer, p.Hash())
 			n.l.Unlock()
@@ -96,7 +100,10 @@ func (n *Node) sendPayments() {
 func (n *Node) receivePayments() {
 	for {
 		select {
-		case h := <-n.router.PaymentHashes():
+		case h, ok := <-n.router.PaymentHashes():
+			if !ok {
+				return
+			}
 			n.l.Lock()
 			c := n.m.AddPaymentHash(h)
 			go func() {

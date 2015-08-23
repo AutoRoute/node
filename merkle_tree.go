@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha512"
 	"errors"
+	"fmt"
 )
 
 func CreateMerkleReceipt(key PrivateKey, packets []PacketHash) PacketReceipt {
@@ -77,4 +78,14 @@ func (m merklenode) Hash() []byte {
 	}
 	s := sha512.Sum512(append(m.Left.Hash(), m.Right.Hash()...))
 	return s[0:sha512.Size]
+}
+
+func (m merklenode) String() string {
+	if len(m.LeafHash) > 0 {
+		return fmt.Sprintf("{%x}", m.LeafHash)
+	}
+	if m.Right == nil {
+		return fmt.Sprintf("{%v nil}", *m.Left)
+	}
+	return fmt.Sprintf("{%v %v}", *m.Left, *m.Right)
 }

@@ -4,10 +4,13 @@ import (
 	"github.com/AutoRoute/l2"
 	"github.com/AutoRoute/node"
 
+	"code.google.com/p/tuntap"
+
 	"flag"
 	"fmt"
 	"log"
 	"net"
+	"runtime"
 	"strings"
 )
 
@@ -18,6 +21,10 @@ var connect = flag.String("connect", "",
 	"Comma separated list of addresses to connect to")
 var autodiscover = flag.Bool("auto", false,
 	"Whether we should try and find neighboring routers")
+var tcptun = flag.String("tcptun", "",
+	"Address to try and tcp tunnel to")
+var keyfile = flag.String("keyfile", "",
+	"The keyfile we should check for a key and write our current key to")
 
 func GetLinkLocalAddr(dev net.Interface) (*net.IPAddr, error) {
 	dev_addrs, err := dev.Addrs()
@@ -98,16 +105,27 @@ func Probe(key node.PrivateKey, n *node.Server) {
 }
 
 func main() {
+
+	runtime.GOMAXPROCS(runtime.NumCPU())
+
 	log.Print("Starting")
 
 	flag.Parse()
 	quit := make(chan bool)
 
-	log.Print("Generating key")
-	key, err := node.NewECDSAKey()
-	if err != nil {
-		log.Fatal(err)
+	var key node.PrivateKey
+	var err error
+
+	if len(*keyfile) > 0 {
+		key, err = node.LoadKey(*keyfile)
+	} else {
+		log.Print("Generating key")
+		key, err = node.NewECDSAKey()
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
+	log.Printf("Key is %x", key.PublicKey().Hash())
 
 	n := node.NewServer(key)
 
@@ -132,6 +150,22 @@ func main() {
 		if err != nil {
 			log.Printf("Error connecting to %s: %v", ip, err)
 		}
+	}
+
+	if len(*tcptun) > 0 {
+		log.Printf("Establishing tcp tunnel to %v", *tcptun)
+		i, err := tuntap.Open("tun%d", tuntap.DevTun)
+		if err != nil {
+			log.Fatal(err)
+		}
+		dest := ""
+		_, err = fmt.Sscanf(*tcptun, "%x", &dest)
+		if err != nil {
+			log.Fatal(err)
+		}
+		t := node.NewTCPTunnel(i, n.Node(), node.NodeAddress(dest), 1)
+		t = t
+		<-quit
 	}
 
 	<-quit

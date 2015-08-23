@@ -20,4 +20,5 @@ func TestPacketMarshalling(t *testing.T) {
 	if m2 != m {
 		t.Fatalf("Different packets? %v != %v", m2, m)
 	}
+	_ = m.String()
 }
