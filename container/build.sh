@@ -16,4 +16,9 @@ touch fs/etc/hosts
 echo 'nameserver 8.8.4.4' > fs/etc/resolv.conv
 echo 'nameserver 8.8.8.8' >> fs/etc/resolv.conv
 echo 'hosts: files dns' > fs/etc/nsswitch.conf
+cat << EOF > fs/README
+GLIBC is covered by the GPL and LGPL licenses.
+see http://www.gnu.org/software/libc for more information.
+EOF
+
 docker build .
