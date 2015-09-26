@@ -1,7 +1,7 @@
 package node
 
 import (
-	"code.google.com/p/tuntap"
+	"github.com/AutoRoute/tuntap"
 
 	"encoding/json"
 	"errors"

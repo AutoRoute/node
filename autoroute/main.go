@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/AutoRoute/l2"
 	"github.com/AutoRoute/node"
+	"github.com/AutoRoute/tuntap"
 
 	"code.google.com/p/tuntap"
 
