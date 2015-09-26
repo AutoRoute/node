@@ -51,7 +51,6 @@ func (n NeighborData) handleLink(mac []byte, frw l2.FrameReadWriter, c chan *Fra
 		}
 		// Throw away if protocols don't match
 		if frame.Type() != protocol {
-			log.Printf("%q: bad protocol", n.pk.Hash())
 			continue
 		}
 		if bytes.Equal(frame.Source(), mac) {
