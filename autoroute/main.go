@@ -21,6 +21,7 @@ var connect = flag.String("connect", "",
 	"Comma separated list of addresses to connect to")
 var autodiscover = flag.Bool("auto", false,
 	"Whether we should try and find neighboring routers")
+var dev_name = flag.String("interface", "", "Interface to discover on")
 var tcptun = flag.String("tcptun", "",
 	"Address to try and tcp tunnel to")
 var keyfile = flag.String("keyfile", "",
@@ -71,37 +72,24 @@ func FindNeighbors(dev net.Interface, ll_addr *net.IPAddr, key node.PublicKey) <
 	return channel
 }
 
-func Probe(key node.PrivateKey, n *node.Server) {
-	devs, err := net.Interfaces()
-	if err != nil {
-		log.Fatal(err)
-	}
-	public_key := key.PublicKey()
+func Probe(public_key node.PublicKey, n *node.Server, dev net.Interface) {
+  ll_addr, err := GetLinkLocalAddr(dev)
+  if err != nil {
+    log.Fatal(err)
+  }
 
-	// find neighbors of each interface
-	for _, dev := range devs {
-		if dev.Name == "lo" {
-			continue
-		}
-
-		ll_addr, err := GetLinkLocalAddr(dev)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		neighbors := FindNeighbors(dev, ll_addr, public_key)
-		go func() {
-			for neighbor := range neighbors {
-				log.Printf("Neighbour Found %v", neighbor.NodeAddr)
-				err := n.Connect(neighbor.LLAddrStr)
-				if err != nil {
-					log.Printf("Error connecting: %v", err)
-					continue
-				}
-				log.Printf("Connection established to %v", neighbor.NodeAddr)
-			}
-		}()
-	}
+  neighbors := FindNeighbors(dev, ll_addr, public_key)
+  go func() {
+    for neighbor := range neighbors {
+      log.Printf("Neighbour Found %v", neighbor.NodeAddr)
+      err := n.Connect(neighbor.LLAddrStr)
+      if err != nil {
+        log.Printf("Error connecting: %v", err)
+        continue
+      }
+      log.Printf("Connection established to %v", neighbor.NodeAddr)
+    }
+  }()
 }
 
 func main() {
@@ -130,8 +118,33 @@ func main() {
 	n := node.NewServer(key)
 
 	if *autodiscover {
-		log.Print("Starting Probing of all interfaces")
-		go Probe(key, n)
+    if *dev_name == ""{
+		  log.Print("Started probing of all interfaces")
+
+	    devs, err := net.Interfaces()
+	    if err != nil {
+		    log.Fatal(err)
+	    }
+
+	    public_key := key.PublicKey()
+
+      go func() {
+        for _, dev := range devs {
+          if dev.Name == "lo" {
+            continue
+          }
+          Probe(public_key, n, dev)
+        }
+      }()
+    } else {
+      dev, err = net.InterfaceByName(dev_name)
+      if err != nil {
+        log.Fatal(err)
+      }
+
+      log.Printf("Started probing on interface %q ", *dev_name)
+      Probe(public_key, n, dev)
+    }
 	}
 
 	if !*nolisten {
