@@ -137,7 +137,7 @@ func main() {
         }
       }()
     } else {
-      dev, err = net.InterfaceByName(dev_name)
+      dev, err = net.InterfaceByName(*dev_name)
       if err != nil {
         log.Fatal(err)
       }
