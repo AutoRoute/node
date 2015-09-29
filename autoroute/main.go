@@ -3,8 +3,7 @@ package main
 import (
 	"github.com/AutoRoute/l2"
 	"github.com/AutoRoute/node"
-
-	"code.google.com/p/tuntap"
+	"github.com/AutoRoute/tuntap"
 
 	"flag"
 	"fmt"
