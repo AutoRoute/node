@@ -5,8 +5,6 @@ import (
 	"github.com/AutoRoute/node"
 	"github.com/AutoRoute/tuntap"
 
-	"code.google.com/p/tuntap"
-
 	"flag"
 	"fmt"
 	"log"
