@@ -99,6 +99,7 @@ func Probe(key node.PrivateKey, n *node.Server, devs []net.Interface) {
 				log.Fatal(e)
 			} else {
 				log.Print(e)
+				continue
 			}
 		}
 
