@@ -27,6 +27,14 @@ var tcptun = flag.String("tcptun", "",
 var keyfile = flag.String("keyfile", "",
 	"The keyfile we should check for a key and write our current key to")
 
+type LinkLocalError struct {
+	msg   string
+	fatal bool
+}
+
+func (e LinkLocalError) Error() string { return e.msg }
+func (e LinkLocalError) IsFatal() bool { return e.fatal }
+
 func GetLinkLocalAddr(dev net.Interface) (*net.IPAddr, error) {
 	dev_addrs, err := dev.Addrs()
 	if err != nil {
@@ -48,13 +56,16 @@ func GetLinkLocalAddr(dev net.Interface) (*net.IPAddr, error) {
 	}
 
 	if ll_addr == nil {
-		log.Fatalf("Couldn't find interface link-local addresses %v", dev.Name)
+		msg := fmt.Sprintf("Couldn't find link-local address on interface %v", dev.Name)
+		e := LinkLocalError{msg, false}
+		return nil, error(e)
 	}
 
 	ll_addr_zone := fmt.Sprintf("%s%%%s", ll_addr.String(), dev.Name)
 	resolved_ll_addr, err := net.ResolveIPAddr("ip6", ll_addr_zone)
 	if err != nil {
-		return nil, err
+		e := LinkLocalError{err.Error(), true}
+		return nil, error(e)
 	}
 	return resolved_ll_addr, nil
 }
@@ -75,6 +86,7 @@ func FindNeighbors(dev net.Interface, ll_addr *net.IPAddr, key node.PublicKey) <
 func Probe(key node.PrivateKey, n *node.Server, devs []net.Interface) {
 	public_key := key.PublicKey()
 
+	// find neighbors of each interface
 	for _, dev := range devs {
 		if dev.Name == "lo" {
 			continue
@@ -82,7 +94,12 @@ func Probe(key node.PrivateKey, n *node.Server, devs []net.Interface) {
 
 		ll_addr, err := GetLinkLocalAddr(dev)
 		if err != nil {
-			log.Fatal(err)
+			e, _ := err.(LinkLocalError)
+			if e.IsFatal() {
+				log.Fatal(e)
+			} else {
+				log.Print(e)
+			}
 		}
 
 		neighbors := FindNeighbors(dev, ll_addr, public_key)
@@ -141,11 +158,15 @@ func main() {
 			devs = []net.Interface{*dev}
 		}
 
+		log.Printf("Starting to probe on interfaces: ")
+		for _, dev := range devs {
+			log.Printf("%v", dev.Name)
+		}
 		go Probe(key, n, devs)
 	}
 
 	if !*nolisten {
-		log.Print("Starting Listening")
+		log.Print("Starting to listen")
 		err := n.Listen(*listen)
 		if err != nil {
 			log.Printf("Error listening: %v", err)
