@@ -1,6 +1,7 @@
 package node
 
 import (
+  "fmt"
 	"log"
 	"net"
 	"time"
@@ -18,7 +19,8 @@ func NewServer(key PrivateKey) *Server {
 }
 
 func (s *Server) Connect(addr string) error {
-	c, err := net.Dial("tcp", addr)
+  formatted_addr := fmt.Sprintf("[%v]:1337", addr)
+	c, err := net.Dial("tcp6", formatted_addr)
 	if err != nil {
 		return err
 	}
