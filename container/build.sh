@@ -5,8 +5,8 @@ go build github.com/AutoRoute/node/autoroute
 mkdir fs
 mkdir fs/usr
 mkdir fs/usr/lib
-distro="$(bash find_distro.sh)"
-if [ "$distro" = "elementary" ]
+distro=`lsb_release -d | awk -v N=2 '{print $N}'`
+if [ $distro = "elementary" ]
 then
 	lib_dir="/lib/x86_64-linux-gnu"
 else
