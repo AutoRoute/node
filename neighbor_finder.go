@@ -77,7 +77,7 @@ func (n NeighborData) handleLink(mac []byte, frw l2.FrameReadWriter, c chan *Fra
 
 func (n NeighborData) Find(mac []byte, frw l2.FrameReadWriter) (<-chan *FrameData, error) {
 	// Send initial packet
-  frame_data := append([]byte(n.pk.Hash()), []byte(n.link_local_address.String())...)
+	frame_data := append([]byte(n.pk.Hash()), []byte(n.link_local_address.String())...)
 	frame := l2.NewEthFrame(broadcast, mac, protocol, frame_data)
 	err := frw.WriteFrame(frame)
 	if err != nil {
