@@ -16,11 +16,11 @@ func TestConnection(t *testing.T) {
 	n2 := NewServer(key2)
 	defer n2.Close()
 
-	err := n1.Listen("127.0.0.1:16543")
+	err := n1.Listen("[::1]:16543")
 	if err != nil {
 		t.Fatalf("Error listening %v", err)
 	}
-	err = n2.Connect("127.0.0.1:16543")
+	err = n2.Connect("[::1]:16543")
 	if err != nil {
 		t.Fatalf("Error connecting %v", err)
 	}
@@ -50,11 +50,11 @@ func TestDataTransmission(t *testing.T) {
 	defer n1.Close()
 	n2 := NewServer(key2)
 	defer n2.Close()
-	err := n1.Listen("127.0.0.1:16544")
+	err := n1.Listen("[::1]:16544")
 	if err != nil {
 		t.Fatalf("Error listening %v", err)
 	}
-	err = n2.Connect("127.0.0.1:16544")
+	err = n2.Connect("[::1]:16544")
 	if err != nil {
 		t.Fatalf("Error connecting %v", err)
 	}
