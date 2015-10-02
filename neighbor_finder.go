@@ -28,10 +28,10 @@ type NeighborFinder interface {
 
 type NeighborData struct {
 	pk                 PublicKey
-	link_local_address *net.IPAddr
+	link_local_address net.IP
 }
 
-func NewNeighborData(pk PublicKey, link_local_address *net.IPAddr) NeighborData {
+func NewNeighborData(pk PublicKey, link_local_address net.IP) NeighborData {
 	return NeighborData{pk, link_local_address}
 }
 
