@@ -106,7 +106,7 @@ func Probe(key node.PrivateKey, n *node.Server, devs []net.Interface) {
 		go func() {
 			for neighbor := range neighbors {
 				log.Printf("Neighbour Found %v", neighbor.NodeAddr)
-                err := n.Connect(fmt.Sprintf("[%s%%%s]:31337", neighbor.LLAddrStr, dev.Name))
+				err := n.Connect(fmt.Sprintf("[%s%%%s]:31337", neighbor.LLAddrStr, dev.Name))
 				if err != nil {
 					log.Printf("Error connecting: %v", err)
 					continue

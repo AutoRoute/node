@@ -60,13 +60,14 @@ func (n NeighborData) handleLink(mac []byte, frw l2.FrameReadWriter, c chan *Fra
 		// If the packet is to us or broadcast, record it.
 		if bytes.Equal(frame.Destination(), mac) ||
 			bytes.Equal(frame.Destination(), broadcast) {
-			data := FrameData{NodeAddress(frame.Data()[:64]), string(frame.Data()[64:])}
+			data := FrameData{NodeAddress(frame.Data()[:64]), net.IP(frame.Data()[64:]).String()}
 			c <- &data
 		}
 		if !bytes.Equal(frame.Destination(), broadcast) {
 			continue
 		}
-		response := l2.NewEthFrame(frame.Source(), mac, protocol, []byte(n.pk.Hash()))
+		response_data := append([]byte(n.pk.Hash()), n.link_local_address...)
+		response := l2.NewEthFrame(frame.Source(), mac, protocol, response_data)
 		err = frw.WriteFrame(response)
 		if err != nil {
 			log.Printf("Failure writing to connection %v, %v", frw, err)
@@ -77,7 +78,7 @@ func (n NeighborData) handleLink(mac []byte, frw l2.FrameReadWriter, c chan *Fra
 
 func (n NeighborData) Find(mac []byte, frw l2.FrameReadWriter) (<-chan *FrameData, error) {
 	// Send initial packet
-	frame_data := append([]byte(n.pk.Hash()), []byte(n.link_local_address.String())...)
+	frame_data := append([]byte(n.pk.Hash()), n.link_local_address...)
 	frame := l2.NewEthFrame(broadcast, mac, protocol, frame_data)
 	err := frw.WriteFrame(frame)
 	if err != nil {
