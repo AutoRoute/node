@@ -34,7 +34,7 @@ type LinkLocalError struct {
 func (e LinkLocalError) Error() string { return e.msg }
 func (e LinkLocalError) IsFatal() bool { return e.fatal }
 
-func GetLinkLocalAddr(dev net.Interface) (*net.IPAddr, error) {
+func GetLinkLocalAddr(dev net.Interface) (net.IP, error) {
 	dev_addrs, err := dev.Addrs()
 	if err != nil {
 		return nil, err
@@ -61,15 +61,15 @@ func GetLinkLocalAddr(dev net.Interface) (*net.IPAddr, error) {
 	}
 
 	ll_addr_zone := fmt.Sprintf("%s%%%s", ll_addr.String(), dev.Name)
-	resolved_ll_addr, err := net.ResolveIPAddr("ip6", ll_addr_zone)
+	_, err = net.ResolveIPAddr("ip6", ll_addr_zone)
 	if err != nil {
 		e := LinkLocalError{err.Error(), true}
 		return nil, error(e)
 	}
-	return resolved_ll_addr, nil
+	return ll_addr, nil
 }
 
-func FindNeighbors(dev net.Interface, ll_addr *net.IPAddr, key node.PublicKey) <-chan *node.FrameData {
+func FindNeighbors(dev net.Interface, ll_addr net.IP, key node.PublicKey) <-chan *node.FrameData {
 	conn, err := l2.ConnectExistingDevice(dev.Name)
 	if err != nil {
 		log.Fatal(err)
@@ -106,7 +106,7 @@ func Probe(key node.PrivateKey, n *node.Server, devs []net.Interface) {
 		go func() {
 			for neighbor := range neighbors {
 				log.Printf("Neighbour Found %v", neighbor.NodeAddr)
-				err := n.Connect(neighbor.LLAddrStr)
+				err := n.Connect(fmt.Sprintf("[%s%%%s]:31337", neighbor.LLAddrStr, dev.Name))
 				if err != nil {
 					log.Printf("Error connecting: %v", err)
 					continue

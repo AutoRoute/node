@@ -18,7 +18,7 @@ func NewServer(key PrivateKey) *Server {
 }
 
 func (s *Server) Connect(addr string) error {
-	c, err := net.Dial("tcp", addr)
+	c, err := net.Dial("tcp6", addr)
 	if err != nil {
 		return err
 	}
@@ -32,7 +32,7 @@ func (s *Server) Connect(addr string) error {
 }
 
 func (s *Server) Listen(addr string) error {
-	ln, err := net.Listen("tcp", addr)
+	ln, err := net.Listen("tcp6", addr)
 	if err != nil {
 		return err
 	}
