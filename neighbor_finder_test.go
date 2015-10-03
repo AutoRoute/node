@@ -46,13 +46,19 @@ func TestBasicExchange(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	link_local_addr := net.ParseIP("fe80::")
-	if link_local_addr == nil {
+	ll_addr_str1 := "fe80::11"
+	ll_addr_str2 := "fe80::22"
+	ll_addr1 := net.ParseIP(ll_addr_str1)
+	if ll_addr1 == nil {
+		t.Fatal("Unable to parse IP address")
+	}
+	ll_addr2 := net.ParseIP(ll_addr_str2)
+	if ll_addr2 == nil {
 		t.Fatal("Unable to parse IP address")
 	}
 
-	nf1 := NewNeighborData(pk1, link_local_addr)
-	nf2 := NewNeighborData(pk2, link_local_addr)
+	nf1 := NewNeighborData(pk1, ll_addr1)
+	nf2 := NewNeighborData(pk2, ll_addr2)
 
 	one, two := CreatePairedInterface()
 	outone, err := nf1.Find(test_mac1, one)
@@ -69,17 +75,28 @@ func TestBasicExchange(t *testing.T) {
 	msg := <-outone
 	if msg.NodeAddr != pk2.Hash() {
 		log.Printf("Expected %q!=%q", pk2.Hash(), msg.NodeAddr)
+	} else if msg.LLAddrStr != ll_addr_str2 {
+		log.Printf("Expected %q!=%q", ll_addr_str2, msg.LLAddrStr)
 	}
+
 	msg = <-outtwo
 	if msg.NodeAddr != pk1.Hash() {
 		log.Printf("Expected %q!=%q", pk1.Hash(), msg.NodeAddr)
+	} else if msg.LLAddrStr != ll_addr_str1 {
+		log.Printf("Expected %q!=%q", ll_addr_str1, msg.LLAddrStr)
 	}
+
 	msg = <-outone
 	if msg.NodeAddr != pk2.Hash() {
 		log.Printf("Expected %q!=%q", pk2.Hash(), msg.NodeAddr)
+	} else if msg.LLAddrStr != ll_addr_str2 {
+		log.Printf("Expected %q!=%q", ll_addr_str2, msg.LLAddrStr)
 	}
+
 	msg = <-outtwo
 	if msg.NodeAddr != pk1.Hash() {
 		log.Printf("Expected %q!=%q", pk1.Hash(), msg.NodeAddr)
+	} else if msg.LLAddrStr != ll_addr_str1 {
+		log.Printf("Expected %q!=%q", ll_addr_str1, msg.LLAddrStr)
 	}
 }
