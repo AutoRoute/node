@@ -1,7 +1,6 @@
 package node
 
 import (
-	"log"
 	"net"
 	"testing"
 
@@ -74,33 +73,33 @@ func TestBasicExchange(t *testing.T) {
 	// from directed response
 	msg := <-outone
 	if msg.NodeAddr != pk2.Hash() {
-		log.Printf("Expected %q!=%q", pk2.Hash(), msg.NodeAddr)
+		t.Errorf("Expected %q!=%q", pk2.Hash(), msg.NodeAddr)
 	}
 	if msg.LLAddrStr != ll_addr_str2 {
-		log.Printf("Expected %q!=%q", ll_addr_str2, msg.LLAddrStr)
+		t.Errorf("Expected %q!=%q", ll_addr_str2, msg.LLAddrStr)
 	}
 
 	msg = <-outtwo
 	if msg.NodeAddr != pk1.Hash() {
-		log.Printf("Expected %q!=%q", pk1.Hash(), msg.NodeAddr)
+		t.Errorf("Expected %q!=%q", pk1.Hash(), msg.NodeAddr)
 	}
 	if msg.LLAddrStr != ll_addr_str1 {
-		log.Printf("Expected %q!=%q", ll_addr_str1, msg.LLAddrStr)
+		t.Errorf("Expected %q!=%q", ll_addr_str1, msg.LLAddrStr)
 	}
 
 	msg = <-outone
 	if msg.NodeAddr != pk2.Hash() {
-		log.Printf("Expected %q!=%q", pk2.Hash(), msg.NodeAddr)
+		t.Errorf("Expected %q!=%q", pk2.Hash(), msg.NodeAddr)
 	}
 	if msg.LLAddrStr != ll_addr_str2 {
-		log.Printf("Expected %q!=%q", ll_addr_str2, msg.LLAddrStr)
+		t.Errorf("Expected %q!=%q", ll_addr_str2, msg.LLAddrStr)
 	}
 
 	msg = <-outtwo
 	if msg.NodeAddr != pk1.Hash() {
-		log.Printf("Expected %q!=%q", pk1.Hash(), msg.NodeAddr)
+		t.Errorf("Expected %q!=%q", pk1.Hash(), msg.NodeAddr)
 	}
 	if msg.LLAddrStr != ll_addr_str1 {
-		log.Printf("Expected %q!=%q", ll_addr_str1, msg.LLAddrStr)
+		t.Errorf("Expected %q!=%q", ll_addr_str1, msg.LLAddrStr)
 	}
 }
