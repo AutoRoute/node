@@ -75,28 +75,32 @@ func TestBasicExchange(t *testing.T) {
 	msg := <-outone
 	if msg.NodeAddr != pk2.Hash() {
 		log.Printf("Expected %q!=%q", pk2.Hash(), msg.NodeAddr)
-	} else if msg.LLAddrStr != ll_addr_str2 {
+	}
+	if msg.LLAddrStr != ll_addr_str2 {
 		log.Printf("Expected %q!=%q", ll_addr_str2, msg.LLAddrStr)
 	}
 
 	msg = <-outtwo
 	if msg.NodeAddr != pk1.Hash() {
 		log.Printf("Expected %q!=%q", pk1.Hash(), msg.NodeAddr)
-	} else if msg.LLAddrStr != ll_addr_str1 {
+	}
+	if msg.LLAddrStr != ll_addr_str1 {
 		log.Printf("Expected %q!=%q", ll_addr_str1, msg.LLAddrStr)
 	}
 
 	msg = <-outone
 	if msg.NodeAddr != pk2.Hash() {
 		log.Printf("Expected %q!=%q", pk2.Hash(), msg.NodeAddr)
-	} else if msg.LLAddrStr != ll_addr_str2 {
+	}
+	if msg.LLAddrStr != ll_addr_str2 {
 		log.Printf("Expected %q!=%q", ll_addr_str2, msg.LLAddrStr)
 	}
 
 	msg = <-outtwo
 	if msg.NodeAddr != pk1.Hash() {
 		log.Printf("Expected %q!=%q", pk1.Hash(), msg.NodeAddr)
-	} else if msg.LLAddrStr != ll_addr_str1 {
+	}
+	if msg.LLAddrStr != ll_addr_str1 {
 		log.Printf("Expected %q!=%q", ll_addr_str1, msg.LLAddrStr)
 	}
 }
