@@ -64,23 +64,23 @@ func Probe(key node.PrivateKey, n *node.Server, dev net.Interface) {
         return
     }
 
-    log.Printf("Probing %v", dev.Name)
+    log.Printf("Probing %q", dev.Name)
 
     ll_addr, err := GetLinkLocalAddr(dev)
     if err != nil {
-        log.Printf("Error probing %v: %v", dev, err)
+        log.Printf("Error probing %q: %v", dev.Name, err)
         return
     }
 
     neighbors := FindNeighbors(dev, ll_addr, key.PublicKey())
     for neighbor := range neighbors {
-        log.Printf("Neighbour Found %v", neighbor.NodeAddr)
+        log.Printf("Neighbour Found %x", neighbor.NodeAddr)
         err := n.Connect(fmt.Sprintf("[%s%%%s]:31337", neighbor.LLAddrStr, dev.Name))
         if err != nil {
             log.Printf("Error connecting: %v", err)
             return
         }
-        log.Printf("Connection established to %v", neighbor.NodeAddr)
+        log.Printf("Connection established to %x", neighbor.NodeAddr)
     }
 }
 
