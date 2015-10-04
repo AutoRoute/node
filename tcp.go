@@ -17,8 +17,6 @@ type TCP struct {
 }
 
 type TCPTun interface {
-	Close() error
-	Name() string
 	ReadPacket() (*tuntap.Packet, error)
 	WritePacket(p *tuntap.Packet) error
 }

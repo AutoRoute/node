@@ -16,9 +16,6 @@ type testTun struct {
 	write_error error
 }
 
-func (t testTun) Close() error { return nil }
-func (t testTun) Name() string { return "dummy" }
-
 func (t testTun) ReadPacket() (*tuntap.Packet, error) {
 	return <-t.out, t.read_error
 }
