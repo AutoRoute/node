@@ -22,17 +22,13 @@ func init() {
 
 // The layer two protocol takes a layer two device and returns the hash of the
 // Public Key of all neighbors it can find.
-type NeighborFinder interface {
-	Find(l2.FrameReadWriter) <-chan NodeAddress
-}
-
-type NeighborData struct {
+type NeighborFinder struct {
 	pk                 PublicKey
 	link_local_address net.IP
 }
 
-func NewNeighborData(pk PublicKey, link_local_address net.IP) NeighborData {
-	return NeighborData{pk, link_local_address}
+func NewNeighborFinder(pk PublicKey, link_local_address net.IP) NeighborFinder {
+	return NeighborFinder{pk, link_local_address}
 }
 
 type FrameData struct {
@@ -40,7 +36,7 @@ type FrameData struct {
 	LLAddrStr string
 }
 
-func (n NeighborData) handleLink(mac []byte, frw l2.FrameReadWriter, c chan *FrameData) {
+func (n NeighborFinder) handleLink(mac []byte, frw l2.FrameReadWriter, c chan *FrameData) {
 	// Handle received packets
 	defer close(c)
 	for {
@@ -75,7 +71,7 @@ func (n NeighborData) handleLink(mac []byte, frw l2.FrameReadWriter, c chan *Fra
 	}
 }
 
-func (n NeighborData) Find(mac []byte, frw l2.FrameReadWriter) (<-chan *FrameData, error) {
+func (n NeighborFinder) Find(mac []byte, frw l2.FrameReadWriter) (<-chan *FrameData, error) {
 	// Send initial packet
 	frame_data := append([]byte(n.pk.Hash()), n.link_local_address...)
 	frame := l2.NewEthFrame(broadcast, mac, protocol, frame_data)
@@ -89,7 +85,7 @@ func (n NeighborData) Find(mac []byte, frw l2.FrameReadWriter) (<-chan *FrameDat
 	return c, nil
 }
 
-func (n NeighborData) BuildResponse(frame l2.EthFrame, mac []byte, protocol uint16) l2.EthFrame {
+func (n NeighborFinder) BuildResponse(frame l2.EthFrame, mac []byte, protocol uint16) l2.EthFrame {
 	data := append([]byte(n.pk.Hash()), n.link_local_address...)
 	return l2.NewEthFrame(frame.Source(), mac, protocol, data)
 }

@@ -5,7 +5,7 @@ import (
 	"github.com/AutoRoute/node"
 	"github.com/AutoRoute/tuntap"
 
-    "errors"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -40,10 +40,10 @@ func GetLinkLocalAddr(dev net.Interface) (net.IP, error) {
 		}
 
 		if addr.IsLinkLocalUnicast() {
-            return addr, nil
+			return addr, nil
 		}
 	}
-    return nil, errors.New("Unable to find link local address")
+	return nil, errors.New("Unable to find link local address")
 }
 
 func FindNeighbors(dev net.Interface, ll_addr net.IP, key node.PublicKey) <-chan *node.FrameData {
@@ -51,7 +51,7 @@ func FindNeighbors(dev net.Interface, ll_addr net.IP, key node.PublicKey) <-chan
 	if err != nil {
 		log.Fatal(err)
 	}
-	nf := node.NewNeighborData(key, ll_addr)
+	nf := node.NewNeighborFinder(key, ll_addr)
 	channel, err := nf.Find(dev.HardwareAddr, conn)
 	if err != nil {
 		log.Fatal(err)
@@ -60,28 +60,28 @@ func FindNeighbors(dev net.Interface, ll_addr net.IP, key node.PublicKey) <-chan
 }
 
 func Probe(key node.PrivateKey, n *node.Server, dev net.Interface) {
-    if dev.Name == "lo" {
-        return
-    }
+	if dev.Name == "lo" {
+		return
+	}
 
-    log.Printf("Probing %q", dev.Name)
+	log.Printf("Probing %q", dev.Name)
 
-    ll_addr, err := GetLinkLocalAddr(dev)
-    if err != nil {
-        log.Printf("Error probing %q: %v", dev.Name, err)
-        return
-    }
+	ll_addr, err := GetLinkLocalAddr(dev)
+	if err != nil {
+		log.Printf("Error probing %q: %v", dev.Name, err)
+		return
+	}
 
-    neighbors := FindNeighbors(dev, ll_addr, key.PublicKey())
-    for neighbor := range neighbors {
-        log.Printf("Neighbour Found %x", neighbor.NodeAddr)
-        err := n.Connect(fmt.Sprintf("[%s%%%s]:31337", neighbor.LLAddrStr, dev.Name))
-        if err != nil {
-            log.Printf("Error connecting: %v", err)
-            return
-        }
-        log.Printf("Connection established to %x", neighbor.NodeAddr)
-    }
+	neighbors := FindNeighbors(dev, ll_addr, key.PublicKey())
+	for neighbor := range neighbors {
+		log.Printf("Neighbour Found %x", neighbor.NodeAddr)
+		err := n.Connect(fmt.Sprintf("[%s%%%s]:31337", neighbor.LLAddrStr, dev.Name))
+		if err != nil {
+			log.Printf("Error connecting: %v", err)
+			return
+		}
+		log.Printf("Connection established to %x", neighbor.NodeAddr)
+	}
 }
 
 func main() {
@@ -110,7 +110,7 @@ func main() {
 	n := node.NewServer(key)
 
 	if *autodiscover {
-        devs := make([]net.Interface, 0)
+		devs := make([]net.Interface, 0)
 
 		if *dev_name == "" {
 			devs, err = net.Interfaces()
@@ -125,9 +125,9 @@ func main() {
 			devs = append(devs, *dev)
 		}
 
-        for _, dev := range devs {
-            go Probe(key, n, dev)
-        }
+		for _, dev := range devs {
+			go Probe(key, n, dev)
+		}
 	}
 
 	if !*nolisten {
