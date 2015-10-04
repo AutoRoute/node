@@ -5,6 +5,7 @@ import (
 	"github.com/AutoRoute/node"
 	"github.com/AutoRoute/tuntap"
 
+    "errors"
 	"flag"
 	"fmt"
 	"log"
@@ -26,21 +27,11 @@ var tcptun = flag.String("tcptun", "",
 var keyfile = flag.String("keyfile", "",
 	"The keyfile we should check for a key and write our current key to")
 
-type LinkLocalError struct {
-	msg   string
-	fatal bool
-}
-
-func (e LinkLocalError) Error() string { return e.msg }
-func (e LinkLocalError) IsFatal() bool { return e.fatal }
-
 func GetLinkLocalAddr(dev net.Interface) (net.IP, error) {
 	dev_addrs, err := dev.Addrs()
 	if err != nil {
 		return nil, err
 	}
-
-	var ll_addr net.IP
 
 	for _, dev_addr := range dev_addrs {
 		addr, _, err := net.ParseCIDR(dev_addr.String())
@@ -49,24 +40,10 @@ func GetLinkLocalAddr(dev net.Interface) (net.IP, error) {
 		}
 
 		if addr.IsLinkLocalUnicast() {
-			ll_addr = addr
-			break
+            return addr, nil
 		}
 	}
-
-	if ll_addr == nil {
-		msg := fmt.Sprintf("Couldn't find link-local address on interface %v", dev.Name)
-		e := LinkLocalError{msg, false}
-		return nil, error(e)
-	}
-
-	ll_addr_zone := fmt.Sprintf("%s%%%s", ll_addr.String(), dev.Name)
-	_, err = net.ResolveIPAddr("ip6", ll_addr_zone)
-	if err != nil {
-		e := LinkLocalError{err.Error(), true}
-		return nil, error(e)
-	}
-	return ll_addr, nil
+    return nil, errors.New("Unable to find link local address")
 }
 
 func FindNeighbors(dev net.Interface, ll_addr net.IP, key node.PublicKey) <-chan *node.FrameData {
@@ -82,39 +59,29 @@ func FindNeighbors(dev net.Interface, ll_addr net.IP, key node.PublicKey) <-chan
 	return channel
 }
 
-func Probe(key node.PrivateKey, n *node.Server, devs []net.Interface) {
-	public_key := key.PublicKey()
+func Probe(key node.PrivateKey, n *node.Server, dev net.Interface) {
+    if dev.Name == "lo" {
+        return
+    }
 
-	// find neighbors of each interface
-	for _, dev := range devs {
-		if dev.Name == "lo" {
-			continue
-		}
+    log.Printf("Probing %v", dev.Name)
 
-		ll_addr, err := GetLinkLocalAddr(dev)
-		if err != nil {
-			e, _ := err.(LinkLocalError)
-			if e.IsFatal() {
-				log.Fatal(e)
-			} else {
-				log.Print(e)
-				continue
-			}
-		}
+    ll_addr, err := GetLinkLocalAddr(dev)
+    if err != nil {
+        log.Printf("Error probing %v: %v", dev, err)
+        return
+    }
 
-		neighbors := FindNeighbors(dev, ll_addr, public_key)
-		go func() {
-			for neighbor := range neighbors {
-				log.Printf("Neighbour Found %v", neighbor.NodeAddr)
-				err := n.Connect(fmt.Sprintf("[%s%%%s]:31337", neighbor.LLAddrStr, dev.Name))
-				if err != nil {
-					log.Printf("Error connecting: %v", err)
-					continue
-				}
-				log.Printf("Connection established to %v", neighbor.NodeAddr)
-			}
-		}()
-	}
+    neighbors := FindNeighbors(dev, ll_addr, key.PublicKey())
+    for neighbor := range neighbors {
+        log.Printf("Neighbour Found %v", neighbor.NodeAddr)
+        err := n.Connect(fmt.Sprintf("[%s%%%s]:31337", neighbor.LLAddrStr, dev.Name))
+        if err != nil {
+            log.Printf("Error connecting: %v", err)
+            return
+        }
+        log.Printf("Connection established to %v", neighbor.NodeAddr)
+    }
 }
 
 func main() {
@@ -143,7 +110,7 @@ func main() {
 	n := node.NewServer(key)
 
 	if *autodiscover {
-		var devs []net.Interface
+        devs := make([]net.Interface, 0)
 
 		if *dev_name == "" {
 			devs, err = net.Interfaces()
@@ -155,14 +122,12 @@ func main() {
 			if err != nil {
 				log.Fatal(err)
 			}
-			devs = []net.Interface{*dev}
+			devs = append(devs, *dev)
 		}
 
-		log.Printf("Starting to probe on interfaces: ")
-		for _, dev := range devs {
-			log.Printf("%v", dev.Name)
-		}
-		go Probe(key, n, devs)
+        for _, dev := range devs {
+            go Probe(key, n, dev)
+        }
 	}
 
 	if !*nolisten {
