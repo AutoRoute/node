@@ -66,8 +66,7 @@ func (n NeighborData) handleLink(mac []byte, frw l2.FrameReadWriter, c chan *Fra
 		if !bytes.Equal(frame.Destination(), broadcast) {
 			continue
 		}
-		response_data := append([]byte(n.pk.Hash()), n.link_local_address...)
-		response := l2.NewEthFrame(frame.Source(), mac, protocol, response_data)
+		response := n.BuildResponse(frame, mac, protocol)
 		err = frw.WriteFrame(response)
 		if err != nil {
 			log.Printf("Failure writing to connection %v, %v", frw, err)
@@ -88,4 +87,9 @@ func (n NeighborData) Find(mac []byte, frw l2.FrameReadWriter) (<-chan *FrameDat
 	c := make(chan *FrameData)
 	go n.handleLink(mac, frw, c)
 	return c, nil
+}
+
+func (n NeighborData) BuildResponse(frame l2.EthFrame, mac []byte, protocol uint16) l2.EthFrame {
+	data := append([]byte(n.pk.Hash()), n.link_local_address...)
+	return l2.NewEthFrame(frame.Source(), mac, protocol, data)
 }
