@@ -14,7 +14,7 @@ import (
 	"strings"
 )
 
-var listen = flag.String("listen", "127.0.0.1:34321",
+var listen = flag.String("listen", "[::1]:34321",
 	"The address to listen to incoming connections on")
 var nolisten = flag.Bool("nolisten", false, "Disables listening")
 var connect = flag.String("connect", "",
@@ -26,6 +26,12 @@ var tcptun = flag.String("tcptun", "",
 	"Address to try and tcp tunnel to")
 var keyfile = flag.String("keyfile", "",
 	"The keyfile we should check for a key and write our current key to")
+var btc_host = flag.String("btc_host", "localhost:8333",
+	"The bitcoin daemon we should connect to")
+var btc_user = flag.String("btc_user", "user",
+	"The bitcoin daemon username")
+var btc_pass = flag.String("btc_pass", "password",
+	"The bitcoin daemon password")
 
 func GetLinkLocalAddr(dev net.Interface) (net.IP, error) {
 	dev_addrs, err := dev.Addrs()
@@ -107,7 +113,13 @@ func main() {
 	}
 	log.Printf("Key is %x", key.PublicKey().Hash())
 
-	n := node.NewServer(key)
+	log.Printf("Connecting to bitcoin daemon")
+	rpc, err := node.NewRPCMoney(*btc_host, *btc_user, *btc_pass)
+	if err != nil {
+		log.Printf("Error connection to bitcoin daemon")
+	}
+	log.Printf("Connected")
+	n := node.NewServer(key, rpc)
 
 	if *autodiscover {
 		devs := make([]net.Interface, 0)

@@ -9,7 +9,7 @@ import (
 // A Node is the highest level abstraction over the network. You receive packets
 // from it and send packets to it, and it takes care of everything else.
 type Node struct {
-	*router
+	router         *router
 	l              *sync.Mutex
 	id             PrivateKey
 	outgoing       chan Packet
@@ -20,7 +20,7 @@ type Node struct {
 	quit           chan bool
 }
 
-func NewNode(pk PrivateKey, receipt_ticker <-chan time.Time, payment_ticker <-chan time.Time) *Node {
+func NewNode(pk PrivateKey, m Money, receipt_ticker <-chan time.Time, payment_ticker <-chan time.Time) *Node {
 	n := &Node{
 		newRouter(pk.PublicKey()),
 		&sync.Mutex{},
@@ -29,13 +29,12 @@ func NewNode(pk PrivateKey, receipt_ticker <-chan time.Time, payment_ticker <-ch
 		nil,
 		receipt_ticker,
 		payment_ticker,
-		fakeMoney{pk.PublicKey().Hash()},
+		m,
 		make(chan bool),
 	}
 	go n.receivePackets()
 	go n.sendReceipts()
 	go n.sendPayments()
-	go n.receivePayments()
 	return n
 }
 
@@ -79,41 +78,18 @@ func (n *Node) sendPayments() {
 		case <-n.payment_ticker:
 			n.l.Lock()
 			for _, c := range n.router.Connections() {
-				owed, _ := n.router.OutgoingDebt(c)
+				owed, _ := n.router.OutgoingDebt(c.Key().Hash())
 				if owed > 0 {
-					p, err := n.m.MakePayment(owed, c)
+					p, err := n.m.MakePayment(owed, c.OtherMetaData().Payment_Address)
 					if err != nil {
-						log.Printf("Failed to make a payment to %s : %v", c, err)
+						log.Printf("Failed to make a payment to %x (%x) : %v",
+							c.Key().Hash(), c.OtherMetaData().Payment_Address, err)
 						break
 					}
-					n.router.RecordPayment(Payment{n.id.PublicKey().Hash(), c, owed})
-					n.router.SendPaymentHash(c, p)
+					n.router.RecordPayment(c.Key().Hash(), owed, p)
 				}
 			}
 			n.l.Unlock()
-		case <-n.quit:
-			return
-		}
-	}
-}
-
-func (n *Node) receivePayments() {
-	for {
-		select {
-		case h, ok := <-n.router.PaymentHashes():
-			if !ok {
-				return
-			}
-			n.l.Lock()
-			c := n.m.AddPaymentHash(h)
-			go func() {
-				select {
-				case p := <-c:
-					n.router.RecordPayment(p)
-				case <-n.quit:
-					return
-				}
-			}()
 		case <-n.quit:
 			return
 		}
@@ -133,7 +109,24 @@ func (n *Node) Close() error {
 	return nil
 }
 
+func (n *Node) GetNewAddress() string {
+	address, c, err := n.m.GetNewAddress()
+	if err != nil {
+		log.Fatal("Failed to get payment address", err)
+	}
+	n.router.ledger.AddAddress(address, c)
+	return address
+}
+
+func (n *Node) GetAddress() PublicKey {
+	return n.id.PublicKey()
+}
+
 func (n *Node) IsReachable(addr NodeAddress) bool {
 	_, err := n.router.FindNextHop(addr)
 	return err == nil
+}
+
+func (n *Node) AddConnection(c Connection) {
+	n.router.AddConnection(c)
 }

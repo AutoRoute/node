@@ -14,7 +14,10 @@ func ConnectSSH(sk1, sk2 PrivateKey) (*SSHConnection, *SSHConnection, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	l := ListenSSH(lt, sk2)
+	m := func() SSHMetaData {
+		return SSHMetaData{Payment_Address: "fake2"}
+	}
+	l := ListenSSH(lt, sk2, m)
 	if l.Error() != nil {
 		return nil, nil, l.Error()
 	}
@@ -23,7 +26,7 @@ func ConnectSSH(sk1, sk2 PrivateKey) (*SSHConnection, *SSHConnection, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	c1, err := EstablishSSH(ct, addr, sk1)
+	c1, err := EstablishSSH(ct, addr, sk1, SSHMetaData{Payment_Address: "fake1"})
 	port += 1
 	if err != nil {
 		return nil, nil, err
@@ -43,28 +46,6 @@ func TestSSHEstablishment(t *testing.T) {
 	}
 	c1.Close()
 	c2.Close()
-}
-
-func TestSSHPaymentTransmission(t *testing.T) {
-	sk1, _ := NewECDSAKey()
-	sk2, _ := NewECDSAKey()
-	c1, c2, err := ConnectSSH(sk1, sk2)
-	if err != nil {
-		t.Fatalf("Problems establish ssh connection: %v", err)
-		return
-	}
-	defer c1.Close()
-	defer c2.Close()
-
-	h := PaymentHash("foo")
-	err = c1.SendPayment(h)
-	if err != nil {
-		t.Fatal(err)
-	}
-	r := <-c2.Payments()
-	if r != h {
-		t.Fatalf("Error in relaying received %v, expected %v", r, h)
-	}
 }
 
 func TestSSHMapTransmission(t *testing.T) {

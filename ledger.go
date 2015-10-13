@@ -58,11 +58,12 @@ type ledger struct {
 	// debt that other people will pay us
 	incoming_debt map[NodeAddress][]debt
 	// debt that we will pay other people
-	outgoing_debt map[NodeAddress][]debt
-	packets       map[PacketHash]routingDecision
-	l             *sync.Mutex
-	id            NodeAddress
-	quit          chan bool
+	outgoing_debt    map[NodeAddress][]debt
+	packets          map[PacketHash]routingDecision
+	payment_channels map[string]chan uint64
+	l                *sync.Mutex
+	id               NodeAddress
+	quit             chan bool
 }
 
 func newLedger(id NodeAddress, c <-chan PacketHash, d <-chan routingDecision) *ledger {
@@ -70,6 +71,7 @@ func newLedger(id NodeAddress, c <-chan PacketHash, d <-chan routingDecision) *l
 		make(map[NodeAddress][]debt),
 		make(map[NodeAddress][]debt),
 		make(map[PacketHash]routingDecision),
+		make(map[string]chan uint64),
 		&sync.Mutex{},
 		id,
 		make(chan bool),
@@ -89,6 +91,16 @@ func (p *ledger) OutgoingDebt(n NodeAddress) (int64, time.Time) {
 	p.l.Lock()
 	defer p.l.Unlock()
 	return sumDebt(p.outgoing_debt[n])
+}
+
+func (p *ledger) AddAddress(address string, c chan uint64) {
+	p.l.Lock()
+	defer p.l.Unlock()
+	p.payment_channels[address] = c
+}
+
+func (p *ledger) AddConnection(n NodeAddress, c Connection) {
+	go p.handlePayments(n, c)
 }
 
 func (p *ledger) handleReceipt(c <-chan PacketHash) {
@@ -125,11 +137,29 @@ func (p *ledger) sentPackets(c <-chan routingDecision) {
 	}
 }
 
-func (p *ledger) RecordPayment(y Payment) {
+func (p *ledger) handlePayments(n NodeAddress, c Connection) {
 	p.l.Lock()
-	defer p.l.Unlock()
-	p.incoming_debt[y.Source] = payDebt(p.incoming_debt[y.Source], y.Amount)
-	p.outgoing_debt[y.Destination] = payDebt(p.outgoing_debt[y.Destination], y.Amount)
+	ch := p.payment_channels[c.MetaData().Payment_Address]
+	p.l.Unlock()
+	for {
+		select {
+		case amount := <-ch:
+			p.l.Lock()
+			defer p.l.Unlock()
+			p.incoming_debt[n] = payDebt(p.incoming_debt[n], int64(amount))
+		case <-p.quit:
+			return
+		}
+	}
+}
+
+// Waits for the payment to be confirmed and records it in the ledger.
+func (p *ledger) RecordPayment(destination NodeAddress, amount int64, confirmed chan bool) {
+	ok := <-confirmed
+	if ok {
+		p.incoming_debt[p.id] = payDebt(p.incoming_debt[p.id], amount)
+		p.outgoing_debt[destination] = payDebt(p.outgoing_debt[destination], amount)
+	}
 }
 
 func (p *ledger) Close() error {

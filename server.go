@@ -12,8 +12,8 @@ type Server struct {
 	listeners map[string]*SSHListener
 }
 
-func NewServer(key PrivateKey) *Server {
-	n := NewNode(key, time.Tick(30*time.Second), time.Tick(30*time.Second))
+func NewServer(key PrivateKey, m Money) *Server {
+	n := NewNode(key, m, time.Tick(30*time.Second), time.Tick(30*time.Second))
 	return &Server{n, make(map[string]*SSHListener)}
 }
 
@@ -22,7 +22,8 @@ func (s *Server) Connect(addr string) error {
 	if err != nil {
 		return err
 	}
-	sc, err := EstablishSSH(c, addr, s.n.id)
+	m := SSHMetaData{Payment_Address: s.n.GetNewAddress()}
+	sc, err := EstablishSSH(c, addr, s.n.id, m)
 	if err != nil {
 		return err
 	}
@@ -37,7 +38,10 @@ func (s *Server) Listen(addr string) error {
 		return err
 	}
 
-	l := ListenSSH(ln, s.n.id)
+	m := func() SSHMetaData {
+		return SSHMetaData{Payment_Address: s.n.GetNewAddress()}
+	}
+	l := ListenSSH(ln, s.n.id, m)
 	if l.Error() != nil {
 		return err
 	}
