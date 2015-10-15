@@ -1,0 +1,12 @@
+{
+	"connections": [
+		{
+			"source": "A",
+			"destination": "B"
+		},
+		{
+			"source": "A",
+			"destination": "C"
+		}
+	]
+}
