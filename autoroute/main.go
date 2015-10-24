@@ -21,7 +21,7 @@ var connect = flag.String("connect", "",
 	"Comma separated list of addresses to connect to")
 var autodiscover = flag.Bool("auto", false,
 	"Whether we should try and find neighboring routers")
-var dev_names = flag.String("interface", "",
+var dev_names = flag.String("devs", "",
 	"Comma separated list of interfaces to discover on")
 var tcptun = flag.String("tcptun", "",
 	"Address to try and tcp tunnel to")
