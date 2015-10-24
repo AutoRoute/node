@@ -21,7 +21,8 @@ var connect = flag.String("connect", "",
 	"Comma separated list of addresses to connect to")
 var autodiscover = flag.Bool("auto", false,
 	"Whether we should try and find neighboring routers")
-var dev_name = flag.String("interface", "", "Interface to discover on")
+var dev_names = flag.String("interface", "",
+	"Comma separated list of interfaces to discover on")
 var tcptun = flag.String("tcptun", "",
 	"Address to try and tcp tunnel to")
 var keyfile = flag.String("keyfile", "",
@@ -112,17 +113,19 @@ func main() {
 	if *autodiscover {
 		devs := make([]net.Interface, 0)
 
-		if *dev_name == "" {
+		if *dev_names == "" {
 			devs, err = net.Interfaces()
 			if err != nil {
 				log.Fatal(err)
 			}
 		} else {
-			dev, err := net.InterfaceByName(*dev_name)
-			if err != nil {
-				log.Fatal(err)
+			for _, dev_name := range strings.Split(*dev_names, ",") {
+				dev, err := net.InterfaceByName(dev_name)
+				if err != nil {
+					log.Fatal(err)
+				}
+				devs = append(devs, *dev)
 			}
-			devs = append(devs, *dev)
 		}
 
 		for _, dev := range devs {
