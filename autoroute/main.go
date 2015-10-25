@@ -1,11 +1,9 @@
 package main
 
 import (
-	"github.com/AutoRoute/l2"
 	"github.com/AutoRoute/node"
 	"github.com/AutoRoute/tuntap"
 
-	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -27,37 +25,6 @@ var tcptun = flag.String("tcptun", "",
 var keyfile = flag.String("keyfile", "",
 	"The keyfile we should check for a key and write our current key to")
 
-func GetLinkLocalAddr(dev net.Interface) (net.IP, error) {
-	dev_addrs, err := dev.Addrs()
-	if err != nil {
-		return nil, err
-	}
-
-	for _, dev_addr := range dev_addrs {
-		addr, _, err := net.ParseCIDR(dev_addr.String())
-		if err != nil {
-			return nil, err
-		}
-
-		if addr.IsLinkLocalUnicast() {
-			return addr, nil
-		}
-	}
-	return nil, errors.New("Unable to find link local address")
-}
-
-func FindNeighbors(dev net.Interface, ll_addr net.IP, key node.PublicKey) <-chan *node.FrameData {
-	conn, err := l2.ConnectExistingDevice(dev.Name)
-	if err != nil {
-		log.Fatal(err)
-	}
-	nf := node.NewNeighborFinder(key, ll_addr)
-	channel, err := nf.Find(dev.HardwareAddr, conn)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return channel
-}
 
 func Probe(key node.PrivateKey, n *node.Server, dev net.Interface) {
 	if dev.Name == "lo" {
@@ -66,13 +33,13 @@ func Probe(key node.PrivateKey, n *node.Server, dev net.Interface) {
 
 	log.Printf("Probing %q", dev.Name)
 
-	ll_addr, err := GetLinkLocalAddr(dev)
+	ll_addr, err := node.GetLinkLocalAddr(dev)
 	if err != nil {
 		log.Printf("Error probing %q: %v", dev.Name, err)
 		return
 	}
 
-	neighbors := FindNeighbors(dev, ll_addr, key.PublicKey())
+	neighbors := node.FindNeighbors(dev, ll_addr, key.PublicKey())
 	for neighbor := range neighbors {
 		log.Printf("Neighbour Found %x", neighbor.NodeAddr)
 		err := n.Connect(fmt.Sprintf("[%s%%%s]:31337", neighbor.LLAddrStr, dev.Name))
