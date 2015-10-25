@@ -9,6 +9,7 @@ import (
 	"log"
 	"net"
 	"runtime"
+	"strconv"
 	"strings"
 )
 
@@ -25,8 +26,7 @@ var tcptun = flag.String("tcptun", "",
 var keyfile = flag.String("keyfile", "",
 	"The keyfile we should check for a key and write our current key to")
 
-
-func Probe(key node.PrivateKey, n *node.Server, dev net.Interface) {
+func Probe(key node.PrivateKey, n *node.Server, dev net.Interface, port uint16) {
 	if dev.Name == "lo" {
 		return
 	}
@@ -39,10 +39,10 @@ func Probe(key node.PrivateKey, n *node.Server, dev net.Interface) {
 		return
 	}
 
-	neighbors := node.FindNeighbors(dev, ll_addr, key.PublicKey())
+	neighbors := node.FindNeighbors(dev, ll_addr, key.PublicKey(), port)
 	for neighbor := range neighbors {
 		log.Printf("Neighbour Found %x", neighbor.NodeAddr)
-		err := n.Connect(fmt.Sprintf("[%s%%%s]:31337", neighbor.LLAddrStr, dev.Name))
+		err := n.Connect(fmt.Sprintf("[%s%%%s]:%v", neighbor.LLAddrStr, dev.Name, neighbor.Port))
 		if err != nil {
 			log.Printf("Error connecting: %v", err)
 			return
@@ -92,8 +92,15 @@ func main() {
 			devs = append(devs, *dev)
 		}
 
+		parsed_listen_addr := strings.Split(*listen, ":")
+		port64, err := strconv.ParseUint(parsed_listen_addr[len(parsed_listen_addr)-1], 10, 16)
+		port := uint16(port64)
+		if err != nil {
+			log.Fatal(err)
+		}
+		port = uint16(port)
 		for _, dev := range devs {
-			go Probe(key, n, dev)
+			go Probe(key, n, dev, port)
 		}
 	}
 

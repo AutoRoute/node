@@ -27,12 +27,12 @@ func GetLinkLocalAddr(dev net.Interface) (net.IP, error) {
 	return nil, errors.New("Unable to find link local address")
 }
 
-func FindNeighbors(dev net.Interface, ll_addr net.IP, key PublicKey) <-chan *FrameData {
+func FindNeighbors(dev net.Interface, ll_addr net.IP, key PublicKey, port uint16) <-chan *FrameData {
 	conn, err := l2.ConnectExistingDevice(dev.Name)
 	if err != nil {
 		log.Fatal(err)
 	}
-	nf := NewNeighborFinder(key, ll_addr)
+	nf := NewNeighborFinder(key, ll_addr, port)
 	channel, err := nf.Find(dev.HardwareAddr, conn)
 	if err != nil {
 		log.Fatal(err)

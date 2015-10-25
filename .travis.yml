@@ -1,5 +1,8 @@
 language: go
 
+go:
+  - 1.5.1
+
 # Use faster container builds
 sudo: false
 
