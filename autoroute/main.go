@@ -32,6 +32,7 @@ var btc_user = flag.String("btc_user", "user",
 	"The bitcoin daemon username")
 var btc_pass = flag.String("btc_pass", "password",
 	"The bitcoin daemon password")
+var fake_money = flag.Bool("fake_money", false, "Enables a money system which is purely fake")
 
 func GetLinkLocalAddr(dev net.Interface) (net.IP, error) {
 	dev_addrs, err := dev.Addrs()
@@ -113,13 +114,17 @@ func main() {
 	}
 	log.Printf("Key is %x", key.PublicKey().Hash())
 
-	log.Printf("Connecting to bitcoin daemon")
-	rpc, err := node.NewRPCMoney(*btc_host, *btc_user, *btc_pass)
-	if err != nil {
-		log.Printf("Error connection to bitcoin daemon")
+	money := node.FakeMoney()
+	if !*fake_money {
+		log.Printf("Connecting to bitcoin daemon")
+		rpc, err := node.NewRPCMoney(*btc_host, *btc_user, *btc_pass)
+		if err != nil {
+			log.Printf("Error connection to bitcoin daemon")
+		}
+		money = rpc
 	}
 	log.Printf("Connected")
-	n := node.NewServer(key, rpc)
+	n := node.NewServer(key, money)
 
 	if *autodiscover {
 		devs := make([]net.Interface, 0)

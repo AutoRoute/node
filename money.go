@@ -10,6 +10,10 @@ func init() {
 	count = 0
 }
 
+func FakeMoney() Money {
+	return fakeMoney{}
+}
+
 // This represents a payment engine, which produces signed payments on demand
 type Money interface {
 	MakePayment(amount int64, destination string) (chan bool, error)
