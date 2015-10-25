@@ -55,9 +55,11 @@ func TestBasicExchange(t *testing.T) {
 	if ll_addr2 == nil {
 		t.Fatal("Unable to parse IP address")
 	}
+  port1 := uint16(34321)
+  port2 := uint16(34322)
 
-	nf1 := NewNeighborFinder(pk1, ll_addr1)
-	nf2 := NewNeighborFinder(pk2, ll_addr2)
+	nf1 := NewNeighborFinder(pk1, ll_addr1, port1)
+	nf2 := NewNeighborFinder(pk2, ll_addr2, port2)
 
 	one, two := CreatePairedInterface()
 	outone, err := nf1.Find(test_mac1, one)
