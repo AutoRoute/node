@@ -20,7 +20,7 @@ echo $ip2
 echo $ip3
 
 sleep 1
-autoroute -auto=true -nolisten=true -devs='i0-0' &
+autoroute -auto=true -listen "[$ip0%i0-0]:31337" -devs='i0-0' &
 sleep 1
 autoroute -auto=true -listen "[$ip1%i1-0]:31337" -devs='i1-0' &
 # sleep 1
