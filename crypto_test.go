@@ -22,3 +22,10 @@ func TestCrypto(t *testing.T) {
 		t.Fatalf("Expected %v != %v", s.Signed(), m)
 	}
 }
+
+func TestEmptyVerify(t *testing.T) {
+	var sig Signature
+	if sig.Verify() == nil {
+		t.Fatal("Empty signature should fail to verify")
+	}
+}
