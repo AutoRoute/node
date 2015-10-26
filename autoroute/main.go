@@ -13,7 +13,7 @@ import (
 	"strings"
 )
 
-var listen = flag.String("listen", "[::1]:34321",
+var listen = flag.String("listen", "[::]:34321",
 	"The address to listen to incoming connections on")
 var nolisten = flag.Bool("nolisten", false, "Disables listening")
 var connect = flag.String("connect", "",
