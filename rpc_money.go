@@ -67,6 +67,9 @@ func (r *RPCMoney) waitForPaymentSuccess(hash *wire.ShaHash, c chan bool) {
 // Returns the address + a channel down which all balance changes will be sent.
 func (r *RPCMoney) GetNewAddress() (string, chan uint64, error) {
 	addr, err := r.rpc.GetNewAddress("")
+	if err != nil {
+		return "", nil, err
+	}
 	c := make(chan uint64)
 	go r.listenBalanceChanges(addr, c)
 	return addr.EncodeAddress(), c, err
