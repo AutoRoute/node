@@ -55,9 +55,11 @@ func TestBasicExchange(t *testing.T) {
 	if ll_addr2 == nil {
 		t.Fatal("Unable to parse IP address")
 	}
+	port1 := uint16(34321)
+	port2 := uint16(34322)
 
-	nf1 := NewNeighborFinder(pk1, ll_addr1)
-	nf2 := NewNeighborFinder(pk2, ll_addr2)
+	nf1 := NewNeighborFinder(pk1, ll_addr1, port1)
+	nf2 := NewNeighborFinder(pk2, ll_addr2, port2)
 
 	one, two := CreatePairedInterface()
 	outone, err := nf1.Find(test_mac1, one)
@@ -78,6 +80,9 @@ func TestBasicExchange(t *testing.T) {
 	if msg.LLAddrStr != ll_addr_str2 {
 		t.Errorf("Expected %q!=%q", ll_addr_str2, msg.LLAddrStr)
 	}
+  if msg.Port != port2 {
+    t.Errorf("Expected %q!=%q", port2, msg.Port)
+  }
 
 	msg = <-outtwo
 	if msg.NodeAddr != pk1.Hash() {
@@ -86,6 +91,9 @@ func TestBasicExchange(t *testing.T) {
 	if msg.LLAddrStr != ll_addr_str1 {
 		t.Errorf("Expected %q!=%q", ll_addr_str1, msg.LLAddrStr)
 	}
+  if msg.Port != port1 {
+    t.Errorf("Expected %q!=%q", port1, msg.Port)
+  }
 
 	msg = <-outone
 	if msg.NodeAddr != pk2.Hash() {
@@ -94,6 +102,9 @@ func TestBasicExchange(t *testing.T) {
 	if msg.LLAddrStr != ll_addr_str2 {
 		t.Errorf("Expected %q!=%q", ll_addr_str2, msg.LLAddrStr)
 	}
+  if msg.Port != port2 {
+    t.Errorf("Expected %q!=%q", port2, msg.Port)
+  }
 
 	msg = <-outtwo
 	if msg.NodeAddr != pk1.Hash() {
@@ -102,4 +113,7 @@ func TestBasicExchange(t *testing.T) {
 	if msg.LLAddrStr != ll_addr_str1 {
 		t.Errorf("Expected %q!=%q", ll_addr_str1, msg.LLAddrStr)
 	}
+  if msg.Port != port1 {
+    t.Errorf("Expected %q!=%q", port1, msg.Port)
+  }
 }
