@@ -59,6 +59,12 @@ func (e Signature) Key() PublicKey {
 
 func (e Signature) Verify() error {
 	k := ecdsa.PublicKey(e.K)
+	if k.X == nil || k.Y == nil {
+		return errors.New("Invalid Signature")
+	}
+	if e.M == nil || e.S == nil {
+		return errors.New("Invalid Signature")
+	}
 	if !ecdsa.Verify(&k, e.M, e.R, e.S) {
 		return errors.New("Invalid Signature")
 	}

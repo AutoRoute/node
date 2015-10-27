@@ -22,8 +22,8 @@ echo $ip3
 sleep 1
 autoroute -fake_money -auto=true -devs='i0-0,i2-0' &
 sleep 1
-autoroute -fake_money -auto=true -nolisten=true -devs='i1-0' &
+autoroute -fake_money -auto=true -listen="[$ip1%i1-0]:31337" -devs='i1-0' &
 sleep 1
-autoroute -fake_money -auto=true -nolisten=true -devs='i3-0' &
+autoroute -fake_money -auto=true -listen="[$ip3%i3-0]:31337" -devs='i3-0' &
 sleep 5
 trap 'kill $(jobs -pr)' SIGINT SIGTERM EXIT

@@ -15,7 +15,6 @@ import (
 
 var listen = flag.String("listen", "[::]:34321",
 	"The address to listen to incoming connections on")
-var nolisten = flag.Bool("nolisten", false, "Disables listening")
 var connect = flag.String("connect", "",
 	"Comma separated list of addresses to connect to")
 var autodiscover = flag.Bool("auto", false,
@@ -124,12 +123,10 @@ func main() {
 		}
 	}
 
-	if !*nolisten {
-		log.Print("Starting to listen")
-		err := n.Listen(*listen)
-		if err != nil {
-			log.Printf("Error listening: %v", err)
-		}
+	log.Print("Starting to listen")
+	err = n.Listen(*listen)
+	if err != nil {
+		log.Printf("Error listening: %v", err)
 	}
 
 	for _, ip := range strings.Split(*connect, ",") {
