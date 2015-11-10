@@ -7,11 +7,11 @@ import (
 )
 
 var connections_export *expvar.Map
+var id_export *expvar.String
 
 func init() {
-	if connections_export == nil {
-		connections_export = expvar.NewMap("connections")
-	}
+	connections_export = expvar.NewMap("connections")
+	id_export = expvar.NewString("id")
 }
 
 // A router handles all routing tasks that don't involve the local machine
@@ -33,6 +33,7 @@ type router struct {
 }
 
 func newRouter(pk PublicKey) *router {
+	id_export.Set(fmt.Sprintf("%x", pk.Hash()))
 	reach := newReachability(pk.Hash())
 	routing := newRouting(pk, reach)
 	c1, c2, quit := splitChannel(routing.Routes())
