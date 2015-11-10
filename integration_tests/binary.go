@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os/exec"
 	"strings"
@@ -96,7 +95,7 @@ type Failer interface {
 
 func (b Binary) KillAndPrint(f Failer) {
 	if f.Failed() {
-		log.Print(b.output)
+		fmt.Printf("\n8<----\n%s8<----\n\n", b.output)
 	}
 	b.Process.Kill()
 }
