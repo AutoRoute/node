@@ -12,7 +12,7 @@ ip1=$(ip -f inet6 -o addr show looptap0-1 |cut -d\  -f 7 | cut -d/ -f 1)
 echo $ip0
 echo $ip1
 sleep 1
-autoroute -listen "[$ip0%looptap0-0]:31337" -auto=true -devs='looptap0-0' &
+autoroute -fake_money -listen "[$ip0%looptap0-0]:31337" -auto=true -devs='looptap0-0' &
 sleep 1
-autoroute -listen "[$ip1%looptap0-1]:31337" -auto=true -devs='looptap0-1'
+autoroute -fake_money -listen "[$ip1%looptap0-1]:31337" -auto=true -devs='looptap0-1'
 

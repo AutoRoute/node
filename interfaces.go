@@ -38,16 +38,11 @@ type ReceiptConnection interface {
 	SendReceipt(PacketReceipt) error
 	PacketReceipts() <-chan PacketReceipt
 }
-type PaymentConnection interface {
-	SendPayment(PaymentHash) error
-	Payments() <-chan PaymentHash
-}
 
 // While the two connections use different messages, a working ControlConnection has both interfaces
 type ControlConnection interface {
 	MapConnection
 	ReceiptConnection
-	PaymentConnection
 }
 
 // The actual data connection. Should be done at the layer two level in order to be able to send congestion signals
@@ -60,5 +55,8 @@ type Connection interface {
 	ControlConnection
 	DataConnection
 	Key() PublicKey
+	// My sides metadata
+	MetaData() SSHMetaData
+	OtherMetaData() SSHMetaData
 	io.Closer
 }

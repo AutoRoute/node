@@ -25,6 +25,13 @@ var tcptun = flag.String("tcptun", "",
 	"Address to try and tcp tunnel to")
 var keyfile = flag.String("keyfile", "",
 	"The keyfile we should check for a key and write our current key to")
+var btc_host = flag.String("btc_host", "localhost:8333",
+	"The bitcoin daemon we should connect to")
+var btc_user = flag.String("btc_user", "user",
+	"The bitcoin daemon username")
+var btc_pass = flag.String("btc_pass", "password",
+	"The bitcoin daemon password")
+var fake_money = flag.Bool("fake_money", false, "Enables a money system which is purely fake")
 
 func Probe(key node.PrivateKey, n *node.Server, dev net.Interface, port uint16) {
 	if dev.Name == "lo" {
@@ -74,7 +81,17 @@ func main() {
 	}
 	log.Printf("Key is %x", key.PublicKey().Hash())
 
-	n := node.NewServer(key)
+	money := node.FakeMoney()
+	if !*fake_money {
+		log.Printf("Connecting to bitcoin daemon")
+		rpc, err := node.NewRPCMoney(*btc_host, *btc_user, *btc_pass)
+		if err != nil {
+			log.Printf("Error connection to bitcoin daemon")
+		}
+		money = rpc
+	}
+	log.Printf("Connected")
+	n := node.NewServer(key, money)
 
 	if *autodiscover {
 		devs := make([]net.Interface, 0)
@@ -133,7 +150,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		t := node.NewTCPTunnel(i, n.Node(), node.NodeAddress(dest), 1)
+		t := node.NewTCPTunnel(i, n.Node(), node.NodeAddress(dest), 10000)
 		t = t
 		<-quit
 	}

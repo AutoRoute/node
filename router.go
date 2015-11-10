@@ -16,7 +16,6 @@ type router struct {
 	*reachabilityHandler
 	*routingHandler
 	*receiptHandler
-	*paymentHandler
 	*ledger
 
 	lock *sync.Mutex
@@ -28,7 +27,6 @@ func newRouter(pk PublicKey) *router {
 	routing := newRouting(pk, reach)
 	c1, c2, quit := splitChannel(routing.Routes())
 	receipt := newReceipt(pk.Hash(), c1)
-	payment := newPayment(pk.Hash())
 	ledger := newLedger(pk.Hash(), receipt.PacketHashes(), c2)
 	return &router{
 		pk,
@@ -36,7 +34,6 @@ func newRouter(pk PublicKey) *router {
 		reach,
 		routing,
 		receipt,
-		payment,
 		ledger,
 		&sync.Mutex{},
 		quit,
@@ -47,11 +44,11 @@ func (r *router) GetAddress() PublicKey {
 	return r.pk
 }
 
-func (r *router) Connections() []NodeAddress {
+func (r *router) Connections() []Connection {
 	r.lock.Lock()
 	defer r.lock.Unlock()
-	c := make([]NodeAddress, 0, len(r.connections))
-	for k, _ := range r.connections {
+	c := make([]Connection, 0, len(r.connections))
+	for _, k := range r.connections {
 		c = append(c, k)
 	}
 	return c
@@ -72,14 +69,12 @@ func (r *router) AddConnection(c Connection) {
 	r.routingHandler.AddConnection(id, c)
 	r.reachabilityHandler.AddConnection(id, c)
 	r.receiptHandler.AddConnection(id, c)
-	r.paymentHandler.AddConnection(id, c)
 }
 
 func (r *router) Close() error {
 	r.reachabilityHandler.Close()
 	r.routingHandler.Close()
 	r.receiptHandler.Close()
-	r.paymentHandler.Close()
 	r.ledger.Close()
 	close(r.quit)
 	return nil

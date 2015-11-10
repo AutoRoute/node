@@ -29,19 +29,19 @@ type testConnection struct {
 	DataConnection
 	MapConnection
 	ReceiptConnection
-	PaymentConnection
 	k PublicKey
 }
 
-func (t testConnection) Close() error   { return nil }
-func (t testConnection) Key() PublicKey { return t.k }
+func (t testConnection) Close() error               { return nil }
+func (t testConnection) Key() PublicKey             { return t.k }
+func (t testConnection) MetaData() SSHMetaData      { return SSHMetaData{} }
+func (t testConnection) OtherMetaData() SSHMetaData { return SSHMetaData{} }
 
 func makePairedConnections(k1, k2 PublicKey) (Connection, Connection) {
 	d1, d2 := makePairedDataConnections()
 	m1, m2 := makePairedMapConnections()
 	r1, r2 := makePairedReceiptConnections()
-	p1, p2 := makePairedPaymentConnections()
-	return testConnection{d1, m1, r1, p1, k1}, testConnection{d2, m2, r2, p2, k2}
+	return testConnection{d1, m1, r1, k1}, testConnection{d2, m2, r2, k2}
 }
 
 func testPacket(n NodeAddress) Packet {
