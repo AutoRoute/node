@@ -41,7 +41,7 @@ func NewNodeBinary(b BinaryOptions) Binary {
 	args := ProduceCommandLine(b)
 	args = append(args, "--status=[::1]:"+fmt.Sprint(port))
 	buf := &bytes.Buffer{}
-	cmd := exec.Command("autoroute", args...)
+	cmd := exec.Command(GetBinaryPath(), args...)
 	cmd.Stdout = buf
 	cmd.Stderr = buf
 	return Binary{cmd, port, buf}
