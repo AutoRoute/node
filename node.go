@@ -79,14 +79,16 @@ func (n *Node) sendPayments() {
 			n.l.Lock()
 			for _, c := range n.router.Connections() {
 				owed, _ := n.router.OutgoingDebt(c.Key().Hash())
+				log.Printf("Owe %x %d", c.Key().Hash(), owed)
 				if owed > 0 {
+					log.Printf("Sending payment to %s", c.OtherMetaData().Payment_Address)
 					p, err := n.m.MakePayment(owed, c.OtherMetaData().Payment_Address)
 					if err != nil {
 						log.Printf("Failed to make a payment to %x (%x) : %v",
 							c.Key().Hash(), c.OtherMetaData().Payment_Address, err)
 						break
 					}
-					n.router.RecordPayment(c.Key().Hash(), owed, p)
+					go n.router.RecordPayment(c.Key().Hash(), owed, p)
 				}
 			}
 			n.l.Unlock()

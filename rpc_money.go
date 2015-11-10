@@ -19,7 +19,7 @@ func NewRPCMoney(host, user, pass string) (*RPCMoney, error) {
 		DisableTLS:   true,
 	}
 	client, err := btcrpcclient.New(config, nil)
-	return &RPCMoney{client, time.Minute, nil}, err
+	return &RPCMoney{client, 30 * time.Second, nil}, err
 }
 
 // RPCMoney represents a Money system which is backed by a bitcoin daemon over
@@ -41,7 +41,7 @@ func (r *RPCMoney) MakePayment(amount int64, destination string) (chan bool, err
 	if err != nil {
 		return nil, err
 	}
-	c := make(chan bool)
+	c := make(chan bool, 1)
 	go r.waitForPaymentSuccess(hash, c)
 	return c, nil
 }
@@ -79,7 +79,9 @@ func (r *RPCMoney) GetNewAddress() (string, chan uint64, error) {
 func (r *RPCMoney) listenBalanceChanges(addr btcutil.Address, c chan uint64) {
 	old_amt := int64(0)
 	for _ = range time.Tick(r.poll_rate) {
+		log.Print("Checking received balance")
 		amt, err := r.rpc.GetReceivedByAddress(addr)
+		log.Printf("current balance %d", amt)
 		if err != nil {
 			log.Print(err)
 			r.err = err
