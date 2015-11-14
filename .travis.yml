@@ -3,7 +3,11 @@ language: go
 go:
   - 1.5.1
 
-# Use faster container builds
-sudo: false
+before_script:
+  - go get github.com/AutoRoute/loopback2
+  - sudo modprobe tun
 
-script: go test -v ./... -race
+script:
+  - go test -v github.com/Autoroute/node -race
+  - go test -v github.com/Autoroute/node/integration_tests
+  - sudo -E env "PATH=$PATH" go test -v github.com/Autoroute/node/integration_tests/root
