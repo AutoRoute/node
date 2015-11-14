@@ -144,9 +144,10 @@ func (p *ledger) handlePayments(n NodeAddress, c Connection) {
 	for {
 		select {
 		case amount := <-ch:
+			log.Printf("Received payment of %d to %q", amount, c.MetaData().Payment_Address)
 			p.l.Lock()
-			defer p.l.Unlock()
 			p.incoming_debt[n] = payDebt(p.incoming_debt[n], int64(amount))
+			p.l.Unlock()
 		case <-p.quit:
 			return
 		}
@@ -157,8 +158,10 @@ func (p *ledger) handlePayments(n NodeAddress, c Connection) {
 func (p *ledger) RecordPayment(destination NodeAddress, amount int64, confirmed chan bool) {
 	ok := <-confirmed
 	if ok {
+		p.l.Lock()
 		p.incoming_debt[p.id] = payDebt(p.incoming_debt[p.id], amount)
 		p.outgoing_debt[destination] = payDebt(p.outgoing_debt[destination], amount)
+		p.l.Unlock()
 	}
 }
 

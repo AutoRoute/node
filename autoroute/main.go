@@ -152,7 +152,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		t := node.NewTCPTunnel(i, n.Node(), node.NodeAddress(dest), 1)
+		t := node.NewTCPTunnel(i, n.Node(), node.NodeAddress(dest), 10000)
 		t = t
 		<-quit
 	}
