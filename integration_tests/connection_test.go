@@ -5,7 +5,7 @@ import (
 )
 
 func TestConnection(t *testing.T) {
-	listen := NewNodeBinary(BinaryOptions{Listen: "localhost:9999", Fake_money: true})
+	listen := NewNodeBinary(BinaryOptions{Listen: "[::1]:9999", Fake_money: true})
 	listen.Start()
 	defer listen.KillAndPrint(t)
 	_, err := WaitForID(listen)
@@ -14,8 +14,8 @@ func TestConnection(t *testing.T) {
 	}
 
 	connect := NewNodeBinary(BinaryOptions{
-		Listen:     "localhost:9998",
-		Connect:    []string{"localhost:9999"},
+		Listen:     "[::1]:9998",
+		Connect:    []string{"[::1]:9999"},
 		Fake_money: true})
 	connect.Start()
 	defer connect.KillAndPrint(t)

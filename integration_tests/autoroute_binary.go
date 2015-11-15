@@ -58,7 +58,7 @@ type statusStruct struct {
 }
 
 func (b AutoRouteBinary) fetchStatus() (*statusStruct, error) {
-	resp, err := http.Get(fmt.Sprintf("http://localhost:%d/debug/vars", b.port))
+	resp, err := http.Get(fmt.Sprintf("http://[::1]:%d/debug/vars", b.port))
 	if err != nil {
 		return nil, err
 	}
