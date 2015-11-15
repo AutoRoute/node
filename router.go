@@ -1,8 +1,18 @@
 package node
 
 import (
+	"expvar"
+	"fmt"
 	"sync"
 )
+
+var connections_export *expvar.Map
+var id_export *expvar.String
+
+func init() {
+	connections_export = expvar.NewMap("connections")
+	id_export = expvar.NewString("id")
+}
 
 // A router handles all routing tasks that don't involve the local machine
 // including connection management, reachability handling, packet receipt
@@ -23,6 +33,7 @@ type router struct {
 }
 
 func newRouter(pk PublicKey) *router {
+	id_export.Set(fmt.Sprintf("%x", pk.Hash()))
 	reach := newReachability(pk.Hash())
 	routing := newRouting(pk, reach)
 	c1, c2, quit := splitChannel(routing.Routes())
@@ -69,6 +80,7 @@ func (r *router) AddConnection(c Connection) {
 	r.routingHandler.AddConnection(id, c)
 	r.reachabilityHandler.AddConnection(id, c)
 	r.receiptHandler.AddConnection(id, c)
+	connections_export.Add(fmt.Sprintf("%x", c.Key().Hash()), 1)
 }
 
 func (r *router) Close() error {

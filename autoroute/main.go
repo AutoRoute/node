@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"net/http"
 	"runtime"
 	"strconv"
 	"strings"
@@ -32,6 +33,7 @@ var btc_user = flag.String("btc_user", "user",
 var btc_pass = flag.String("btc_pass", "password",
 	"The bitcoin daemon password")
 var fake_money = flag.Bool("fake_money", false, "Enables a money system which is purely fake")
+var status = flag.String("status", "[::1]:12345", "The port to expose status information on")
 
 func Probe(key node.PrivateKey, n *node.Server, dev net.Interface, port uint16) {
 	if dev.Name == "lo" {
@@ -153,6 +155,11 @@ func main() {
 		t := node.NewTCPTunnel(i, n.Node(), node.NodeAddress(dest), 10000)
 		t = t
 		<-quit
+	}
+
+	err = http.ListenAndServe(*status, nil)
+	if err != nil {
+		log.Fatal("ListenAndServe: ", err)
 	}
 
 	<-quit
