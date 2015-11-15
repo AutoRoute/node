@@ -21,6 +21,9 @@ type BinaryOptions struct {
 	Connect              []string
 	Autodiscover         bool
 	Autodiscover_devices []string
+	BTCHost              string
+	BTCUser              string
+	BTCPass              string
 }
 
 // Transforms a BinaryOptions into a valid AutoRoute command line.
@@ -38,6 +41,15 @@ func ProduceCommandLine(b BinaryOptions) []string {
 	}
 	if len(b.Autodiscover_devices) > 0 {
 		args = append(args, "--devs="+strings.Join(b.Autodiscover_devices, ","))
+	}
+	if len(b.BTCHost) > 0 {
+		args = append(args, "--btc_host="+b.BTCHost)
+	}
+	if len(b.BTCUser) > 0 {
+		args = append(args, "--btc_user="+b.BTCUser)
+	}
+	if len(b.BTCPass) > 0 {
+		args = append(args, "--btc_pass="+b.BTCPass)
 	}
 	return args
 }

@@ -114,7 +114,7 @@ func (n *Node) Close() error {
 func (n *Node) GetNewAddress() string {
 	address, c, err := n.m.GetNewAddress()
 	if err != nil {
-		log.Fatal("Failed to get payment address", err)
+		log.Fatal("Failed to get payment address: ", err)
 	}
 	n.router.ledger.AddAddress(address, c)
 	return address
