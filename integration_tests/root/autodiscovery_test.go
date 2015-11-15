@@ -30,7 +30,7 @@ func WaitForDevice(s string) error {
 			return errors.New(fmt.Sprintf("Error waiting for %s to be reachable", s))
 		default:
 		}
-		_, err := net.InterfaceByName("looptap0-0")
+		_, err := net.InterfaceByName(s)
 		if err == nil {
 			return nil
 		}
