@@ -125,7 +125,7 @@ func main() {
 		}
 	}
 
-	log.Print("Starting to listen")
+	log.Printf("Starting to listen on %s", *listen)
 	err = n.Listen(*listen)
 	if err != nil {
 		log.Printf("Error listening: %v", err)

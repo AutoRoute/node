@@ -6,17 +6,21 @@ import (
 	"os/exec"
 )
 
-func init() {
-	cmd := exec.Command("go", "install", "github.com/AutoRoute/node/autoroute")
+func BuildBinary(path string) (string, error) {
+	cmd := exec.Command("go", "install", path)
 	cmd.Env = os.Environ()
 	cmd.Env = append(cmd.Env, "GOBIN=/tmp")
 	out, err := cmd.CombinedOutput()
+	return string(out), err
+}
+
+func init() {
+	out, err := BuildBinary("github.com/AutoRoute/node/autoroute")
 	if err != nil {
 		log.Fatalf("%s:%s:", err, out)
 	}
 }
 
-func GetBinaryPath() string {
+func GetAutoRoutePath() string {
 	return "/tmp/autoroute"
-
 }
