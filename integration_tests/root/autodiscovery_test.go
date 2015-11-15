@@ -22,17 +22,17 @@ func BuildListenAddress(i *net.Interface, port int) string {
 	return fmt.Sprintf("[%s%%%s]:%d", ll, i.Name, port)
 }
 
-func WaitForDevice(s string) error {
+func WaitForDevice(s string) (*net.Interface, error) {
 	timeout := time.After(1 * time.Second)
 	for range time.Tick(10 * time.Millisecond) {
 		select {
 		case <-timeout:
-			return errors.New(fmt.Sprintf("Error waiting for %s to be reachable", s))
+			return nil, errors.New(fmt.Sprintf("Error waiting for %s to be reachable", s))
 		default:
 		}
-		_, err := net.InterfaceByName(s)
+		d, err := net.InterfaceByName(s)
 		if err == nil {
-			return nil
+			return d, nil
 		}
 	}
 	panic("Unreachable")
@@ -64,23 +64,15 @@ func TestConnection(t *testing.T) {
 	}
 	defer cmd.KillAndPrint(t)
 
-	err = WaitForDevice("looptap0-0")
+	listen_dev, err := WaitForDevice("looptap0-0")
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = WaitForDevice("looptap0-1")
+	connect_dev, err := WaitForDevice("looptap0-1")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	listen_dev, err := net.InterfaceByName("looptap0-0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	connect_dev, err := net.InterfaceByName("looptap0-1")
-	if err != nil {
-		t.Fatal(err)
-	}
 	out, err := exec.Command("ip", strings.Split("link set dev looptap0-0 up", " ")...).CombinedOutput()
 	if err != nil {
 		t.Fatal(err, string(out))
