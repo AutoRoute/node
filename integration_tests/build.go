@@ -19,16 +19,8 @@ func init() {
 	if err != nil {
 		log.Fatalf("%s:%s:", err, out)
 	}
-	out, err = BuildBinary("github.com/AutoRoute/loopback2")
-	if err != nil {
-		log.Fatalf("%s:%s:", err, out)
-	}
 }
 
 func GetAutoRoutePath() string {
 	return "/tmp/autoroute"
-}
-
-func GetLoopBack2Path() string {
-	return "/tmp/loopback2"
 }

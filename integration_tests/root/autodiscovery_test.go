@@ -57,7 +57,7 @@ func WaitForListen(s string) error {
 func TestConnection(t *testing.T) {
 	WarnRoot(t)
 
-	cmd := integration.NewWrappedBinary(integration.GetLoopBack2Path())
+	cmd := integration.NewWrappedBinary(GetLoopBack2Path())
 	err := cmd.Start()
 	if err != nil {
 		t.Fatal(err)

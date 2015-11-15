@@ -3,11 +3,6 @@ language: go
 go:
   - 1.5.1
 
-before_script:
-  - go get github.com/AutoRoute/loopback2
-  - sudo modprobe tun
-
 script:
-  - go test -v github.com/Autoroute/node -race
-  - go test -v github.com/Autoroute/node/integration_tests
-  - sudo -E env "PATH=$PATH" go test -v github.com/Autoroute/node/integration_tests/root
+  - go test -v github.com/AutoRoute/node -race
+  - go test -v github.com/AutoRoute/node/integration_tests
