@@ -15,7 +15,7 @@ func WaitForIncomingDebt(t *testing.T, l *ledger, a NodeAddress, o int64) {
 			t.Errorf("Expected incoming debt from %s to be %d != %d", a, o, d)
 			return
 		case <-tick:
-			d, _ = l.IncomingDebt(a)
+			d = l.IncomingDebt(a)
 			if d == o {
 				return
 			}
@@ -33,7 +33,7 @@ func WaitForOutgoingDebt(t *testing.T, l *ledger, a NodeAddress, o int64) {
 			t.Errorf("Expected outgoing debt from %s to be %d != %d", a, o, d)
 			return
 		case <-tick:
-			d, _ = l.OutgoingDebt(a)
+			d = l.OutgoingDebt(a)
 			if d == o {
 				return
 			}
