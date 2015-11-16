@@ -102,7 +102,7 @@ func TestConnection(t *testing.T) {
 	})
 	listen.Start()
 	defer listen.KillAndPrint(t)
-    // autoroute -fake_money -listen "[%ip1%looptap0-1]:31337" -auto=true -devs='looptap0-1'
+	// autoroute -fake_money -listen "[%ip1%looptap0-1]:31337" -auto=true -devs='looptap0-1'
 	connect_port := integration.GetUnusedPort()
 	connect := integration.NewNodeBinary(integration.BinaryOptions{
 		Listen:               BuildListenAddress(connect_dev, connect_port),
