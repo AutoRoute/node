@@ -39,14 +39,6 @@ type SSHConnection struct {
 	receipt_dec_l    *sync.Mutex
 	receipt_chan     chan PacketReceipt
 
-	// payment
-	payment_ssh_chan *SSHChannel
-	payment_enc      *json.Encoder
-	payment_enc_l    *sync.Mutex
-	payment_dec      *json.Decoder
-	payment_dec_l    *sync.Mutex
-	payment_chan     chan PaymentHash
-
 	// packet
 	packet_ssh_chan *SSHChannel
 	packet_enc      *json.Encoder
@@ -55,65 +47,72 @@ type SSHConnection struct {
 	packet_dec_l    *sync.Mutex
 	packet_chan     chan Packet
 
-	key PublicKey
+	other_metadata SSHMetaData
+	our_metadata   SSHMetaData
 	// Channel to allow blocking until ssh channels are established
 	sync chan bool
 	lock *sync.Mutex
 }
 
+type SSHMetaData struct {
+	Payment_Address string
+	// Will be generated on the fly.
+	Sig Signature
+}
+
 // Constructs a new SSHConnection given the various items returned by the /x/c/ssh library.
 // Does *not* call listen() or connect() on the SSHConnection, which is required
 // to establish the various required channels.
-func NewSSHConnection(conn ssh.Conn, chans <-chan ssh.NewChannel, reqs <-chan *ssh.Request, key PrivateKey) *SSHConnection {
+func NewSSHConnection(conn ssh.Conn, chans <-chan ssh.NewChannel, reqs <-chan *ssh.Request, key PrivateKey, metadata SSHMetaData) *SSHConnection {
 	s := &SSHConnection{conn,
 		chans,
 		reqs,
 		nil, nil, &sync.Mutex{}, nil, &sync.Mutex{}, make(chan *BloomReachabilityMap),
 		nil, nil, &sync.Mutex{}, nil, &sync.Mutex{}, make(chan PacketReceipt),
-		nil, nil, &sync.Mutex{}, nil, &sync.Mutex{}, make(chan PaymentHash),
 		nil, nil, &sync.Mutex{}, nil, &sync.Mutex{}, make(chan Packet),
-		PublicKey{},
+		SSHMetaData{},
+		metadata,
 		make(chan bool),
 		&sync.Mutex{},
 	}
-	go s.sendKey(key)
-	s.waitForKey()
+	go s.sendMetaData(key, metadata)
+	s.waitForMetaData()
 	return s
 }
 
-func (s *SSHConnection) sendKey(k PrivateKey) {
-	sig := k.Sign(s.conn.SessionID())
-	b, err := json.Marshal(sig)
+func (s *SSHConnection) sendMetaData(key PrivateKey, m SSHMetaData) {
+	m.Sig = key.Sign(s.conn.SessionID())
+	b, err := json.Marshal(m)
 	if err != nil {
 		panic(err)
 	}
 	s.conn.SendRequest("identify", false, b)
 }
 
-func (s *SSHConnection) waitForKey() {
+func (s *SSHConnection) waitForMetaData() {
 	for req := range s.reqs {
 		if req.Type != "identify" {
 			log.Printf("Received message of type %q", req.Type)
 			continue
 		}
 
-		var sig Signature
-		err := json.Unmarshal(req.Payload, &sig)
+		var m SSHMetaData
+		err := json.Unmarshal(req.Payload, &m)
 		if err != nil {
 			log.Printf("Error unmarshalling: %v", err)
 			continue
 
 		}
-		err = sig.Verify()
+		err = m.Sig.Verify()
 		if err != nil {
 			log.Printf("Error verifying: %v", err)
 			continue
 		}
-		if !bytes.Equal(sig.Signed(), s.conn.SessionID()) {
-			log.Printf("wrong signed session id %x != %x", sig.Signed(), s.conn.SessionID())
+		if !bytes.Equal(m.Sig.Signed(), s.conn.SessionID()) {
+			log.Printf("wrong signed session id %x != %x", m.Sig.Signed(), s.conn.SessionID())
 			continue
 		}
-		s.key = sig.Key()
+		s.other_metadata = m
 		break
 	}
 }
@@ -163,26 +162,6 @@ func (s *SSHConnection) listen() {
 				s.receipt_dec = json.NewDecoder(c)
 				s.receipt_dec_l.Unlock()
 				s.sync <- true
-			case "payment":
-				if s.payment_ssh_chan != nil {
-					nc.Reject(ssh.ConnectionFailed, "Connection already established")
-					s.lock.Unlock()
-					continue
-				}
-				c, r, err := nc.Accept()
-				if err != nil {
-					log.Printf("Error accepting channel request: %v", err)
-					s.lock.Unlock()
-					continue
-				}
-				s.payment_ssh_chan = &SSHChannel{c, r}
-				s.payment_enc_l.Lock()
-				s.payment_enc = json.NewEncoder(c)
-				s.payment_enc_l.Unlock()
-				s.payment_dec_l.Lock()
-				s.payment_dec = json.NewDecoder(c)
-				s.payment_dec_l.Unlock()
-				s.sync <- true
 			case "packet":
 				if s.packet_ssh_chan != nil {
 					nc.Reject(ssh.ConnectionFailed, "Connection already established")
@@ -212,10 +191,8 @@ func (s *SSHConnection) listen() {
 	<-s.sync
 	<-s.sync
 	<-s.sync
-	<-s.sync
 	go s.handleMaps()
 	go s.handleReceipts()
-	go s.handlePayments()
 	go s.handlePackets()
 	go func() {
 		for range s.sync {
@@ -251,18 +228,6 @@ func (s *SSHConnection) connect() error {
 	s.receipt_dec = json.NewDecoder(c)
 	s.receipt_dec_l.Unlock()
 
-	c, r, err = s.conn.OpenChannel("payment", nil)
-	if err != nil {
-		return err
-	}
-	s.payment_ssh_chan = &SSHChannel{c, r}
-	s.payment_enc_l.Lock()
-	s.payment_enc = json.NewEncoder(c)
-	s.payment_enc_l.Unlock()
-	s.payment_dec_l.Lock()
-	s.payment_dec = json.NewDecoder(c)
-	s.payment_dec_l.Unlock()
-
 	c, r, err = s.conn.OpenChannel("packet", nil)
 	if err != nil {
 		return err
@@ -277,7 +242,6 @@ func (s *SSHConnection) connect() error {
 
 	go s.handleMaps()
 	go s.handleReceipts()
-	go s.handlePayments()
 	go s.handlePackets()
 
 	return nil
@@ -333,31 +297,6 @@ func (s *SSHConnection) PacketReceipts() <-chan PacketReceipt {
 	return s.receipt_chan
 }
 
-func (s *SSHConnection) SendPayment(p PaymentHash) error {
-	s.payment_enc_l.Lock()
-	defer s.payment_enc_l.Unlock()
-	return s.payment_enc.Encode(p)
-}
-
-func (s *SSHConnection) handlePayments() {
-	for {
-		s.payment_dec_l.Lock()
-		var v PaymentHash
-		err := s.payment_dec.Decode(&v)
-		if err != nil {
-			close(s.payment_chan)
-			return
-		} else {
-			s.payment_chan <- v
-		}
-		s.payment_dec_l.Unlock()
-	}
-}
-
-func (s *SSHConnection) Payments() <-chan PaymentHash {
-	return s.payment_chan
-}
-
 func (s *SSHConnection) SendPacket(p Packet) error {
 	s.packet_enc_l.Lock()
 	defer s.packet_enc_l.Unlock()
@@ -384,7 +323,15 @@ func (s *SSHConnection) Packets() <-chan Packet {
 }
 
 func (s *SSHConnection) Key() PublicKey {
-	return s.key
+	return s.other_metadata.Sig.Key()
+}
+
+func (s *SSHConnection) MetaData() SSHMetaData {
+	return s.our_metadata
+}
+
+func (s *SSHConnection) OtherMetaData() SSHMetaData {
+	return s.other_metadata
 }
 
 func (s *SSHConnection) Close() error {
@@ -405,9 +352,9 @@ func (l *SSHListener) Connections() <-chan *SSHConnection {
 	return l.c
 }
 
-func ListenSSH(c net.Listener, key PrivateKey) *SSHListener {
+func ListenSSH(c net.Listener, key PrivateKey, metadata func() SSHMetaData) *SSHListener {
 	l := &SSHListener{nil, make(chan *SSHConnection)}
-	l.listen(c, key)
+	l.listen(c, key, metadata)
 	return l
 }
 
@@ -417,7 +364,7 @@ func (l *SSHListener) error(err error) {
 	return
 }
 
-func (l *SSHListener) listen(s net.Listener, key PrivateKey) {
+func (l *SSHListener) listen(s net.Listener, key PrivateKey, metadata func() SSHMetaData) {
 	config := &ssh.ServerConfig{
 		PublicKeyCallback: func(conn ssh.ConnMetadata, key ssh.PublicKey) (*ssh.Permissions, error) {
 			return &ssh.Permissions{}, nil
@@ -442,14 +389,14 @@ func (l *SSHListener) listen(s net.Listener, key PrivateKey) {
 				l.error(err)
 				return
 			}
-			sc := NewSSHConnection(server, chans, reqs, key)
+			sc := NewSSHConnection(server, chans, reqs, key, metadata())
 			sc.listen()
 			l.c <- sc
 		}
 	}()
 }
 
-func EstablishSSH(c net.Conn, address string, key PrivateKey) (*SSHConnection, error) {
+func EstablishSSH(c net.Conn, address string, key PrivateKey, metadata SSHMetaData) (*SSHConnection, error) {
 	username := string(key.PublicKey().Hash())
 	signer, err := ssh.NewSignerFromKey(key.k)
 	if err != nil {
@@ -466,7 +413,7 @@ func EstablishSSH(c net.Conn, address string, key PrivateKey) (*SSHConnection, e
 	if err != nil {
 		return nil, err
 	}
-	sc := NewSSHConnection(client, chans, reqs, key)
+	sc := NewSSHConnection(client, chans, reqs, key, metadata)
 	err = sc.connect()
 	if err != nil {
 		sc.conn.Close()

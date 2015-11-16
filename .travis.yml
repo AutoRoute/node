@@ -3,7 +3,6 @@ language: go
 go:
   - 1.5.1
 
-# Use faster container builds
-sudo: false
-
-script: go test -v ./... -race
+script:
+  - go test -v github.com/AutoRoute/node -race
+  - go test -v github.com/AutoRoute/node/integration_tests

@@ -15,8 +15,8 @@ func TestNode(t *testing.T) {
 	sk1, _ := NewECDSAKey()
 	sk2, _ := NewECDSAKey()
 	c := make(chan time.Time)
-	n1 := NewNode(sk1, time.Tick(100*time.Millisecond), c)
-	n2 := NewNode(sk2, time.Tick(100*time.Millisecond), time.Tick(100*time.Millisecond))
+	n1 := NewNode(sk1, fakeMoney{}, time.Tick(100*time.Millisecond), c)
+	n2 := NewNode(sk2, fakeMoney{}, time.Tick(100*time.Millisecond), time.Tick(100*time.Millisecond))
 	defer n1.Close()
 	defer n2.Close()
 	link(n1, n2)
@@ -31,18 +31,4 @@ func TestNode(t *testing.T) {
 		t.Fatalf("Error sending packet: %v", err)
 	}
 	<-n2.Packets()
-
-	for range time.Tick(25 * time.Millisecond) {
-		if amt, _ := n1.router.OutgoingDebt(sk2.PublicKey().Hash()); amt != 0 {
-			break
-		}
-	}
-
-	c <- time.Now()
-
-	for range time.Tick(25 * time.Millisecond) {
-		if amt, _ := n1.router.OutgoingDebt(sk2.PublicKey().Hash()); amt == 0 {
-			return
-		}
-	}
 }

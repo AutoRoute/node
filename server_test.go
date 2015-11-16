@@ -11,9 +11,9 @@ func TestConnection(t *testing.T) {
 	key1, _ := NewECDSAKey()
 	key2, _ := NewECDSAKey()
 
-	n1 := NewServer(key1)
+	n1 := NewServer(key1, fakeMoney{})
 	defer n1.Close()
-	n2 := NewServer(key2)
+	n2 := NewServer(key2, fakeMoney{})
 	defer n2.Close()
 
 	err := n1.Listen("[::1]:16543")
@@ -28,7 +28,7 @@ func TestConnection(t *testing.T) {
 
 func WaitForReachable(n *Node, addr NodeAddress) error {
 	tick := time.Tick(100 * time.Millisecond)
-	timeout := time.After(10 * time.Second)
+	timeout := time.After(1 * time.Second)
 	for {
 		select {
 		case <-tick:
@@ -46,9 +46,9 @@ func TestDataTransmission(t *testing.T) {
 	key1, _ := NewECDSAKey()
 	key2, _ := NewECDSAKey()
 
-	n1 := NewServer(key1)
+	n1 := NewServer(key1, fakeMoney{})
 	defer n1.Close()
-	n2 := NewServer(key2)
+	n2 := NewServer(key2, fakeMoney{})
 	defer n2.Close()
 	err := n1.Listen("[::1]:16544")
 	if err != nil {
