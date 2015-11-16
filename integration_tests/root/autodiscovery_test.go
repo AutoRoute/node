@@ -55,15 +55,15 @@ func WaitForListen(s string) error {
 }
 
 func TestConnection(t *testing.T) {
+	// set -e
 	WarnRoot(t)
-
+	// loopback2
 	cmd := integration.NewWrappedBinary(GetLoopBack2Path())
 	err := cmd.Start()
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer cmd.KillAndPrint(t)
-
 	listen_dev, err := WaitForDevice("looptap0-0")
 	if err != nil {
 		t.Fatal(err)
@@ -72,16 +72,17 @@ func TestConnection(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
+	//  ip link set dev looptap0-0 up
 	out, err := exec.Command("ip", strings.Split("link set dev looptap0-0 up", " ")...).CombinedOutput()
 	if err != nil {
 		t.Fatal(err, string(out))
 	}
+	// ip link set dev looptap 0-1 up
 	out, err = exec.Command("ip", strings.Split("link set dev looptap0-1 up", " ")...).CombinedOutput()
 	if err != nil {
 		t.Fatal(err, string(out))
 	}
-
+	// starts listening on the address
 	err = WaitForListen(BuildListenAddress(listen_dev, integration.GetUnusedPort()))
 	if err != nil {
 		t.Fatal(err)
@@ -92,6 +93,7 @@ func TestConnection(t *testing.T) {
 	}
 
 	listen_port := integration.GetUnusedPort()
+	// autoroute -fake_money -listen "[%ip0%looptap0-0]:31337" -auto=true -devs='looptap0-0'
 	listen := integration.NewNodeBinary(integration.BinaryOptions{
 		Listen:               BuildListenAddress(listen_dev, listen_port),
 		Fake_money:           true,
@@ -100,7 +102,7 @@ func TestConnection(t *testing.T) {
 	})
 	listen.Start()
 	defer listen.KillAndPrint(t)
-
+    // autoroute -fake_money -listen "[%ip1%looptap0-1]:31337" -auto=true -devs='looptap0-1'
 	connect_port := integration.GetUnusedPort()
 	connect := integration.NewNodeBinary(integration.BinaryOptions{
 		Listen:               BuildListenAddress(connect_dev, connect_port),
@@ -115,12 +117,12 @@ func TestConnection(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
+	// get connect ID once it's generated
 	connect_id, err := integration.WaitForID(connect)
 	if err != nil {
 		t.Fatal(err)
 	}
-
+	// connect it to the listener
 	err = integration.WaitForConnection(listen, connect_id)
 	if err != nil {
 		t.Fatal(err)
