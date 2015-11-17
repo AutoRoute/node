@@ -32,33 +32,26 @@ func WaitForGetInfo() error {
 }
 
 func TestBitcoin(t *testing.T) {
-	log.Print("Starting")
-
 	cmd := exec.Command("make", "start")
 	cmd.Dir = test_net_path
-	log.Print("Starting")
 	err := cmd.Run()
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	defer func() {
-		cmd = exec.Command("make", "stop")
+		cmd := exec.Command("make", "stop")
 		cmd.Dir = test_net_path
-		log.Print("Stop")
 		err = cmd.Run()
 		if err != nil {
 			log.Print(err)
 		}
-		log.Print("Done")
 		cmd = exec.Command("make", "clean")
 		cmd.Dir = test_net_path
-		log.Print("Cleaning")
 		err = cmd.Run()
 		if err != nil {
 			log.Print(err)
 		}
-		log.Print("Done")
 	}()
 
 	err = WaitForGetInfo()
