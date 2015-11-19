@@ -69,11 +69,14 @@ func NewNodeBinary(b BinaryOptions) AutoRouteBinary {
 }
 
 type statusStruct struct {
-	Connections map[string]int
-	Id          string
+	Connections      map[string]int
+	Packets_sent     map[string]int
+	Packets_dropped  int
+	Packets_received map[string]int
+	Id               string
 }
 
-func (b AutoRouteBinary) fetchStatus() (*statusStruct, error) {
+func (b AutoRouteBinary) FetchStatus() (*statusStruct, error) {
 	resp, err := http.Get(fmt.Sprintf("http://[::1]:%d/debug/vars", b.port))
 	if err != nil {
 		return nil, err
@@ -90,7 +93,7 @@ func (b AutoRouteBinary) fetchStatus() (*statusStruct, error) {
 
 // Returns a list of connections
 func (b AutoRouteBinary) GetConnections() ([]string, error) {
-	status, err := b.fetchStatus()
+	status, err := b.FetchStatus()
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +107,7 @@ func (b AutoRouteBinary) GetConnections() ([]string, error) {
 
 // Returns the hex encoded network ID of the binary.
 func (b AutoRouteBinary) GetID() (string, error) {
-	status, err := b.fetchStatus()
+	status, err := b.FetchStatus()
 	if err != nil {
 		return "", err
 	}

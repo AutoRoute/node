@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/signal"
 	"runtime"
 	"strconv"
 	"strings"
@@ -70,8 +71,9 @@ func main() {
 
 	log.Print("Starting")
 	flag.Parse()
-	log.Print(*unix)
-	quit := make(chan bool)
+
+	quit := make(chan os.Signal)
+	signal.Notify(quit)
 
 	var key node.PrivateKey
 	var err error
@@ -172,7 +174,8 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		c = c
+		defer os.Remove(*unix)
+		defer c.Close()
 		<-quit
 		return
 	}
