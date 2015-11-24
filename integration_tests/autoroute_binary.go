@@ -105,6 +105,26 @@ func (b AutoRouteBinary) GetConnections() ([]string, error) {
 
 }
 
+// Returns a map of address -> packets received
+func (b AutoRouteBinary) GetPacketsReceived() (map[string]int, error) {
+	status, err := b.FetchStatus()
+	if err != nil {
+		return nil, err
+	}
+	return status.Packets_received, err
+
+}
+
+// Returns a map of address -> packets received
+func (b AutoRouteBinary) GetPacketsSent() (map[string]int, error) {
+	status, err := b.FetchStatus()
+	if err != nil {
+		return nil, err
+	}
+	return status.Packets_sent, err
+
+}
+
 // Returns the hex encoded network ID of the binary.
 func (b AutoRouteBinary) GetID() (string, error) {
 	status, err := b.FetchStatus()

@@ -49,10 +49,10 @@ func WaitForConnection(b AutoRouteBinary, addr string) error {
 	panic("unreachable")
 }
 
-func WaitForSocket(p string) (net.Conn, error) {
+func WaitForSocket(dev string) (net.Conn, error) {
 	timeout := time.After(time.Second)
 	for range time.Tick(10 * time.Millisecond) {
-		c, err := net.Dial("unix", "/tmp/unix")
+		c, err := net.Dial("unix", dev)
 		if err == nil {
 			return c, err
 		}
@@ -63,6 +63,50 @@ func WaitForSocket(p string) (net.Conn, error) {
 		}
 	}
 	panic("Unreachable")
+}
+
+func WaitForPacketsReceived(b AutoRouteBinary, src string, amt int) error {
+	stop := time.After(time.Second)
+	for range time.Tick(10 * time.Millisecond) {
+		packets_received, err := b.GetPacketsReceived()
+		if err != nil {
+			continue
+		}
+		for source, amount := range packets_received {
+			if source == src && amount == amt {
+				return nil
+			}
+		}
+
+		select {
+		case <-stop:
+			return errors.New(fmt.Sprint("Timeout out while waiting for packets received: ", packets_received))
+		default:
+		}
+	}
+	panic("unreachable")
+}
+
+func WaitForPacketsSent(b AutoRouteBinary, dest string, amt int) error {
+	stop := time.After(time.Second)
+	for range time.Tick(10 * time.Millisecond) {
+		packets_sent, err := b.GetPacketsSent()
+		if err != nil {
+			continue
+		}
+		for destination, amount := range packets_sent {
+			if destination == dest && amount == amt {
+				return nil
+			}
+		}
+
+		select {
+		case <-stop:
+			return errors.New(fmt.Sprint("Timeout out while waiting for packets sent: ", packets_sent))
+		default:
+		}
+	}
+	panic("unreachable")
 }
 
 func WaitForPacket(c net.Conn, t *testing.T, s chan node.Packet) {

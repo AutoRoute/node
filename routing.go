@@ -81,9 +81,9 @@ func (r *routingHandler) SendPacket(p Packet) error {
 }
 
 func (r *routingHandler) sendPacket(p Packet, src NodeAddress) error {
-	packets_received.Add(fmt.Sprint("%x", src), 1)
+	packets_received.Add(fmt.Sprintf("%x", src), 1)
 	if p.Destination() == r.pk.Hash() {
-		packets_sent.Add(fmt.Sprint("%x", r.pk.Hash), 1)
+		packets_sent.Add(fmt.Sprintf("%x", r.pk.Hash()), 1)
 		r.incoming <- p
 		go r.notifyDecision(p, src, r.pk.Hash())
 		return nil
@@ -93,7 +93,7 @@ func (r *routingHandler) sendPacket(p Packet, src NodeAddress) error {
 		packets_dropped.Add(1)
 		return err
 	}
-	packets_sent.Add(fmt.Sprint("%x", next), 1)
+	packets_sent.Add(fmt.Sprintf("%x", next), 1)
 	go r.notifyDecision(p, src, next)
 	return r.connections[next].SendPacket(p)
 }

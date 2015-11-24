@@ -18,7 +18,7 @@ func TestPacket(t *testing.T) {
 	})
 	listen.Start()
 	defer listen.KillAndPrint(t)
-	_, err := WaitForID(listen)
+	listen_id, err := WaitForID(listen)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -45,20 +45,41 @@ func TestPacket(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	c2, err := WaitForSocket("/tmp/unix2")
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	w := json.NewEncoder(c)
 	err = w.Encode(p)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	c2, err := WaitForSocket("/tmp/unix2")
+	err = WaitForPacketsReceived(listen, listen_id, 1)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	err = WaitForPacketsSent(listen, connect_id, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = WaitForPacketsReceived(connect, listen_id, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = WaitForPacketsSent(connect, connect_id, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	packets := make(chan node.Packet)
 	go WaitForPacket(c2, t, packets)
 	select {
-	case <-time.After(2 * time.Second):
+	case <-time.After(4 * time.Second):
 		t.Fatal("Never received packet")
 	case p2 := <-packets:
 		if p != p2 {
