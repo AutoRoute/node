@@ -59,6 +59,47 @@ func link(a, b linkable) {
 	b.AddConnection(c1)
 }
 
+func TestRouterConnections(t *testing.T) {
+	sk1, _ := NewECDSAKey()
+	k1 := sk1.PublicKey()
+	sk2, _ := NewECDSAKey()
+	k2 := sk2.PublicKey()
+	r1 := newRouter(k1)
+	r2 := newRouter(k2)
+	defer r1.Close()
+	defer r2.Close()
+	link(r1, r2)
+	if len(r1.Connections()) != 1 {
+		t.Fatal("Expected one connection in r1")
+	}
+	if len(r2.Connections()) != 1 {
+		t.Fatal("Expected one connection in r2")
+	}
+}
+
+func TestDoubleConnect(t *testing.T) {
+	sk1, _ := NewECDSAKey()
+	k1 := sk1.PublicKey()
+	sk2, _ := NewECDSAKey()
+	k2 := sk2.PublicKey()
+	r1 := newRouter(k1)
+	r2 := newRouter(k2)
+	defer r1.Close()
+	defer r2.Close()
+	c1, c2 := makePairedConnections(r1.GetAddress(), r2.GetAddress())
+	r1.AddConnection(c2)
+	r1.AddConnection(c2)
+	r2.AddConnection(c1)
+	r2.AddConnection(c1)
+
+	if len(r1.Connections()) != 1 {
+		t.Fatal("Expected one connection in r1")
+	}
+	if len(r2.Connections()) != 1 {
+		t.Fatal("Expected one connection in r2")
+	}
+}
+
 func TestDirectRouter(t *testing.T) {
 	sk1, _ := NewECDSAKey()
 	k1 := sk1.PublicKey()
