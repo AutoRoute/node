@@ -78,7 +78,7 @@ func (n *Node) sendPayments() {
 		case <-n.payment_ticker:
 			n.l.Lock()
 			for _, c := range n.router.Connections() {
-				owed, _ := n.router.OutgoingDebt(c.Key().Hash())
+				owed := n.router.OutgoingDebt(c.Key().Hash())
 				log.Printf("Owe %x %d", c.Key().Hash(), owed)
 				if owed > 0 {
 					log.Printf("Sending payment to %s", c.OtherMetaData().Payment_Address)
@@ -114,7 +114,7 @@ func (n *Node) Close() error {
 func (n *Node) GetNewAddress() string {
 	address, c, err := n.m.GetNewAddress()
 	if err != nil {
-		log.Fatal("Failed to get payment address", err)
+		log.Fatal("Failed to get payment address: ", err)
 	}
 	n.router.ledger.AddAddress(address, c)
 	return address
