@@ -19,6 +19,7 @@ type BinaryOptions struct {
 	Listen               string
 	Fake_money           bool
 	Connect              []string
+	Unix                 string
 	Autodiscover         bool
 	Autodiscover_devices []string
 	BTCHost              string
@@ -50,6 +51,9 @@ func ProduceCommandLine(b BinaryOptions) []string {
 	}
 	if len(b.BTCPass) > 0 {
 		args = append(args, "--btc_pass="+b.BTCPass)
+	}
+	if len(b.Unix) > 0 {
+		args = append(args, "--unix="+b.Unix)
 	}
 	return args
 }
