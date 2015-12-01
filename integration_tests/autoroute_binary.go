@@ -29,7 +29,9 @@ type BinaryOptions struct {
 // Transforms a BinaryOptions into a valid AutoRoute command line.
 func ProduceCommandLine(b BinaryOptions) []string {
 	args := make([]string, 0)
-	args = append(args, "--listen="+b.Listen)
+	if len(b.Listen) > 0 {
+		args = append(args, "--listen="+b.Listen)
+	}
 	if b.Fake_money {
 		args = append(args, "--fake_money")
 	}
