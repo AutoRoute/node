@@ -19,6 +19,7 @@ type BinaryOptions struct {
 	Listen               string
 	Fake_money           bool
 	Connect              []string
+	Unix                 string
 	Autodiscover         bool
 	Autodiscover_devices []string
 	BTCHost              string
@@ -51,6 +52,9 @@ func ProduceCommandLine(b BinaryOptions) []string {
 	if len(b.BTCPass) > 0 {
 		args = append(args, "--btc_pass="+b.BTCPass)
 	}
+	if len(b.Unix) > 0 {
+		args = append(args, "--unix="+b.Unix)
+	}
 	return args
 }
 
@@ -65,11 +69,14 @@ func NewNodeBinary(b BinaryOptions) AutoRouteBinary {
 }
 
 type statusStruct struct {
-	Connections map[string]int
-	Id          string
+	Connections      map[string]int
+	Packets_sent     map[string]int
+	Packets_dropped  int
+	Packets_received map[string]int
+	Id               string
 }
 
-func (b AutoRouteBinary) fetchStatus() (*statusStruct, error) {
+func (b AutoRouteBinary) FetchStatus() (*statusStruct, error) {
 	resp, err := http.Get(fmt.Sprintf("http://[::1]:%d/debug/vars", b.port))
 	if err != nil {
 		return nil, err
@@ -86,7 +93,7 @@ func (b AutoRouteBinary) fetchStatus() (*statusStruct, error) {
 
 // Returns a list of connections
 func (b AutoRouteBinary) GetConnections() ([]string, error) {
-	status, err := b.fetchStatus()
+	status, err := b.FetchStatus()
 	if err != nil {
 		return nil, err
 	}
@@ -98,9 +105,29 @@ func (b AutoRouteBinary) GetConnections() ([]string, error) {
 
 }
 
+// Returns a map of address -> packets received
+func (b AutoRouteBinary) GetPacketsReceived() (map[string]int, error) {
+	status, err := b.FetchStatus()
+	if err != nil {
+		return nil, err
+	}
+	return status.Packets_received, err
+
+}
+
+// Returns a map of address -> packets received
+func (b AutoRouteBinary) GetPacketsSent() (map[string]int, error) {
+	status, err := b.FetchStatus()
+	if err != nil {
+		return nil, err
+	}
+	return status.Packets_sent, err
+
+}
+
 // Returns the hex encoded network ID of the binary.
 func (b AutoRouteBinary) GetID() (string, error) {
-	status, err := b.fetchStatus()
+	status, err := b.FetchStatus()
 	if err != nil {
 		return "", err
 	}
