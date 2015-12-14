@@ -1,8 +1,20 @@
 package node
 
 import (
+	"expvar"
+	"fmt"
 	"log"
 )
+
+var packets_sent *expvar.Map
+var packets_received *expvar.Map
+var packets_dropped *expvar.Int
+
+func init() {
+	packets_sent = expvar.NewMap("packets_sent")
+	packets_received = expvar.NewMap("packets_received")
+	packets_dropped = expvar.NewInt("packets_dropped")
+}
 
 // Represents a permanent record of a routing decision.
 type routingDecision struct {
@@ -69,15 +81,19 @@ func (r *routingHandler) SendPacket(p Packet) error {
 }
 
 func (r *routingHandler) sendPacket(p Packet, src NodeAddress) error {
+	packets_received.Add(fmt.Sprintf("%x", src), 1)
 	if p.Destination() == r.pk.Hash() {
+		packets_sent.Add(fmt.Sprintf("%x", r.pk.Hash()), 1)
 		r.incoming <- p
 		go r.notifyDecision(p, src, r.pk.Hash())
 		return nil
 	}
 	next, err := r.reachability.FindNextHop(p.Destination())
 	if err != nil {
+		packets_dropped.Add(1)
 		return err
 	}
+	packets_sent.Add(fmt.Sprintf("%x", next), 1)
 	go r.notifyDecision(p, src, next)
 	return r.connections[next].SendPacket(p)
 }

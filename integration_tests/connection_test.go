@@ -8,7 +8,7 @@ func TestConnection(t *testing.T) {
 	listen := NewNodeBinary(BinaryOptions{Listen: "[::1]:9999", Fake_money: true})
 	listen.Start()
 	defer listen.KillAndPrint(t)
-	_, err := WaitForID(listen)
+	listen_id, err := WaitForID(listen)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -22,6 +22,10 @@ func TestConnection(t *testing.T) {
 	connect_id, err := WaitForID(connect)
 
 	err = WaitForConnection(listen, connect_id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = WaitForConnection(connect, listen_id)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -9,6 +9,8 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
+	"os/signal"
 	"runtime"
 	"strconv"
 	"strings"
@@ -34,6 +36,7 @@ var btc_pass = flag.String("btc_pass", "password",
 	"The bitcoin daemon password")
 var fake_money = flag.Bool("fake_money", false, "Enables a money system which is purely fake")
 var status = flag.String("status", "[::1]:12345", "The port to expose status information on")
+var unix = flag.String("unix", "", "The path to accept / receive packets as unix packets from")
 
 func Probe(key node.PrivateKey, n *node.Server, dev net.Interface, port uint16) {
 	if dev.Name == "lo" {
@@ -64,10 +67,13 @@ func main() {
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	log.Print("Starting")
+	log.Print(os.Args)
 
+	log.Print("Starting")
 	flag.Parse()
-	quit := make(chan bool)
+
+	quit := make(chan os.Signal)
+	signal.Notify(quit)
 
 	var key node.PrivateKey
 	var err error
@@ -141,6 +147,10 @@ func main() {
 		}
 	}
 
+	go func() {
+		log.Fatal(http.ListenAndServe(*status, nil))
+	}()
+
 	if len(*tcptun) > 0 {
 		log.Printf("Establishing tcp tunnel to %v", *tcptun)
 		i, err := tuntap.Open("tun%d", tuntap.DevTun)
@@ -155,11 +165,19 @@ func main() {
 		t := node.NewTCPTunnel(i, n.Node(), node.NodeAddress(dest), 10000)
 		t = t
 		<-quit
+		return
 	}
 
-	err = http.ListenAndServe(*status, nil)
-	if err != nil {
-		log.Fatal("ListenAndServe: ", err)
+	if len(*unix) > 0 {
+		log.Printf("Establishing unix interface %s", *unix)
+		c, err := node.NewUnixSocket(*unix, n.Node())
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer os.Remove(*unix)
+		defer c.Close()
+		<-quit
+		return
 	}
 
 	<-quit

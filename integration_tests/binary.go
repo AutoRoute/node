@@ -2,6 +2,7 @@ package integration_tests
 
 import (
 	"bytes"
+	"os"
 	"os/exec"
 )
 
@@ -30,5 +31,5 @@ func (b WrappedBinary) KillAndPrint(f LogFailer) {
 	if f.Failed() {
 		f.Logf("\n8<----\n%s8<----\n\n", b.output)
 	}
-	b.Process.Kill()
+	b.Process.Signal(os.Interrupt)
 }
