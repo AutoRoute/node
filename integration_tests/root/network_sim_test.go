@@ -3,8 +3,10 @@ package root
 
 import (
 	integration "github.com/AutoRoute/node/integration_tests"
+	"github.com/AutoRoute/node"
 	"io/ioutil"
 	"net"
+	"time"
 	"os"
 	"os/exec"
 	"strings"
@@ -12,6 +14,7 @@ import (
 	"testing"
 	"path/filepath"
 	"encoding/json"
+	"encoding/hex"
 )
 
 type settings struct {
@@ -58,6 +61,7 @@ func TestNetwork(t *testing.T) {
 	devs := make(map[string][]string)
 	// binaries
 	bins := make(map[string]integration.AutoRouteBinary)
+	sockets := make(map[string]string)
 	// generate connection pairs
 	// goes through each pair of connections
 	for _, v := range s.Connections {
@@ -120,8 +124,10 @@ func TestNetwork(t *testing.T) {
 
 		}
 	}
+	i = 0
 	for _, names := range devs {
 		// "leaf"
+		socket := "/tmp/unix" + strconv.Itoa(i)
 		if len(names) == 1 {
 			name := names[0]
 			listen_port := integration.GetUnusedPort()
@@ -130,8 +136,10 @@ func TestNetwork(t *testing.T) {
 				Fake_money:           true,
 				Autodiscover:         true,
 				Autodiscover_devices: names,
+				Unix: 				  socket,
 			})
-			bins[name] = listen;
+			bins[name] = listen
+			sockets[name] = socket
 			listen.Start()
 			defer listen.KillAndPrint(t)
 		} else {
@@ -139,14 +147,16 @@ func TestNetwork(t *testing.T) {
 				Fake_money:           true,
 				Autodiscover:         true,
 				Autodiscover_devices: names,
+				Unix:				  socket,
 			})
 			for _, name := range names {
-				bins[name] = connect;
+				bins[name] = connect
+				sockets[name] = socket
 			}
 			connect.Start()
 			defer connect.KillAndPrint(t)
 		}
-
+		i++
 	}
 	// wait for each pair of interfaces to connect
 	for _, dsts := range tap_interfaces {
@@ -154,7 +164,7 @@ func TestNetwork(t *testing.T) {
 			looptaps := strings.Split(ifaces,":")
 			listen := bins[looptaps[0]]
 			connect := bins[looptaps[1]]
-			_, err = integration.WaitForID(listen)
+			listen_id, err := integration.WaitForID(listen)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -167,6 +177,56 @@ func TestNetwork(t *testing.T) {
 			err = integration.WaitForConnection(listen, connect_id)
 			if err != nil {
 				t.Fatal(err)
+			}
+			raw_id, err := hex.DecodeString(connect_id)
+			p := node.Packet{node.NodeAddress(string(raw_id)), 10, "data"}
+
+			c, err := integration.WaitForSocket(sockets[looptaps[0]])
+			if err != nil {
+				t.Fatal(err)
+			}
+			c2, err := integration.WaitForSocket(sockets[looptaps[1]])
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			w := json.NewEncoder(c)
+			err = w.Encode(p)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			/*
+			//This fails for some reason
+			err = integration.WaitForPacketsReceived(listen, listen_id, 1)
+			if err != nil {
+				t.Fatal(err)
+			}
+			*/
+			err = integration.WaitForPacketsSent(listen, connect_id, 1)
+			if err != nil {
+				t.Fatal(err)
+			}
+			
+			err = integration.WaitForPacketsReceived(connect, listen_id, 1)
+			if err != nil {
+				t.Fatal(err)
+			}
+			
+			err = integration.WaitForPacketsSent(connect, connect_id, 1)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			packets := make(chan node.Packet)
+			go integration.WaitForPacket(c2, t, packets)
+			select {
+			case <-time.After(4 * time.Second):
+				t.Fatal("Never received packet")
+			case p2 := <-packets:
+				if p != p2 {
+					t.Fatal("Packets %v != %v", p, p2)
+				}
 			}
 		}
 	}
