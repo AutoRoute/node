@@ -7,6 +7,8 @@ addons:
   apt:
     packages:
       - bitcoin
+env:
+  - GO15VENDOREXPERIMENT=1
 
 before_script:
   - mkdir ${GOPATH}/src/github.com/freewil
