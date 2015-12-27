@@ -3,19 +3,14 @@
 	"ignore": "test",
 	"package": [
 		{
-			"path": "code.google.com/p/tuntap",
-			"revision": "8c942ac90d31cb599c2801d1bb66dadf274bed7d",
-			"revisionTime": "2012-05-04T15:50:50-07:00"
-		},
-		{
 			"path": "github.com/AutoRoute/bloom",
 			"revision": "dc717dc0d42e09100fd70bd33c032535a3fe1cc6",
 			"revisionTime": "2015-04-21T15:48:35-04:00"
 		},
 		{
 			"path": "github.com/AutoRoute/l2",
-			"revision": "b88674a158f8b684baba68b1c1dcf05d83e36dd3",
-			"revisionTime": "2015-07-17T21:37:22-04:00"
+			"revision": "abbc21d9ed8875657b8b34039834cbe8d03a9161",
+			"revisionTime": "2015-12-27T02:22:07-05:00"
 		},
 		{
 			"path": "github.com/AutoRoute/tuntap",
