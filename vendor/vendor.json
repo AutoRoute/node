@@ -1,0 +1,106 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"path": "code.google.com/p/tuntap",
+			"revision": "8c942ac90d31cb599c2801d1bb66dadf274bed7d",
+			"revisionTime": "2012-05-04T15:50:50-07:00"
+		},
+		{
+			"path": "github.com/AutoRoute/bloom",
+			"revision": "dc717dc0d42e09100fd70bd33c032535a3fe1cc6",
+			"revisionTime": "2015-04-21T15:48:35-04:00"
+		},
+		{
+			"path": "github.com/AutoRoute/l2",
+			"revision": "b88674a158f8b684baba68b1c1dcf05d83e36dd3",
+			"revisionTime": "2015-07-17T21:37:22-04:00"
+		},
+		{
+			"path": "github.com/AutoRoute/tuntap",
+			"revision": "8c942ac90d31cb599c2801d1bb66dadf274bed7d",
+			"revisionTime": "2012-05-04T15:50:50-07:00"
+		},
+		{
+			"path": "github.com/btcsuite/btcd/btcec",
+			"revision": "0c3cf63773370d9c44eb1b47944c951ca0749d5d",
+			"revisionTime": "2015-11-12T23:22:58+05:30"
+		},
+		{
+			"path": "github.com/btcsuite/btcd/btcjson",
+			"revision": "0c3cf63773370d9c44eb1b47944c951ca0749d5d",
+			"revisionTime": "2015-11-12T23:22:58+05:30"
+		},
+		{
+			"path": "github.com/btcsuite/btcd/chaincfg",
+			"revision": "0c3cf63773370d9c44eb1b47944c951ca0749d5d",
+			"revisionTime": "2015-11-12T23:22:58+05:30"
+		},
+		{
+			"path": "github.com/btcsuite/btcd/wire",
+			"revision": "0c3cf63773370d9c44eb1b47944c951ca0749d5d",
+			"revisionTime": "2015-11-12T23:22:58+05:30"
+		},
+		{
+			"path": "github.com/btcsuite/btclog",
+			"revision": "5005b7240f310ae8f01c7664a3954d280241eb2b",
+			"revisionTime": "2015-05-01T12:15:08-05:00"
+		},
+		{
+			"path": "github.com/btcsuite/btcrpcclient",
+			"revision": "975536f20f06492724b197ddb79f13af17ce5986",
+			"revisionTime": "2015-11-16T22:17:19-08:00"
+		},
+		{
+			"path": "github.com/btcsuite/btcutil",
+			"revision": "ff82dacded1c76d101bce55c394c03c0bbff69e8",
+			"revisionTime": "2015-11-10T10:36:46-06:00"
+		},
+		{
+			"path": "github.com/btcsuite/btcutil/base58",
+			"revision": "ff82dacded1c76d101bce55c394c03c0bbff69e8",
+			"revisionTime": "2015-11-10T10:36:46-06:00"
+		},
+		{
+			"path": "github.com/btcsuite/fastsha256",
+			"revision": "302ad4db268b46f9ebda3078f6f7397f96047735",
+			"revisionTime": "2015-04-09T12:38:57-04:00"
+		},
+		{
+			"path": "github.com/btcsuite/go-socks/socks",
+			"revision": "cfe8b59e565c1a5bd4e2005d77cd9aa8b2e14524",
+			"revisionTime": "2015-05-13T13:39:12-04:00"
+		},
+		{
+			"path": "github.com/btcsuite/golangcrypto/ripemd160",
+			"revision": "53f62d9b43e87a6c56975cf862af7edf33a8d0df",
+			"revisionTime": "2015-03-03T20:55:08-06:00"
+		},
+		{
+			"path": "github.com/btcsuite/seelog",
+			"revision": "313961b101eb55f65ae0f03ddd4e322731763b6c",
+			"revisionTime": "2015-01-15T22:11:18-06:00"
+		},
+		{
+			"path": "github.com/btcsuite/websocket",
+			"revision": "31079b6807923eb23992c421b114992b95131b55",
+			"revisionTime": "2015-01-19T11:41:27-06:00"
+		},
+		{
+			"path": "github.com/willf/bitset",
+			"revision": "28a4168144bb8ac95454e1f51c84da1933681ad4",
+			"revisionTime": "2015-08-12T09:10:42-04:00"
+		},
+		{
+			"path": "golang.org/x/crypto/curve25519",
+			"revision": "346896d57731cb5670b36c6178fc5519f3225980",
+			"revisionTime": "2015-06-18T15:57:31-07:00"
+		},
+		{
+			"path": "golang.org/x/crypto/ssh",
+			"revision": "346896d57731cb5670b36c6178fc5519f3225980",
+			"revisionTime": "2015-06-18T15:57:31-07:00"
+		}
+	]
+}
