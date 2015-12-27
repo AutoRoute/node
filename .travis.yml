@@ -1,16 +1,16 @@
 language: go
 
 go:
-  - 1.5.1
+  - 1.5.2
 
 addons:
   apt:
     packages:
-      - bitcoin
+      - bitcoind
 env:
   - GO15VENDOREXPERIMENT=1
 
-before_script:
+install:
   - mkdir ${GOPATH}/src/github.com/freewil
   - mkdir ${GOPATH}/src/github.com/freewil/bitcoin-testnet-box
   - git clone https://github.com/freewil/bitcoin-testnet-box.git ${GOPATH}/src/github.com/freewil/bitcoin-testnet-box
