@@ -3,10 +3,6 @@ language: go
 go:
   - 1.5.2
 
-addons:
-  apt:
-    packages:
-      - bitcoind
 env:
   - GO15VENDOREXPERIMENT=1
 
