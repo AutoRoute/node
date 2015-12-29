@@ -11,12 +11,12 @@ import (
 
 // The server handles creating connections and listening on various ports.
 type Server struct {
-	n         *Node
+	n         *fullNode
 	listeners map[string]*node.SSHListener
 }
 
 func NewServer(key Key, m types.Money) *Server {
-	n := NewNode(key.k, m, time.Tick(30*time.Second), time.Tick(30*time.Second))
+	n := newFullNode(key.k, m, time.Tick(30*time.Second), time.Tick(30*time.Second))
 	return &Server{n, make(map[string]*node.SSHListener)}
 }
 
@@ -62,8 +62,8 @@ func (s *Server) AddConnection(c node.Connection) {
 	s.n.AddConnection(c)
 }
 
-func (s *Server) Node() *Node {
-	return s.n
+func (s *Server) Node() Node {
+	return Node{s.n}
 }
 
 func (s *Server) Close() error {

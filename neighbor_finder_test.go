@@ -76,8 +76,8 @@ func TestBasicExchange(t *testing.T) {
 	// We should receive the other side twice, once from broadcast, and once
 	// from directed response
 	msg := <-outone
-	if msg.NodeAddr != pk2.Hash() {
-		t.Errorf("Expected %q!=%q", pk2.Hash(), msg.NodeAddr)
+	if msg.fullNodeAddr != pk2.Hash() {
+		t.Errorf("Expected %q!=%q", pk2.Hash(), msg.fullNodeAddr)
 	}
 	if msg.LLAddrStr != ll_addr_str2 {
 		t.Errorf("Expected %q!=%q", ll_addr_str2, msg.LLAddrStr)
@@ -87,8 +87,8 @@ func TestBasicExchange(t *testing.T) {
 	}
 
 	msg = <-outtwo
-	if msg.NodeAddr != pk1.Hash() {
-		t.Errorf("Expected %q!=%q", pk1.Hash(), msg.NodeAddr)
+	if msg.fullNodeAddr != pk1.Hash() {
+		t.Errorf("Expected %q!=%q", pk1.Hash(), msg.fullNodeAddr)
 	}
 	if msg.LLAddrStr != ll_addr_str1 {
 		t.Errorf("Expected %q!=%q", ll_addr_str1, msg.LLAddrStr)
@@ -98,8 +98,8 @@ func TestBasicExchange(t *testing.T) {
 	}
 
 	msg = <-outone
-	if msg.NodeAddr != pk2.Hash() {
-		t.Errorf("Expected %q!=%q", pk2.Hash(), msg.NodeAddr)
+	if msg.fullNodeAddr != pk2.Hash() {
+		t.Errorf("Expected %q!=%q", pk2.Hash(), msg.fullNodeAddr)
 	}
 	if msg.LLAddrStr != ll_addr_str2 {
 		t.Errorf("Expected %q!=%q", ll_addr_str2, msg.LLAddrStr)
@@ -109,8 +109,8 @@ func TestBasicExchange(t *testing.T) {
 	}
 
 	msg = <-outtwo
-	if msg.NodeAddr != pk1.Hash() {
-		t.Errorf("Expected %q!=%q", pk1.Hash(), msg.NodeAddr)
+	if msg.fullNodeAddr != pk1.Hash() {
+		t.Errorf("Expected %q!=%q", pk1.Hash(), msg.fullNodeAddr)
 	}
 	if msg.LLAddrStr != ll_addr_str1 {
 		t.Errorf("Expected %q!=%q", ll_addr_str1, msg.LLAddrStr)

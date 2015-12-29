@@ -38,7 +38,7 @@ func NewNeighborFinder(pk node.PublicKey, Link_local_address net.IP, port uint16
 }
 
 type FrameData struct {
-	NodeAddr  types.NodeAddress
+	fullNodeAddr  types.NodeAddress
 	LLAddrStr string
 	Port      uint16
 }
@@ -130,12 +130,12 @@ func Probe(key Key, n *Server, dev net.Interface, port uint16) {
 
 	neighbors := FindNeighbors(dev, ll_addr, key.k.PublicKey(), port)
 	for neighbor := range neighbors {
-		log.Printf("Neighbour Found %x", neighbor.NodeAddr)
+		log.Printf("Neighbour Found %x", neighbor.fullNodeAddr)
 		err := n.Connect(fmt.Sprintf("[%s%%%s]:%v", neighbor.LLAddrStr, dev.Name, neighbor.Port))
 		if err != nil {
 			log.Printf("Error connecting: %v", err)
 			return
 		}
-		log.Printf("Connection established to %x", neighbor.NodeAddr)
+		log.Printf("Connection established to %x", neighbor.fullNodeAddr)
 	}
 }

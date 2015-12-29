@@ -12,6 +12,23 @@ import (
 // A Node is the highest level abstraction over the network. You receive packets
 // from it and send packets to it, and it takes care of everything else.
 type Node struct {
+	private *fullNode
+}
+
+func (n Node) IsReachable(addr types.NodeAddress) bool {
+	return n.private.IsReachable(addr)
+}
+
+func (n Node) SendPacket(p types.Packet) error {
+	return n.private.SendPacket(p)
+}
+
+func (n Node) Packets() <-chan types.Packet {
+	return n.private.Packets()
+}
+
+// A fullNode includes various functions which are called by Server but shouldn't be publicly exposed.
+type fullNode struct {
 	router         *node.Router
 	l              *sync.Mutex
 	id             node.PrivateKey
@@ -23,8 +40,8 @@ type Node struct {
 	quit           chan bool
 }
 
-func NewNode(pk node.PrivateKey, m types.Money, receipt_ticker <-chan time.Time, payment_ticker <-chan time.Time) *Node {
-	n := &Node{
+func newFullNode(pk node.PrivateKey, m types.Money, receipt_ticker <-chan time.Time, payment_ticker <-chan time.Time) *fullNode {
+	n := &fullNode{
 		node.NewRouter(pk.PublicKey()),
 		&sync.Mutex{},
 		pk,
@@ -41,7 +58,7 @@ func NewNode(pk node.PrivateKey, m types.Money, receipt_ticker <-chan time.Time,
 	return n
 }
 
-func (n *Node) receivePackets() {
+func (n *fullNode) receivePackets() {
 	for {
 		select {
 		case p, ok := <-n.router.Packets():
@@ -58,7 +75,7 @@ func (n *Node) receivePackets() {
 	}
 }
 
-func (n *Node) sendReceipts() {
+func (n *fullNode) sendReceipts() {
 	for {
 		select {
 		case <-n.receipt_ticker:
@@ -75,7 +92,7 @@ func (n *Node) sendReceipts() {
 	}
 }
 
-func (n *Node) sendPayments() {
+func (n *fullNode) sendPayments() {
 	for {
 		select {
 		case <-n.payment_ticker:
@@ -101,20 +118,20 @@ func (n *Node) sendPayments() {
 	}
 }
 
-func (n *Node) SendPacket(p types.Packet) error {
+func (n *fullNode) SendPacket(p types.Packet) error {
 	return n.router.SendPacket(p)
 }
 
-func (n *Node) Packets() <-chan types.Packet {
+func (n *fullNode) Packets() <-chan types.Packet {
 	return n.outgoing
 }
 
-func (n *Node) Close() error {
+func (n *fullNode) Close() error {
 	close(n.quit)
 	return nil
 }
 
-func (n *Node) GetNewAddress() string {
+func (n *fullNode) GetNewAddress() string {
 	address, c, err := n.m.GetNewAddress()
 	if err != nil {
 		log.Fatal("Failed to get payment address: ", err)
@@ -123,15 +140,15 @@ func (n *Node) GetNewAddress() string {
 	return address
 }
 
-func (n *Node) GetAddress() node.PublicKey {
+func (n *fullNode) GetAddress() node.PublicKey {
 	return n.id.PublicKey()
 }
 
-func (n *Node) IsReachable(addr types.NodeAddress) bool {
+func (n *fullNode) IsReachable(addr types.NodeAddress) bool {
 	_, err := n.router.FindNextHop(addr)
 	return err == nil
 }
 
-func (n *Node) AddConnection(c node.Connection) {
+func (n *fullNode) AddConnection(c node.Connection) {
 	n.router.AddConnection(c)
 }

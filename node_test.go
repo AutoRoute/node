@@ -14,12 +14,12 @@ func LinkRouters(a, b node.Router) {
 	b.AddConnection(c1)
 }
 
-func TestNode(t *testing.T) {
+func TestfullNode(t *testing.T) {
 	sk1, _ := node.NewECDSAKey()
 	sk2, _ := node.NewECDSAKey()
 	c := make(chan time.Time)
-	n1 := NewNode(sk1, node.FakeMoney{}, time.Tick(100*time.Millisecond), c)
-	n2 := NewNode(sk2, node.FakeMoney{}, time.Tick(100*time.Millisecond), time.Tick(100*time.Millisecond))
+	n1 := newFullNode(sk1, node.FakeMoney{}, time.Tick(100*time.Millisecond), c)
+	n2 := newFullNode(sk2, node.FakeMoney{}, time.Tick(100*time.Millisecond), time.Tick(100*time.Millisecond))
 	defer n1.Close()
 	defer n2.Close()
 	node.Link(n1, n2)

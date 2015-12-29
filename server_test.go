@@ -29,7 +29,7 @@ func TestConnection(t *testing.T) {
 	}
 }
 
-func WaitForReachable(n *Node, addr types.NodeAddress) error {
+func WaitForReachable(n Node, addr types.NodeAddress) error {
 	tick := time.Tick(100 * time.Millisecond)
 	timeout := time.After(1 * time.Second)
 	for {
