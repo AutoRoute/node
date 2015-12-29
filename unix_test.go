@@ -15,7 +15,7 @@ func TestUnixSocket(t *testing.T) {
 		t.Fatal("Expected failure of opening NON EXISTANT PATH")
 	}
 
-	data := node.TestDataConnection{make(chan types.Packet), make(chan types.Packet)}
+	data := internal.TestDataConnection{make(chan types.Packet), make(chan types.Packet)}
 	c, err := NewUnixSocket("/tmp/test", data)
 	if err != nil {
 		t.Fatal("Error opening test pipe", err)

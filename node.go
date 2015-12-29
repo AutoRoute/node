@@ -29,9 +29,9 @@ func (n Node) Packets() <-chan types.Packet {
 
 // A fullNode includes various functions which are called by Server but shouldn't be publicly exposed.
 type fullNode struct {
-	router         *node.Router
+	router         *internal.Router
 	l              *sync.Mutex
-	id             node.PrivateKey
+	id             internal.PrivateKey
 	outgoing       chan types.Packet
 	receipt_buffer []types.PacketHash
 	receipt_ticker <-chan time.Time
@@ -40,9 +40,9 @@ type fullNode struct {
 	quit           chan bool
 }
 
-func newFullNode(pk node.PrivateKey, m types.Money, receipt_ticker <-chan time.Time, payment_ticker <-chan time.Time) *fullNode {
+func newFullNode(pk internal.PrivateKey, m types.Money, receipt_ticker <-chan time.Time, payment_ticker <-chan time.Time) *fullNode {
 	n := &fullNode{
-		node.NewRouter(pk.PublicKey()),
+		internal.NewRouter(pk.PublicKey()),
 		&sync.Mutex{},
 		pk,
 		make(chan types.Packet),
@@ -81,7 +81,7 @@ func (n *fullNode) sendReceipts() {
 		case <-n.receipt_ticker:
 			n.l.Lock()
 			if len(n.receipt_buffer) > 0 {
-				r := node.CreateMerkleReceipt(n.id, n.receipt_buffer)
+				r := internal.CreateMerkleReceipt(n.id, n.receipt_buffer)
 				n.receipt_buffer = nil
 				n.router.SendReceipt(r)
 			}
@@ -140,7 +140,7 @@ func (n *fullNode) GetNewAddress() string {
 	return address
 }
 
-func (n *fullNode) GetAddress() node.PublicKey {
+func (n *fullNode) GetAddress() internal.PublicKey {
 	return n.id.PublicKey()
 }
 
@@ -149,6 +149,6 @@ func (n *fullNode) IsReachable(addr types.NodeAddress) bool {
 	return err == nil
 }
 
-func (n *fullNode) AddConnection(c node.Connection) {
+func (n *fullNode) AddConnection(c internal.Connection) {
 	n.router.AddConnection(c)
 }

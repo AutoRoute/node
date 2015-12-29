@@ -12,12 +12,12 @@ import (
 // The server handles creating connections and listening on various ports.
 type Server struct {
 	n         *fullNode
-	listeners map[string]*node.SSHListener
+	listeners map[string]*internal.SSHListener
 }
 
 func NewServer(key Key, m types.Money) *Server {
 	n := newFullNode(key.k, m, time.Tick(30*time.Second), time.Tick(30*time.Second))
-	return &Server{n, make(map[string]*node.SSHListener)}
+	return &Server{n, make(map[string]*internal.SSHListener)}
 }
 
 func (s *Server) Connect(addr string) error {
@@ -25,8 +25,8 @@ func (s *Server) Connect(addr string) error {
 	if err != nil {
 		return err
 	}
-	m := node.SSHMetaData{Payment_Address: s.n.GetNewAddress()}
-	sc, err := node.EstablishSSH(c, addr, s.n.id, m)
+	m := internal.SSHMetaData{Payment_Address: s.n.GetNewAddress()}
+	sc, err := internal.EstablishSSH(c, addr, s.n.id, m)
 	if err != nil {
 		return err
 	}
@@ -41,10 +41,10 @@ func (s *Server) Listen(addr string) error {
 		return err
 	}
 
-	m := func() node.SSHMetaData {
-		return node.SSHMetaData{Payment_Address: s.n.GetNewAddress()}
+	m := func() internal.SSHMetaData {
+		return internal.SSHMetaData{Payment_Address: s.n.GetNewAddress()}
 	}
-	l := node.ListenSSH(ln, s.n.id, m)
+	l := internal.ListenSSH(ln, s.n.id, m)
 	if l.Error() != nil {
 		return err
 	}
@@ -58,7 +58,7 @@ func (s *Server) Listen(addr string) error {
 	return nil
 }
 
-func (s *Server) AddConnection(c node.Connection) {
+func (s *Server) AddConnection(c internal.Connection) {
 	s.n.AddConnection(c)
 }
 

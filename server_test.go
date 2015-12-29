@@ -14,9 +14,9 @@ func TestConnection(t *testing.T) {
 	key1, _ := NewKey()
 	key2, _ := NewKey()
 
-	n1 := NewServer(key1, node.FakeMoney{})
+	n1 := NewServer(key1, internal.FakeMoney{})
 	defer n1.Close()
-	n2 := NewServer(key2, node.FakeMoney{})
+	n2 := NewServer(key2, internal.FakeMoney{})
 	defer n2.Close()
 
 	err := n1.Listen("[::1]:16543")
@@ -49,9 +49,9 @@ func TestDataTransmission(t *testing.T) {
 	key1, _ := NewKey()
 	key2, _ := NewKey()
 
-	n1 := NewServer(key1, node.FakeMoney{})
+	n1 := NewServer(key1, internal.FakeMoney{})
 	defer n1.Close()
-	n2 := NewServer(key2, node.FakeMoney{})
+	n2 := NewServer(key2, internal.FakeMoney{})
 	defer n2.Close()
 	err := n1.Listen("[::1]:16544")
 	if err != nil {

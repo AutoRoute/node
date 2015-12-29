@@ -10,7 +10,7 @@ import (
 )
 
 type Key struct {
-	k node.PrivateKey
+	k internal.PrivateKey
 }
 
 func (k Key) String() string {
@@ -18,12 +18,12 @@ func (k Key) String() string {
 }
 
 func NewKey() (Key, error) {
-	key, err := node.NewECDSAKey()
+	key, err := internal.NewECDSAKey()
 	return Key{key}, err
 }
 
 func LoadKey(keyfile string) (Key, error) {
-	var key node.PrivateKey
+	var key internal.PrivateKey
 	f, err := os.Open(keyfile)
 	if err != nil {
 		if !os.IsNotExist(err) {

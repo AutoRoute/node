@@ -11,7 +11,7 @@ import (
 )
 
 type TCP struct {
-	data node.DataConnection
+	data internal.DataConnection
 	tun  TCPTun
 	dest types.NodeAddress
 	amt  int64
@@ -26,7 +26,7 @@ type TCPTun interface {
 
 var truncated_error error = errors.New("truncated packet")
 
-func NewTCPTunnel(tun TCPTun, d node.DataConnection, dest types.NodeAddress, amt int64) *TCP {
+func NewTCPTunnel(tun TCPTun, d internal.DataConnection, dest types.NodeAddress, amt int64) *TCP {
 	t := &TCP{d, tun, dest, amt, make(chan bool), make(chan error, 1)}
 	go t.readtun()
 	go t.writetun()

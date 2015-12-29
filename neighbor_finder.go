@@ -28,12 +28,12 @@ func init() {
 // The layer two protocol takes a layer two device and returns the hash of the
 // Public Key of all neighbors it can find.
 type NeighborFinder struct {
-	pk                 node.PublicKey
+	pk                 internal.PublicKey
 	Link_local_address net.IP
 	port               uint16
 }
 
-func NewNeighborFinder(pk node.PublicKey, Link_local_address net.IP, port uint16) NeighborFinder {
+func NewNeighborFinder(pk internal.PublicKey, Link_local_address net.IP, port uint16) NeighborFinder {
 	return NeighborFinder{pk, Link_local_address, port}
 }
 

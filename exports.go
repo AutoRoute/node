@@ -7,10 +7,10 @@ import (
 
 // Represents a money type which is fake and purely usable for testing
 func FakeMoney() types.Money {
-	return node.FakeMoney{}
+	return internal.FakeMoney{}
 }
 
 // Represents a money connection to an active bitcoin server
 func NewRPCMoney(host, user, pass string) (types.Money, error) {
-	return node.NewRPCMoney(host, user, pass)
+	return internal.NewRPCMoney(host, user, pass)
 }

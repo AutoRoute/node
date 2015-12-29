@@ -11,11 +11,11 @@ import (
 
 type UnixSocket struct {
 	l net.Listener
-	d node.DataConnection
+	d internal.DataConnection
 }
 
 // Creates a unix socket which all packets are sent to /from.
-func NewUnixSocket(path string, d node.DataConnection) (*UnixSocket, error) {
+func NewUnixSocket(path string, d internal.DataConnection) (*UnixSocket, error) {
 	l, err := net.Listen("unix", path)
 	if err != nil {
 		return nil, err

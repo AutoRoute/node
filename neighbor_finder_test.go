@@ -36,12 +36,12 @@ func TestBasicExchange(t *testing.T) {
 	test_mac1, _ := l2.MacToBytes("aa:bb:cc:dd:ee:00")
 	test_mac2, _ := l2.MacToBytes("aa:bb:cc:dd:ee:11")
 
-	k1, err := node.NewECDSAKey()
+	k1, err := internal.NewECDSAKey()
 	pk1 := k1.PublicKey()
 	if err != nil {
 		t.Fatal(err)
 	}
-	k2, err := node.NewECDSAKey()
+	k2, err := internal.NewECDSAKey()
 	pk2 := k2.PublicKey()
 	if err != nil {
 		t.Fatal(err)
