@@ -9,10 +9,12 @@ import (
 	"errors"
 	"log"
 	"math/big"
+
+	"github.com/AutoRoute/node/types"
 )
 
 type PrivateKey struct {
-	k *ecdsa.PrivateKey
+	K *ecdsa.PrivateKey
 }
 
 type encodedprivk struct {
@@ -21,7 +23,7 @@ type encodedprivk struct {
 }
 
 func (e PrivateKey) MarshalJSON() ([]byte, error) {
-	return json.Marshal(encodedprivk{D: e.k.D, PK: e.PublicKey()})
+	return json.Marshal(encodedprivk{D: e.K.D, PK: e.PublicKey()})
 }
 
 func (e *PrivateKey) UnmarshalJSON(b []byte) error {
@@ -30,20 +32,20 @@ func (e *PrivateKey) UnmarshalJSON(b []byte) error {
 	if err != nil {
 		return err
 	}
-	e.k = &ecdsa.PrivateKey{ecdsa.PublicKey(s.PK), s.D}
+	e.K = &ecdsa.PrivateKey{ecdsa.PublicKey(s.PK), s.D}
 	return nil
 }
 
 func (p PrivateKey) PublicKey() PublicKey {
-	return PublicKey(p.k.PublicKey)
+	return PublicKey(p.K.PublicKey)
 }
 
 func (p PrivateKey) Sign(m []byte) Signature {
-	r, s, err := ecdsa.Sign(rand.Reader, p.k, m)
+	r, s, err := ecdsa.Sign(rand.Reader, p.K, m)
 	if err != nil {
 		log.Fatal(err)
 	}
-	return Signature{r, s, PublicKey(p.k.PublicKey), m}
+	return Signature{r, s, PublicKey(p.K.PublicKey), m}
 }
 
 type Signature struct {
@@ -82,11 +84,11 @@ func hashstring(s string) string {
 	return string(o[0:sha512.Size])
 }
 
-func (e PublicKey) Hash() NodeAddress {
+func (e PublicKey) Hash() types.NodeAddress {
 	// Cannot error
 	t1, _ := e.X.MarshalText()
 	t2, _ := e.Y.MarshalText()
-	return NodeAddress(hashstring("ecdsa:P521:" + string(t1) + "," + string(t2)))
+	return types.NodeAddress(hashstring("ecdsa:P521:" + string(t1) + "," + string(t2)))
 }
 
 type encodedpk struct {

@@ -7,6 +7,8 @@ import (
 	"net"
 	"sync"
 
+	"github.com/AutoRoute/node/types"
+
 	"golang.org/x/crypto/ssh"
 )
 
@@ -45,7 +47,7 @@ type SSHConnection struct {
 	packet_enc_l    *sync.Mutex
 	packet_dec      *json.Decoder
 	packet_dec_l    *sync.Mutex
-	packet_chan     chan Packet
+	packet_chan     chan types.Packet
 
 	other_metadata SSHMetaData
 	our_metadata   SSHMetaData
@@ -69,7 +71,7 @@ func NewSSHConnection(conn ssh.Conn, chans <-chan ssh.NewChannel, reqs <-chan *s
 		reqs,
 		nil, nil, &sync.Mutex{}, nil, &sync.Mutex{}, make(chan *BloomReachabilityMap),
 		nil, nil, &sync.Mutex{}, nil, &sync.Mutex{}, make(chan PacketReceipt),
-		nil, nil, &sync.Mutex{}, nil, &sync.Mutex{}, make(chan Packet),
+		nil, nil, &sync.Mutex{}, nil, &sync.Mutex{}, make(chan types.Packet),
 		SSHMetaData{},
 		metadata,
 		make(chan bool),
@@ -297,7 +299,7 @@ func (s *SSHConnection) PacketReceipts() <-chan PacketReceipt {
 	return s.receipt_chan
 }
 
-func (s *SSHConnection) SendPacket(p Packet) error {
+func (s *SSHConnection) SendPacket(p types.Packet) error {
 	s.packet_enc_l.Lock()
 	defer s.packet_enc_l.Unlock()
 	return s.packet_enc.Encode(p)
@@ -306,7 +308,7 @@ func (s *SSHConnection) SendPacket(p Packet) error {
 func (s *SSHConnection) handlePackets() {
 	for {
 		s.packet_dec_l.Lock()
-		var v Packet
+		var v types.Packet
 		err := s.packet_dec.Decode(&v)
 		if err != nil {
 			close(s.packet_chan)
@@ -318,7 +320,7 @@ func (s *SSHConnection) handlePackets() {
 	}
 }
 
-func (s *SSHConnection) Packets() <-chan Packet {
+func (s *SSHConnection) Packets() <-chan types.Packet {
 	return s.packet_chan
 }
 
@@ -370,7 +372,7 @@ func (l *SSHListener) listen(s net.Listener, key PrivateKey, metadata func() SSH
 			return &ssh.Permissions{}, nil
 		},
 	}
-	signer, err := ssh.NewSignerFromKey(key.k)
+	signer, err := ssh.NewSignerFromKey(key.K)
 	if err != nil {
 		l.error(err)
 		return
@@ -398,7 +400,7 @@ func (l *SSHListener) listen(s net.Listener, key PrivateKey, metadata func() SSH
 
 func EstablishSSH(c net.Conn, address string, key PrivateKey, metadata SSHMetaData) (*SSHConnection, error) {
 	username := string(key.PublicKey().Hash())
-	signer, err := ssh.NewSignerFromKey(key.k)
+	signer, err := ssh.NewSignerFromKey(key.K)
 	if err != nil {
 		return nil, err
 	}

@@ -5,15 +5,18 @@ import (
 	"fmt"
 	"testing"
 	"time"
+
+	"github.com/AutoRoute/node/internal"
+	"github.com/AutoRoute/node/types"
 )
 
 func TestConnection(t *testing.T) {
-	key1, _ := NewECDSAKey()
-	key2, _ := NewECDSAKey()
+	key1, _ := NewKey()
+	key2, _ := NewKey()
 
-	n1 := NewServer(key1, fakeMoney{})
+	n1 := NewServer(key1, node.FakeMoney{})
 	defer n1.Close()
-	n2 := NewServer(key2, fakeMoney{})
+	n2 := NewServer(key2, node.FakeMoney{})
 	defer n2.Close()
 
 	err := n1.Listen("[::1]:16543")
@@ -26,7 +29,7 @@ func TestConnection(t *testing.T) {
 	}
 }
 
-func WaitForReachable(n *Node, addr NodeAddress) error {
+func WaitForReachable(n *Node, addr types.NodeAddress) error {
 	tick := time.Tick(100 * time.Millisecond)
 	timeout := time.After(1 * time.Second)
 	for {
@@ -43,12 +46,12 @@ func WaitForReachable(n *Node, addr NodeAddress) error {
 }
 
 func TestDataTransmission(t *testing.T) {
-	key1, _ := NewECDSAKey()
-	key2, _ := NewECDSAKey()
+	key1, _ := NewKey()
+	key2, _ := NewKey()
 
-	n1 := NewServer(key1, fakeMoney{})
+	n1 := NewServer(key1, node.FakeMoney{})
 	defer n1.Close()
-	n2 := NewServer(key2, fakeMoney{})
+	n2 := NewServer(key2, node.FakeMoney{})
 	defer n2.Close()
 	err := n1.Listen("[::1]:16544")
 	if err != nil {
@@ -60,13 +63,13 @@ func TestDataTransmission(t *testing.T) {
 	}
 
 	// Wait for n1 to know about n2
-	err = WaitForReachable(n1.Node(), key2.PublicKey().Hash())
+	err = WaitForReachable(n1.Node(), key2.k.PublicKey().Hash())
 	if err != nil {
 		t.Fatalf("Error waiting for information %v", err)
 	}
 
 	for i := 0; i < 10; i++ {
-		p2 := Packet{key2.PublicKey().Hash(), 3, fmt.Sprintf("test%d", i)}
+		p2 := types.Packet{key2.k.PublicKey().Hash(), 3, fmt.Sprintf("test%d", i)}
 		err = n1.Node().SendPacket(p2)
 		if err != nil {
 			t.Fatalf("Error sending packet: %v", err)

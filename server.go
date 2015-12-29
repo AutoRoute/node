@@ -4,17 +4,20 @@ import (
 	"log"
 	"net"
 	"time"
+
+	"github.com/AutoRoute/node/internal"
+	"github.com/AutoRoute/node/types"
 )
 
 // The server handles creating connections and listening on various ports.
 type Server struct {
 	n         *Node
-	listeners map[string]*SSHListener
+	listeners map[string]*node.SSHListener
 }
 
-func NewServer(key PrivateKey, m Money) *Server {
-	n := NewNode(key, m, time.Tick(30*time.Second), time.Tick(30*time.Second))
-	return &Server{n, make(map[string]*SSHListener)}
+func NewServer(key Key, m types.Money) *Server {
+	n := NewNode(key.k, m, time.Tick(30*time.Second), time.Tick(30*time.Second))
+	return &Server{n, make(map[string]*node.SSHListener)}
 }
 
 func (s *Server) Connect(addr string) error {
@@ -22,8 +25,8 @@ func (s *Server) Connect(addr string) error {
 	if err != nil {
 		return err
 	}
-	m := SSHMetaData{Payment_Address: s.n.GetNewAddress()}
-	sc, err := EstablishSSH(c, addr, s.n.id, m)
+	m := node.SSHMetaData{Payment_Address: s.n.GetNewAddress()}
+	sc, err := node.EstablishSSH(c, addr, s.n.id, m)
 	if err != nil {
 		return err
 	}
@@ -38,10 +41,10 @@ func (s *Server) Listen(addr string) error {
 		return err
 	}
 
-	m := func() SSHMetaData {
-		return SSHMetaData{Payment_Address: s.n.GetNewAddress()}
+	m := func() node.SSHMetaData {
+		return node.SSHMetaData{Payment_Address: s.n.GetNewAddress()}
 	}
-	l := ListenSSH(ln, s.n.id, m)
+	l := node.ListenSSH(ln, s.n.id, m)
 	if l.Error() != nil {
 		return err
 	}
@@ -55,7 +58,7 @@ func (s *Server) Listen(addr string) error {
 	return nil
 }
 
-func (s *Server) AddConnection(c *SSHConnection) {
+func (s *Server) AddConnection(c node.Connection) {
 	s.n.AddConnection(c)
 }
 

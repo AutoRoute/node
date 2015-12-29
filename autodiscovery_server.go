@@ -1,11 +1,13 @@
 package node
 
 import (
-	"github.com/AutoRoute/l2"
-
 	"errors"
 	"log"
 	"net"
+
+	"github.com/AutoRoute/l2"
+
+	"github.com/AutoRoute/node/internal"
 )
 
 func GetLinkLocalAddr(dev net.Interface) (net.IP, error) {
@@ -24,10 +26,10 @@ func GetLinkLocalAddr(dev net.Interface) (net.IP, error) {
 			return addr, nil
 		}
 	}
-	return nil, errors.New("Unable to find link local address")
+	return nil, errors.New("Unable to find Link local address")
 }
 
-func FindNeighbors(dev net.Interface, ll_addr net.IP, key PublicKey, port uint16) <-chan *FrameData {
+func FindNeighbors(dev net.Interface, ll_addr net.IP, key node.PublicKey, port uint16) <-chan *FrameData {
 	conn, err := l2.ConnectExistingDevice(dev.Name)
 	if err != nil {
 		log.Fatal(err)

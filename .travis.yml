@@ -18,4 +18,5 @@ before_script:
 
 script:
   - go test -v github.com/AutoRoute/node -race
+  - go test -v github.com/AutoRoute/node/internal -race
   - go test -v github.com/AutoRoute/node/integration_tests

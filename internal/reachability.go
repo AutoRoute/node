@@ -4,22 +4,24 @@ import (
 	"errors"
 	"log"
 	"sync"
+
+	"github.com/AutoRoute/node/types"
 )
 
 // Takes care of maintaining and relaying maps and insures that we know which
 // interfaces can reach which addresses.
 type reachabilityHandler struct {
-	me         NodeAddress
+	me         types.NodeAddress
 	l          *sync.Mutex
-	conns      map[NodeAddress]MapConnection
-	maps       map[NodeAddress]*BloomReachabilityMap
+	conns      map[types.NodeAddress]MapConnection
+	maps       map[types.NodeAddress]*BloomReachabilityMap
 	merged_map *BloomReachabilityMap
 	quit       chan bool
 }
 
-func newReachability(me NodeAddress) *reachabilityHandler {
-	conns := make(map[NodeAddress]MapConnection)
-	maps := make(map[NodeAddress]*BloomReachabilityMap)
+func newReachability(me types.NodeAddress) *reachabilityHandler {
+	conns := make(map[types.NodeAddress]MapConnection)
+	maps := make(map[types.NodeAddress]*BloomReachabilityMap)
 	impl := &reachabilityHandler{
 		me,
 		&sync.Mutex{},
@@ -32,7 +34,7 @@ func newReachability(me NodeAddress) *reachabilityHandler {
 	return impl
 }
 
-func (m *reachabilityHandler) addMap(address NodeAddress, new_map *BloomReachabilityMap) {
+func (m *reachabilityHandler) addMap(address types.NodeAddress, new_map *BloomReachabilityMap) {
 	m.l.Lock()
 	defer m.l.Unlock()
 	m.maps[address].Merge(new_map)
@@ -44,7 +46,7 @@ func (m *reachabilityHandler) addMap(address NodeAddress, new_map *BloomReachabi
 	}
 }
 
-func (m *reachabilityHandler) AddConnection(id NodeAddress, c MapConnection) {
+func (m *reachabilityHandler) AddConnection(id types.NodeAddress, c MapConnection) {
 	// TODO(colin): This should be streamed. or something similar.
 	m.l.Lock()
 	defer m.l.Unlock()
@@ -67,7 +69,7 @@ func (m *reachabilityHandler) AddConnection(id NodeAddress, c MapConnection) {
 	go m.HandleConnection(id, c)
 }
 
-func (m *reachabilityHandler) HandleConnection(id NodeAddress, c MapConnection) {
+func (m *reachabilityHandler) HandleConnection(id types.NodeAddress, c MapConnection) {
 	for {
 		select {
 		case rmap, ok := <-c.ReachabilityMaps():
@@ -82,7 +84,7 @@ func (m *reachabilityHandler) HandleConnection(id NodeAddress, c MapConnection) 
 	}
 }
 
-func (m *reachabilityHandler) FindNextHop(id NodeAddress) (NodeAddress, error) {
+func (m *reachabilityHandler) FindNextHop(id types.NodeAddress) (types.NodeAddress, error) {
 	m.l.Lock()
 	defer m.l.Unlock()
 	_, ok := m.conns[id]

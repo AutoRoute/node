@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/AutoRoute/l2"
+
+	"github.com/AutoRoute/node/internal"
 )
 
 type testInterface struct {
@@ -34,12 +36,12 @@ func TestBasicExchange(t *testing.T) {
 	test_mac1, _ := l2.MacToBytes("aa:bb:cc:dd:ee:00")
 	test_mac2, _ := l2.MacToBytes("aa:bb:cc:dd:ee:11")
 
-	k1, err := NewECDSAKey()
+	k1, err := node.NewECDSAKey()
 	pk1 := k1.PublicKey()
 	if err != nil {
 		t.Fatal(err)
 	}
-	k2, err := NewECDSAKey()
+	k2, err := node.NewECDSAKey()
 	pk2 := k2.PublicKey()
 	if err != nil {
 		t.Fatal(err)
@@ -80,9 +82,9 @@ func TestBasicExchange(t *testing.T) {
 	if msg.LLAddrStr != ll_addr_str2 {
 		t.Errorf("Expected %q!=%q", ll_addr_str2, msg.LLAddrStr)
 	}
-  if msg.Port != port2 {
-    t.Errorf("Expected %q!=%q", port2, msg.Port)
-  }
+	if msg.Port != port2 {
+		t.Errorf("Expected %q!=%q", port2, msg.Port)
+	}
 
 	msg = <-outtwo
 	if msg.NodeAddr != pk1.Hash() {
@@ -91,9 +93,9 @@ func TestBasicExchange(t *testing.T) {
 	if msg.LLAddrStr != ll_addr_str1 {
 		t.Errorf("Expected %q!=%q", ll_addr_str1, msg.LLAddrStr)
 	}
-  if msg.Port != port1 {
-    t.Errorf("Expected %q!=%q", port1, msg.Port)
-  }
+	if msg.Port != port1 {
+		t.Errorf("Expected %q!=%q", port1, msg.Port)
+	}
 
 	msg = <-outone
 	if msg.NodeAddr != pk2.Hash() {
@@ -102,9 +104,9 @@ func TestBasicExchange(t *testing.T) {
 	if msg.LLAddrStr != ll_addr_str2 {
 		t.Errorf("Expected %q!=%q", ll_addr_str2, msg.LLAddrStr)
 	}
-  if msg.Port != port2 {
-    t.Errorf("Expected %q!=%q", port2, msg.Port)
-  }
+	if msg.Port != port2 {
+		t.Errorf("Expected %q!=%q", port2, msg.Port)
+	}
 
 	msg = <-outtwo
 	if msg.NodeAddr != pk1.Hash() {
@@ -113,7 +115,7 @@ func TestBasicExchange(t *testing.T) {
 	if msg.LLAddrStr != ll_addr_str1 {
 		t.Errorf("Expected %q!=%q", ll_addr_str1, msg.LLAddrStr)
 	}
-  if msg.Port != port1 {
-    t.Errorf("Expected %q!=%q", port1, msg.Port)
-  }
+	if msg.Port != port1 {
+		t.Errorf("Expected %q!=%q", port1, msg.Port)
+	}
 }

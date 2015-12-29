@@ -1,7 +1,7 @@
 package integration_tests
 
 import (
-	"github.com/AutoRoute/node"
+	"github.com/AutoRoute/node/types"
 
 	"encoding/json"
 	"errors"
@@ -109,9 +109,9 @@ func WaitForPacketsSent(b AutoRouteBinary, dest string, amt int) error {
 	panic("unreachable")
 }
 
-func WaitForPacket(c net.Conn, t *testing.T, s chan node.Packet) {
+func WaitForPacket(c net.Conn, t *testing.T, s chan types.Packet) {
 	r := json.NewDecoder(c)
-	var p node.Packet
+	var p types.Packet
 	err := r.Decode(&p)
 	if err != nil {
 		t.Fatal(err)

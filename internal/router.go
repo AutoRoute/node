@@ -4,6 +4,8 @@ import (
 	"expvar"
 	"fmt"
 	"sync"
+
+	"github.com/AutoRoute/node/types"
 )
 
 var connections_export *expvar.Map
@@ -14,48 +16,48 @@ func init() {
 	id_export = expvar.NewString("id")
 }
 
-// A router handles all routing tasks that don't involve the local machine
+// A Router handles all routing tasks that don't involve the local machine
 // including connection management, reachability handling, packet receipt
 // relaying, and (outstanding) payment tracking. AKA anything which doesn't
 // need the private key.
-type router struct {
+type Router struct {
 	pk PublicKey
 	// A map of public key hashes to connections
-	connections map[NodeAddress]Connection
+	connections map[types.NodeAddress]Connection
 
 	*reachabilityHandler
 	*routingHandler
 	*receiptHandler
-	*ledger
+	*Ledger
 
 	lock *sync.Mutex
 	quit chan bool
 }
 
-func newRouter(pk PublicKey) *router {
+func NewRouter(pk PublicKey) *Router {
 	id_export.Set(fmt.Sprintf("%x", pk.Hash()))
 	reach := newReachability(pk.Hash())
 	routing := newRouting(pk, reach)
 	c1, c2, quit := splitChannel(routing.Routes())
 	receipt := newReceipt(pk.Hash(), c1)
-	ledger := newLedger(pk.Hash(), receipt.PacketHashes(), c2)
-	return &router{
+	Ledger := newLedger(pk.Hash(), receipt.PacketHashes(), c2)
+	return &Router{
 		pk,
-		make(map[NodeAddress]Connection),
+		make(map[types.NodeAddress]Connection),
 		reach,
 		routing,
 		receipt,
-		ledger,
+		Ledger,
 		&sync.Mutex{},
 		quit,
 	}
 }
 
-func (r *router) GetAddress() PublicKey {
+func (r *Router) GetAddress() PublicKey {
 	return r.pk
 }
 
-func (r *router) Connections() []Connection {
+func (r *Router) Connections() []Connection {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 	c := make([]Connection, 0, len(r.connections))
@@ -65,7 +67,7 @@ func (r *router) Connections() []Connection {
 	return c
 }
 
-func (r *router) AddConnection(c Connection) {
+func (r *Router) AddConnection(c Connection) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 	id := c.Key().Hash()
@@ -83,11 +85,11 @@ func (r *router) AddConnection(c Connection) {
 	connections_export.Add(fmt.Sprintf("%x", c.Key().Hash()), 1)
 }
 
-func (r *router) Close() error {
+func (r *Router) Close() error {
 	r.reachabilityHandler.Close()
 	r.routingHandler.Close()
 	r.receiptHandler.Close()
-	r.ledger.Close()
+	r.Ledger.Close()
 	close(r.quit)
 	return nil
 }

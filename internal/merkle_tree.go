@@ -5,9 +5,11 @@ import (
 	"crypto/sha512"
 	"errors"
 	"fmt"
+
+	"github.com/AutoRoute/node/types"
 )
 
-func CreateMerkleReceipt(key PrivateKey, packets []PacketHash) PacketReceipt {
+func CreateMerkleReceipt(key PrivateKey, packets []types.PacketHash) PacketReceipt {
 	old := make([]merklenode, 0)
 	for _, h := range packets {
 		old = append(old, merklenode{h, nil, nil})
@@ -43,23 +45,23 @@ func (m PacketReceipt) Verify() error {
 	return m.Signature.Verify()
 }
 
-func (m PacketReceipt) Source() NodeAddress {
+func (m PacketReceipt) Source() types.NodeAddress {
 	return m.Signature.Key().Hash()
 }
 
-func (m PacketReceipt) ListPackets() []PacketHash {
+func (m PacketReceipt) ListPackets() []types.PacketHash {
 	return m.Tree.ListLeafs()
 }
 
 type merklenode struct {
-	LeafHash PacketHash
+	LeafHash types.PacketHash
 	Left     *merklenode
 	Right    *merklenode
 }
 
-func (m merklenode) ListLeafs() []PacketHash {
+func (m merklenode) ListLeafs() []types.PacketHash {
 	if len(m.LeafHash) != 0 {
-		return []PacketHash{m.LeafHash}
+		return []types.PacketHash{m.LeafHash}
 	}
 	if m.Right == nil {
 		return m.Left.ListLeafs()

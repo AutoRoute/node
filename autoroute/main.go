@@ -7,6 +7,7 @@ package main
 
 import (
 	"github.com/AutoRoute/node"
+	"github.com/AutoRoute/node/types"
 	"github.com/AutoRoute/tuntap"
 
 	"flag"
@@ -41,31 +42,6 @@ var status = flag.String("status", "[::1]:12345", "The port to expose status inf
 var unix = flag.String("unix", "", "The path to accept / receive packets as unix packets from")
 var tcptun = flag.String("tcptun", "", "Address to try and tcp tunnel to")
 
-func Probe(key node.PrivateKey, n *node.Server, dev net.Interface, port uint16) {
-	if dev.Name == "lo" {
-		return
-	}
-
-	log.Printf("Probing %q", dev.Name)
-
-	ll_addr, err := node.GetLinkLocalAddr(dev)
-	if err != nil {
-		log.Printf("Error probing %q: %v", dev.Name, err)
-		return
-	}
-
-	neighbors := node.FindNeighbors(dev, ll_addr, key.PublicKey(), port)
-	for neighbor := range neighbors {
-		log.Printf("Neighbour Found %x", neighbor.NodeAddr)
-		err := n.Connect(fmt.Sprintf("[%s%%%s]:%v", neighbor.LLAddrStr, dev.Name, neighbor.Port))
-		if err != nil {
-			log.Printf("Error connecting: %v", err)
-			return
-		}
-		log.Printf("Connection established to %x", neighbor.NodeAddr)
-	}
-}
-
 func main() {
 	log.Print(os.Args)
 	flag.Parse()
@@ -75,7 +51,7 @@ func main() {
 	signal.Notify(quit)
 
 	// Figure out and load what key we are using for our identity
-	var key node.PrivateKey
+	var key node.Key
 	var err error
 	if len(*keyfile) > 0 {
 		key, err = node.LoadKey(*keyfile)
@@ -84,12 +60,12 @@ func main() {
 		}
 	} else {
 		log.Print("Generating key")
-		key, err = node.NewECDSAKey()
+		key, err = node.NewKey()
 		if err != nil {
 			log.Fatalf("Error Generating Key: %v", err)
 		}
 	}
-	log.Printf("Key is %x", key.PublicKey().Hash())
+	log.Printf("Key is %x", key)
 
 	// Connect to our money server
 	money := node.FakeMoney()
@@ -130,7 +106,7 @@ func main() {
 		}
 		port = uint16(port)
 		for _, dev := range devs {
-			go Probe(key, n, dev, port)
+			go node.Probe(key, n, dev, port)
 		}
 	}
 
@@ -165,7 +141,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		t := node.NewTCPTunnel(i, n.Node(), node.NodeAddress(dest), 10000)
+		t := node.NewTCPTunnel(i, n.Node(), types.NodeAddress(dest), 10000)
 		defer t.Close()
 		<-quit
 		return

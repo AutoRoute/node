@@ -16,10 +16,10 @@ func TestLoadKey(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if k1.PublicKey().Hash() != k2.PublicKey().Hash() {
+	if k1.k.PublicKey().Hash() != k2.k.PublicKey().Hash() {
 		t.Fatalf("diff public keys %v != %v", k1, k2)
 	}
-	if k1.k.D.Cmp(k2.k.D) != 0 {
+	if k1.k.K.D.Cmp(k2.k.K.D) != 0 {
 		t.Fatalf("diff D %v != %v", k1, k2)
 	}
 

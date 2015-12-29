@@ -3,29 +3,32 @@ package node
 import (
 	"testing"
 	"time"
+
+	"github.com/AutoRoute/node/internal"
+	"github.com/AutoRoute/node/types"
 )
 
-func LinkRouters(a, b router) {
-	c1, c2 := makePairedConnections(a.GetAddress(), b.GetAddress())
+func LinkRouters(a, b node.Router) {
+	c1, c2 := node.MakePairedConnections(a.GetAddress(), b.GetAddress())
 	a.AddConnection(c2)
 	b.AddConnection(c1)
 }
 
 func TestNode(t *testing.T) {
-	sk1, _ := NewECDSAKey()
-	sk2, _ := NewECDSAKey()
+	sk1, _ := node.NewECDSAKey()
+	sk2, _ := node.NewECDSAKey()
 	c := make(chan time.Time)
-	n1 := NewNode(sk1, fakeMoney{}, time.Tick(100*time.Millisecond), c)
-	n2 := NewNode(sk2, fakeMoney{}, time.Tick(100*time.Millisecond), time.Tick(100*time.Millisecond))
+	n1 := NewNode(sk1, node.FakeMoney{}, time.Tick(100*time.Millisecond), c)
+	n2 := NewNode(sk2, node.FakeMoney{}, time.Tick(100*time.Millisecond), time.Tick(100*time.Millisecond))
 	defer n1.Close()
 	defer n2.Close()
-	link(n1, n2)
+	node.Link(n1, n2)
 
 	if !n1.IsReachable(sk2.PublicKey().Hash()) {
 		t.Fatalf("n2 is not reachable")
 	}
 
-	p2 := testPacket(sk2.PublicKey().Hash())
+	p2 := types.Packet{sk2.PublicKey().Hash(), 3, "data"}
 	err := n1.SendPacket(p2)
 	if err != nil {
 		t.Fatalf("Error sending packet: %v", err)

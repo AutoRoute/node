@@ -3,12 +3,14 @@ package node
 import (
 	"encoding/json"
 	"testing"
+
+	"github.com/AutoRoute/node/types"
 )
 
 func TestMerkle(t *testing.T) {
 	k, _ := NewECDSAKey()
 
-	p := make([]PacketHash, 3)
+	p := make([]types.PacketHash, 3)
 	p[0] = "Fo0"
 	p[1] = "Fo1"
 	p[2] = "Fo2"
@@ -38,7 +40,7 @@ func TestMerkle(t *testing.T) {
 
 func TestMerkleMarshalling(t *testing.T) {
 	sk1, _ := NewECDSAKey()
-	m := CreateMerkleReceipt(sk1, []PacketHash{PacketHash("hi")})
+	m := CreateMerkleReceipt(sk1, []types.PacketHash{types.PacketHash("hi")})
 	if m.Verify() != nil {
 		t.Fatalf("Error verifying generated receipt: %v", m.Verify())
 	}

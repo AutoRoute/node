@@ -3,8 +3,12 @@ package node
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"log"
 	"net"
+
+	"github.com/AutoRoute/node/internal"
+	"github.com/AutoRoute/node/types"
 
 	"github.com/AutoRoute/l2"
 )
@@ -24,17 +28,17 @@ func init() {
 // The layer two protocol takes a layer two device and returns the hash of the
 // Public Key of all neighbors it can find.
 type NeighborFinder struct {
-	pk                 PublicKey
-	link_local_address net.IP
+	pk                 node.PublicKey
+	Link_local_address net.IP
 	port               uint16
 }
 
-func NewNeighborFinder(pk PublicKey, link_local_address net.IP, port uint16) NeighborFinder {
-	return NeighborFinder{pk, link_local_address, port}
+func NewNeighborFinder(pk node.PublicKey, Link_local_address net.IP, port uint16) NeighborFinder {
+	return NeighborFinder{pk, Link_local_address, port}
 }
 
 type FrameData struct {
-	NodeAddr  NodeAddress
+	NodeAddr  types.NodeAddress
 	LLAddrStr string
 	Port      uint16
 }
@@ -65,7 +69,7 @@ func (n NeighborFinder) handleLink(mac []byte, frw l2.FrameReadWriter, c chan *F
 			if err != nil {
 				log.Fatal(err)
 			}
-			data := FrameData{NodeAddress(frame.Data()[:64]), net.IP(frame.Data()[64:80]).String(), port}
+			data := FrameData{types.NodeAddress(frame.Data()[:64]), net.IP(frame.Data()[64:80]).String(), port}
 			c <- &data
 		}
 		if !bytes.Equal(frame.Destination(), broadcast) {
@@ -87,7 +91,7 @@ func (n NeighborFinder) Find(mac []byte, frw l2.FrameReadWriter) (<-chan *FrameD
 	if err != nil {
 		log.Fatal(err)
 	}
-	frame_data := append([]byte(n.pk.Hash()), n.link_local_address...)
+	frame_data := append([]byte(n.pk.Hash()), n.Link_local_address...)
 	frame_data = append(frame_data, port_buf.Bytes()...)
 	frame := l2.NewEthFrame(broadcast, mac, protocol, frame_data)
 	err = frw.WriteFrame(frame)
@@ -106,7 +110,32 @@ func (n NeighborFinder) BuildResponse(frame l2.EthFrame, mac []byte, protocol ui
 	if err != nil {
 		log.Fatal(err)
 	}
-	data := append([]byte(n.pk.Hash()), n.link_local_address...)
+	data := append([]byte(n.pk.Hash()), n.Link_local_address...)
 	data = append(data, port_buf.Bytes()...)
 	return l2.NewEthFrame(frame.Source(), mac, protocol, data)
+}
+
+func Probe(key Key, n *Server, dev net.Interface, port uint16) {
+	if dev.Name == "lo" {
+		return
+	}
+
+	log.Printf("Probing %q", dev.Name)
+
+	ll_addr, err := GetLinkLocalAddr(dev)
+	if err != nil {
+		log.Printf("Error probing %q: %v", dev.Name, err)
+		return
+	}
+
+	neighbors := FindNeighbors(dev, ll_addr, key.k.PublicKey(), port)
+	for neighbor := range neighbors {
+		log.Printf("Neighbour Found %x", neighbor.NodeAddr)
+		err := n.Connect(fmt.Sprintf("[%s%%%s]:%v", neighbor.LLAddrStr, dev.Name, neighbor.Port))
+		if err != nil {
+			log.Printf("Error connecting: %v", err)
+			return
+		}
+		log.Printf("Connection established to %x", neighbor.NodeAddr)
+	}
 }

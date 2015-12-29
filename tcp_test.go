@@ -1,12 +1,14 @@
 package node
 
 import (
-	"github.com/AutoRoute/tuntap"
-
 	"bytes"
 	"encoding/json"
 	"errors"
 	"testing"
+
+	"github.com/AutoRoute/tuntap"
+
+	"github.com/AutoRoute/node/types"
 )
 
 type testTun struct {
@@ -25,24 +27,24 @@ func (t testTun) WritePacket(p *tuntap.Packet) error {
 }
 
 type testData struct {
-	in          chan Packet
-	out         chan Packet
+	in          chan types.Packet
+	out         chan types.Packet
 	write_error error
 }
 
-func (d testData) SendPacket(p Packet) error {
+func (d testData) SendPacket(p types.Packet) error {
 	d.in <- p
 	return d.write_error
 }
-func (d testData) Packets() <-chan Packet {
+func (d testData) Packets() <-chan types.Packet {
 	return d.out
 }
 
 func TestTCPTunToData(t *testing.T) {
 	amt := int64(7)
-	dest := NodeAddress("destination")
+	dest := types.NodeAddress("destination")
 	tun := testTun{make(chan *tuntap.Packet), make(chan *tuntap.Packet), nil, nil}
-	data := testData{make(chan Packet), make(chan Packet), nil}
+	data := testData{make(chan types.Packet), make(chan types.Packet), nil}
 	tcp := NewTCPTunnel(tun, data, dest, amt)
 	defer tcp.Close()
 
@@ -72,10 +74,10 @@ func TestTCPTunToData(t *testing.T) {
 
 func TestTCPTunReadError(t *testing.T) {
 	amt := int64(7)
-	dest := NodeAddress("destination")
+	dest := types.NodeAddress("destination")
 	read_error := errors.New("Read Error")
 	tun := testTun{make(chan *tuntap.Packet), make(chan *tuntap.Packet), read_error, nil}
-	data := testData{make(chan Packet), make(chan Packet), nil}
+	data := testData{make(chan types.Packet), make(chan types.Packet), nil}
 	tcp := NewTCPTunnel(tun, data, dest, amt)
 	defer tcp.Close()
 
@@ -92,9 +94,9 @@ func TestTCPTunReadError(t *testing.T) {
 
 func TestTCPTunReadTruncated(t *testing.T) {
 	amt := int64(7)
-	dest := NodeAddress("destination")
+	dest := types.NodeAddress("destination")
 	tun := testTun{make(chan *tuntap.Packet), make(chan *tuntap.Packet), nil, nil}
-	data := testData{make(chan Packet), make(chan Packet), nil}
+	data := testData{make(chan types.Packet), make(chan types.Packet), nil}
 	tcp := NewTCPTunnel(tun, data, dest, amt)
 	defer tcp.Close()
 
@@ -111,10 +113,10 @@ func TestTCPTunReadTruncated(t *testing.T) {
 
 func TestTCPTunReadWriteFails(t *testing.T) {
 	amt := int64(7)
-	dest := NodeAddress("destination")
+	dest := types.NodeAddress("destination")
 	write_error := errors.New("Write Error")
 	tun := testTun{make(chan *tuntap.Packet), make(chan *tuntap.Packet), nil, nil}
-	data := testData{make(chan Packet, 1), make(chan Packet), write_error}
+	data := testData{make(chan types.Packet, 1), make(chan types.Packet), write_error}
 	tcp := NewTCPTunnel(tun, data, dest, amt)
 	defer tcp.Close()
 
@@ -131,9 +133,9 @@ func TestTCPTunReadWriteFails(t *testing.T) {
 
 func TestTCPTunWrite(t *testing.T) {
 	amt := int64(7)
-	dest := NodeAddress("destination")
+	dest := types.NodeAddress("destination")
 	tun := testTun{make(chan *tuntap.Packet), make(chan *tuntap.Packet), nil, nil}
-	data := testData{make(chan Packet), make(chan Packet), nil}
+	data := testData{make(chan types.Packet), make(chan types.Packet), nil}
 	tcp := NewTCPTunnel(tun, data, dest, amt)
 	defer tcp.Close()
 
@@ -143,7 +145,7 @@ func TestTCPTunWrite(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	p_in := Packet{dest, amt, string(b)}
+	p_in := types.Packet{dest, amt, string(b)}
 	data.out <- p_in
 	p_recv := <-tun.in
 
@@ -157,10 +159,10 @@ func TestTCPTunWrite(t *testing.T) {
 
 func TestTCPTunWriteSendError(t *testing.T) {
 	amt := int64(7)
-	dest := NodeAddress("destination")
+	dest := types.NodeAddress("destination")
 	write_error := errors.New("Write Error")
 	tun := testTun{make(chan *tuntap.Packet, 1), make(chan *tuntap.Packet), nil, write_error}
-	data := testData{make(chan Packet), make(chan Packet), nil}
+	data := testData{make(chan types.Packet), make(chan types.Packet), nil}
 	tcp := NewTCPTunnel(tun, data, dest, amt)
 	defer tcp.Close()
 
@@ -170,7 +172,7 @@ func TestTCPTunWriteSendError(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	p_in := Packet{dest, amt, string(b)}
+	p_in := types.Packet{dest, amt, string(b)}
 	data.out <- p_in
 
 	err = <-tcp.Error()
@@ -181,14 +183,14 @@ func TestTCPTunWriteSendError(t *testing.T) {
 
 func TestTCPTunWriteUnmarshalError(t *testing.T) {
 	amt := int64(7)
-	dest := NodeAddress("destination")
+	dest := types.NodeAddress("destination")
 	tun := testTun{make(chan *tuntap.Packet), make(chan *tuntap.Packet), nil, nil}
-	data := testData{make(chan Packet), make(chan Packet), nil}
+	data := testData{make(chan types.Packet), make(chan types.Packet), nil}
 	tcp := NewTCPTunnel(tun, data, dest, amt)
 	defer tcp.Close()
 
 	// Send in a test packet
-	p_in := Packet{dest, amt, string("NOTJSON")}
+	p_in := types.Packet{dest, amt, string("NOTJSON")}
 	data.out <- p_in
 
 	err := <-tcp.Error()

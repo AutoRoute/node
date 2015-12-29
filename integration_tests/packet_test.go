@@ -1,7 +1,7 @@
 package integration_tests
 
 import (
-	"github.com/AutoRoute/node"
+	"github.com/AutoRoute/node/types"
 
 	"encoding/hex"
 	"encoding/json"
@@ -39,7 +39,7 @@ func TestPacket(t *testing.T) {
 	}
 
 	raw_id, err := hex.DecodeString(connect_id)
-	p := node.Packet{node.NodeAddress(string(raw_id)), 10, "data"}
+	p := types.Packet{types.NodeAddress(string(raw_id)), 10, "data"}
 
 	c, err := WaitForSocket("/tmp/unix")
 	if err != nil {
@@ -76,7 +76,7 @@ func TestPacket(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	packets := make(chan node.Packet)
+	packets := make(chan types.Packet)
 	go WaitForPacket(c2, t, packets)
 	select {
 	case <-time.After(4 * time.Second):

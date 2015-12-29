@@ -3,31 +3,14 @@ package node
 import (
 	"testing"
 	"time"
+
+	"github.com/AutoRoute/node/types"
 )
-
-type testMapConnection struct {
-	in  chan *BloomReachabilityMap
-	out chan *BloomReachabilityMap
-}
-
-func (c testMapConnection) SendMap(m *BloomReachabilityMap) error {
-	c.out <- m
-	return nil
-}
-func (c testMapConnection) ReachabilityMaps() <-chan *BloomReachabilityMap {
-	return c.in
-}
-
-func makePairedMapConnections() (MapConnection, MapConnection) {
-	one := make(chan *BloomReachabilityMap)
-	two := make(chan *BloomReachabilityMap)
-	return testMapConnection{one, two}, testMapConnection{two, one}
-}
 
 func TestMapHandler(t *testing.T) {
 	c1, c2 := makePairedMapConnections()
-	a1 := NodeAddress("1")
-	a2 := NodeAddress("2")
+	a1 := types.NodeAddress("1")
+	a2 := types.NodeAddress("2")
 	m1 := newReachability(a1)
 	m2 := newReachability(a1)
 	defer m1.Close()
@@ -35,7 +18,7 @@ func TestMapHandler(t *testing.T) {
 	m1.AddConnection(a2, c2)
 	m2.AddConnection(a1, c1)
 
-	timeout := func(m *reachabilityHandler, id NodeAddress) bool {
+	timeout := func(m *reachabilityHandler, id types.NodeAddress) bool {
 		start := time.Now()
 		for now := start; now.Before(start.Add(time.Second)); now = time.Now() {
 			if a, err := m.FindNextHop(id); err == nil {
@@ -60,9 +43,9 @@ func TestMapHandler(t *testing.T) {
 func TestRelayMapHandler(t *testing.T) {
 	c1, c2 := makePairedMapConnections()
 	c3, c4 := makePairedMapConnections()
-	a1 := NodeAddress("1")
-	a2 := NodeAddress("2")
-	a3 := NodeAddress("3")
+	a1 := types.NodeAddress("1")
+	a2 := types.NodeAddress("2")
+	a3 := types.NodeAddress("3")
 	m1 := newReachability(a1)
 	m2 := newReachability(a2)
 	m3 := newReachability(a3)
@@ -74,7 +57,7 @@ func TestRelayMapHandler(t *testing.T) {
 	m2.AddConnection(a3, c3)
 	m3.AddConnection(a2, c4)
 
-	timeout := func(m *reachabilityHandler, id NodeAddress, nexthop NodeAddress) bool {
+	timeout := func(m *reachabilityHandler, id types.NodeAddress, nexthop types.NodeAddress) bool {
 		start := time.Now()
 		for now := start; now.Before(start.Add(time.Second)); now = time.Now() {
 			if a, err := m.FindNextHop(id); err == nil {

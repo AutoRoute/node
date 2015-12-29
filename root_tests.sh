@@ -3,5 +3,4 @@
 # Travis CI doesn't give us tun tap support and nothing else gives us root.
 # These tests should only be run locally.
 
-go get github.com/AutoRoute/loopback2
 sudo -E env "PATH=$PATH" go test -v github.com/AutoRoute/node/integration_tests/root
