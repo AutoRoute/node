@@ -66,10 +66,6 @@ func (s *Server) Listen(addr string) error {
 	return nil
 }
 
-func (s *Server) AddConnection(c internal.Connection) {
-	s.n.AddConnection(c)
-}
-
 func (s *Server) Node() Node {
 	return Node{s.n}
 }
