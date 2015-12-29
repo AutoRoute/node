@@ -1,12 +1,10 @@
-package node
+package internal
 
 import (
 	"net"
 	"testing"
 
 	"github.com/AutoRoute/l2"
-
-	"github.com/AutoRoute/node/internal"
 )
 
 type testInterface struct {
@@ -36,12 +34,12 @@ func TestBasicExchange(t *testing.T) {
 	test_mac1, _ := l2.MacToBytes("aa:bb:cc:dd:ee:00")
 	test_mac2, _ := l2.MacToBytes("aa:bb:cc:dd:ee:11")
 
-	k1, err := internal.NewECDSAKey()
+	k1, err := NewECDSAKey()
 	pk1 := k1.PublicKey()
 	if err != nil {
 		t.Fatal(err)
 	}
-	k2, err := internal.NewECDSAKey()
+	k2, err := NewECDSAKey()
 	pk2 := k2.PublicKey()
 	if err != nil {
 		t.Fatal(err)
@@ -76,8 +74,8 @@ func TestBasicExchange(t *testing.T) {
 	// We should receive the other side twice, once from broadcast, and once
 	// from directed response
 	msg := <-outone
-	if msg.fullNodeAddr != pk2.Hash() {
-		t.Errorf("Expected %q!=%q", pk2.Hash(), msg.fullNodeAddr)
+	if msg.FullNodeAddr != pk2.Hash() {
+		t.Errorf("Expected %q!=%q", pk2.Hash(), msg.FullNodeAddr)
 	}
 	if msg.LLAddrStr != ll_addr_str2 {
 		t.Errorf("Expected %q!=%q", ll_addr_str2, msg.LLAddrStr)
@@ -87,8 +85,8 @@ func TestBasicExchange(t *testing.T) {
 	}
 
 	msg = <-outtwo
-	if msg.fullNodeAddr != pk1.Hash() {
-		t.Errorf("Expected %q!=%q", pk1.Hash(), msg.fullNodeAddr)
+	if msg.FullNodeAddr != pk1.Hash() {
+		t.Errorf("Expected %q!=%q", pk1.Hash(), msg.FullNodeAddr)
 	}
 	if msg.LLAddrStr != ll_addr_str1 {
 		t.Errorf("Expected %q!=%q", ll_addr_str1, msg.LLAddrStr)
@@ -98,8 +96,8 @@ func TestBasicExchange(t *testing.T) {
 	}
 
 	msg = <-outone
-	if msg.fullNodeAddr != pk2.Hash() {
-		t.Errorf("Expected %q!=%q", pk2.Hash(), msg.fullNodeAddr)
+	if msg.FullNodeAddr != pk2.Hash() {
+		t.Errorf("Expected %q!=%q", pk2.Hash(), msg.FullNodeAddr)
 	}
 	if msg.LLAddrStr != ll_addr_str2 {
 		t.Errorf("Expected %q!=%q", ll_addr_str2, msg.LLAddrStr)
@@ -109,8 +107,8 @@ func TestBasicExchange(t *testing.T) {
 	}
 
 	msg = <-outtwo
-	if msg.fullNodeAddr != pk1.Hash() {
-		t.Errorf("Expected %q!=%q", pk1.Hash(), msg.fullNodeAddr)
+	if msg.FullNodeAddr != pk1.Hash() {
+		t.Errorf("Expected %q!=%q", pk1.Hash(), msg.FullNodeAddr)
 	}
 	if msg.LLAddrStr != ll_addr_str1 {
 		t.Errorf("Expected %q!=%q", ll_addr_str1, msg.LLAddrStr)

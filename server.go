@@ -1,9 +1,15 @@
 package node
 
 import (
+	"errors"
+	"fmt"
 	"log"
 	"net"
+	"strconv"
+	"strings"
 	"time"
+
+	"github.com/AutoRoute/l2"
 
 	"github.com/AutoRoute/node/internal"
 	"github.com/AutoRoute/node/types"
@@ -11,13 +17,14 @@ import (
 
 // The server handles creating connections and listening on various ports.
 type Server struct {
-	n         *fullNode
-	listeners map[string]*internal.SSHListener
+	n              *fullNode
+	listeners      map[string]*internal.SSHListener
+	listen_address string
 }
 
 func NewServer(key Key, m types.Money) *Server {
 	n := newFullNode(key.k, m, time.Tick(30*time.Second), time.Tick(30*time.Second))
-	return &Server{n, make(map[string]*internal.SSHListener)}
+	return &Server{n, make(map[string]*internal.SSHListener), ""}
 }
 
 func (s *Server) Connect(addr string) error {
@@ -48,6 +55,7 @@ func (s *Server) Listen(addr string) error {
 	if l.Error() != nil {
 		return err
 	}
+	s.listen_address = addr
 	s.listeners[addr] = l
 	go func() {
 		for c := range l.Connections() {
@@ -68,4 +76,66 @@ func (s *Server) Node() Node {
 
 func (s *Server) Close() error {
 	return s.n.Close()
+}
+
+func getLinkLocalAddr(dev net.Interface) (net.IP, error) {
+	dev_addrs, err := dev.Addrs()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, dev_addr := range dev_addrs {
+		addr, _, err := net.ParseCIDR(dev_addr.String())
+		if err != nil {
+			return nil, err
+		}
+
+		if addr.IsLinkLocalUnicast() {
+			return addr, nil
+		}
+	}
+	return nil, errors.New("Unable to find Link local address")
+}
+
+func (s *Server) findNeighbors(dev net.Interface, ll_addr net.IP, port uint16) {
+	conn, err := l2.ConnectExistingDevice(dev.Name)
+	if err != nil {
+		log.Fatal(err)
+	}
+	nf := internal.NewNeighborFinder(s.n.id.PublicKey(), ll_addr, port)
+	neighbors, err := nf.Find(dev.HardwareAddr, conn)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for neighbor := range neighbors {
+		log.Printf("Neighbour Found %x", neighbor.FullNodeAddr)
+		err := s.Connect(fmt.Sprintf("[%s%%%s]:%v", neighbor.LLAddrStr, dev.Name, neighbor.Port))
+		if err != nil {
+			log.Printf("Error connecting: %v", err)
+			return
+		}
+		log.Printf("Connection established to %x", neighbor.FullNodeAddr)
+	}
+}
+
+func (s *Server) Probe(dev net.Interface) error {
+	if dev.Name == "lo" {
+		return errors.New("Unable to prove loopback device")
+	}
+
+	log.Printf("Probing %q", dev.Name)
+
+	ll_addr, err := getLinkLocalAddr(dev)
+	if err != nil {
+		return err
+	}
+
+	parsed_listen_addr := strings.Split(s.listen_address, ":")
+	port, err := strconv.ParseUint(parsed_listen_addr[len(parsed_listen_addr)-1], 10, 16)
+	if err != nil {
+		return errors.New("Unable to figure out listening port. Is this server listening?")
+	}
+
+	go s.findNeighbors(dev, ll_addr, uint16(port))
+	return nil
 }

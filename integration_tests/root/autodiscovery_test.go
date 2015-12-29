@@ -2,7 +2,6 @@
 package root
 
 import (
-	"github.com/AutoRoute/node"
 	integration "github.com/AutoRoute/node/integration_tests"
 
 	"errors"
@@ -14,8 +13,27 @@ import (
 	"time"
 )
 
+func GetLinkLocalAddr(dev net.Interface) (net.IP, error) {
+	dev_addrs, err := dev.Addrs()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, dev_addr := range dev_addrs {
+		addr, _, err := net.ParseCIDR(dev_addr.String())
+		if err != nil {
+			return nil, err
+		}
+
+		if addr.IsLinkLocalUnicast() {
+			return addr, nil
+		}
+	}
+	return nil, errors.New("Unable to find Link local address")
+}
+
 func BuildListenAddress(i *net.Interface, port int) string {
-	ll, err := node.GetLinkLocalAddr(*i)
+	ll, err := GetLinkLocalAddr(*i)
 	if err != nil {
 		panic(err)
 	}

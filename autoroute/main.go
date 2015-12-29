@@ -6,10 +6,6 @@ package main
 // do which isn't possible in the core library.
 
 import (
-	"github.com/AutoRoute/node"
-	"github.com/AutoRoute/node/types"
-	"github.com/AutoRoute/tuntap"
-
 	"flag"
 	"fmt"
 	"log"
@@ -17,8 +13,11 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strconv"
 	"strings"
+
+	"github.com/AutoRoute/node"
+	"github.com/AutoRoute/node/types"
+	"github.com/AutoRoute/tuntap"
 )
 
 var listen = flag.String("listen", "[::]:34321",
@@ -98,15 +97,8 @@ func main() {
 			}
 		}
 
-		parsed_listen_addr := strings.Split(*listen, ":")
-		port64, err := strconv.ParseUint(parsed_listen_addr[len(parsed_listen_addr)-1], 10, 16)
-		port := uint16(port64)
-		if err != nil {
-			log.Fatal(err)
-		}
-		port = uint16(port)
 		for _, dev := range devs {
-			go node.Probe(key, n, dev, port)
+			go n.Probe(dev)
 		}
 	}
 
