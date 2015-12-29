@@ -1,9 +1,8 @@
-package main
-
 // This binary is the canonical way to use autoroute. It supports most use cases and should
 // be able to provide most needs. Ideally the binary should merely be a wrapper around the core library
 // and should be the canonical example of how to use it. There should be nothing which this binary can
 // do which isn't possible in the core library.
+package main
 
 import (
 	"flag"
