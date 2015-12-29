@@ -1,37 +1,18 @@
-package node
+package internal
 
 import (
 	"log"
 	"sync"
 	"time"
 
-	"github.com/AutoRoute/node/internal"
 	"github.com/AutoRoute/node/types"
 )
 
-// A Node is the highest level abstraction over the network. You receive packets
-// from it and send packets to it, and it takes care of everything else.
+// A Node includes various functions which are called by Server but shouldn't be publicly exposed.
 type Node struct {
-	private *fullNode
-}
-
-func (n Node) IsReachable(addr types.NodeAddress) bool {
-	return n.private.IsReachable(addr)
-}
-
-func (n Node) SendPacket(p types.Packet) error {
-	return n.private.SendPacket(p)
-}
-
-func (n Node) Packets() <-chan types.Packet {
-	return n.private.Packets()
-}
-
-// A fullNode includes various functions which are called by Server but shouldn't be publicly exposed.
-type fullNode struct {
-	router         *internal.Router
+	router         *Router
 	l              *sync.Mutex
-	id             internal.PrivateKey
+	id             PrivateKey
 	outgoing       chan types.Packet
 	receipt_buffer []types.PacketHash
 	receipt_ticker <-chan time.Time
@@ -40,9 +21,9 @@ type fullNode struct {
 	quit           chan bool
 }
 
-func newFullNode(pk internal.PrivateKey, m types.Money, receipt_ticker <-chan time.Time, payment_ticker <-chan time.Time) *fullNode {
-	n := &fullNode{
-		internal.NewRouter(pk.PublicKey()),
+func NewNode(pk PrivateKey, m types.Money, receipt_ticker <-chan time.Time, payment_ticker <-chan time.Time) *Node {
+	n := &Node{
+		NewRouter(pk.PublicKey()),
 		&sync.Mutex{},
 		pk,
 		make(chan types.Packet),
@@ -58,7 +39,7 @@ func newFullNode(pk internal.PrivateKey, m types.Money, receipt_ticker <-chan ti
 	return n
 }
 
-func (n *fullNode) receivePackets() {
+func (n *Node) receivePackets() {
 	for {
 		select {
 		case p, ok := <-n.router.Packets():
@@ -75,13 +56,13 @@ func (n *fullNode) receivePackets() {
 	}
 }
 
-func (n *fullNode) sendReceipts() {
+func (n *Node) sendReceipts() {
 	for {
 		select {
 		case <-n.receipt_ticker:
 			n.l.Lock()
 			if len(n.receipt_buffer) > 0 {
-				r := internal.CreateMerkleReceipt(n.id, n.receipt_buffer)
+				r := CreateMerkleReceipt(n.id, n.receipt_buffer)
 				n.receipt_buffer = nil
 				n.router.SendReceipt(r)
 			}
@@ -92,7 +73,7 @@ func (n *fullNode) sendReceipts() {
 	}
 }
 
-func (n *fullNode) sendPayments() {
+func (n *Node) sendPayments() {
 	for {
 		select {
 		case <-n.payment_ticker:
@@ -118,20 +99,20 @@ func (n *fullNode) sendPayments() {
 	}
 }
 
-func (n *fullNode) SendPacket(p types.Packet) error {
+func (n *Node) SendPacket(p types.Packet) error {
 	return n.router.SendPacket(p)
 }
 
-func (n *fullNode) Packets() <-chan types.Packet {
+func (n *Node) Packets() <-chan types.Packet {
 	return n.outgoing
 }
 
-func (n *fullNode) Close() error {
+func (n *Node) Close() error {
 	close(n.quit)
 	return nil
 }
 
-func (n *fullNode) GetNewAddress() string {
+func (n *Node) GetNewAddress() string {
 	address, c, err := n.m.GetNewAddress()
 	if err != nil {
 		log.Fatal("Failed to get payment address: ", err)
@@ -140,15 +121,19 @@ func (n *fullNode) GetNewAddress() string {
 	return address
 }
 
-func (n *fullNode) GetAddress() internal.PublicKey {
+func (n *Node) GetAddress() PublicKey {
 	return n.id.PublicKey()
 }
 
-func (n *fullNode) IsReachable(addr types.NodeAddress) bool {
+func (n *Node) IsReachable(addr types.NodeAddress) bool {
 	_, err := n.router.FindNextHop(addr)
 	return err == nil
 }
 
-func (n *fullNode) AddConnection(c internal.Connection) {
+func (n *Node) AddConnection(c Connection) {
 	n.router.AddConnection(c)
+}
+
+func (n *Node) ID() PrivateKey {
+	return n.id
 }

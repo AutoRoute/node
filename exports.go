@@ -20,3 +20,21 @@ type DataConnection interface {
 	SendPacket(types.Packet) error
 	Packets() <-chan types.Packet
 }
+
+// A Node is the highest level abstraction over the network. You receive packets
+// from it and send packets to it, and it takes care of everything else.
+type Node struct {
+	private *internal.Node
+}
+
+func (n Node) IsReachable(addr types.NodeAddress) bool {
+	return n.private.IsReachable(addr)
+}
+
+func (n Node) SendPacket(p types.Packet) error {
+	return n.private.SendPacket(p)
+}
+
+func (n Node) Packets() <-chan types.Packet {
+	return n.private.Packets()
+}

@@ -17,13 +17,13 @@ import (
 
 // The server handles creating connections and listening on various ports.
 type Server struct {
-	n              *fullNode
+	n              *internal.Node
 	listeners      map[string]*internal.SSHListener
 	listen_address string
 }
 
 func NewServer(key Key, m types.Money) *Server {
-	n := newFullNode(key.k, m, time.Tick(30*time.Second), time.Tick(30*time.Second))
+	n := internal.NewNode(key.k, m, time.Tick(30*time.Second), time.Tick(30*time.Second))
 	return &Server{n, make(map[string]*internal.SSHListener), ""}
 }
 
@@ -33,7 +33,7 @@ func (s *Server) Connect(addr string) error {
 		return err
 	}
 	m := internal.SSHMetaData{Payment_Address: s.n.GetNewAddress()}
-	sc, err := internal.EstablishSSH(c, addr, s.n.id, m)
+	sc, err := internal.EstablishSSH(c, addr, s.n.ID(), m)
 	if err != nil {
 		return err
 	}
@@ -51,7 +51,7 @@ func (s *Server) Listen(addr string) error {
 	m := func() internal.SSHMetaData {
 		return internal.SSHMetaData{Payment_Address: s.n.GetNewAddress()}
 	}
-	l := internal.ListenSSH(ln, s.n.id, m)
+	l := internal.ListenSSH(ln, s.n.ID(), m)
 	if l.Error() != nil {
 		return err
 	}
@@ -98,7 +98,7 @@ func (s *Server) findNeighbors(dev net.Interface, ll_addr net.IP, port uint16) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	nf := internal.NewNeighborFinder(s.n.id.PublicKey(), ll_addr, port)
+	nf := internal.NewNeighborFinder(s.n.ID().PublicKey(), ll_addr, port)
 	neighbors, err := nf.Find(dev.HardwareAddr, conn)
 	if err != nil {
 		log.Fatal(err)
