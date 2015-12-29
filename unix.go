@@ -5,17 +5,16 @@ import (
 	"log"
 	"net"
 
-	"github.com/AutoRoute/node/internal"
 	"github.com/AutoRoute/node/types"
 )
 
 type UnixSocket struct {
 	l net.Listener
-	d internal.DataConnection
+	d DataConnection
 }
 
 // Creates a unix socket which all packets are sent to /from.
-func NewUnixSocket(path string, d internal.DataConnection) (*UnixSocket, error) {
+func NewUnixSocket(path string, d DataConnection) (*UnixSocket, error) {
 	l, err := net.Listen("unix", path)
 	if err != nil {
 		return nil, err

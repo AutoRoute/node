@@ -14,3 +14,9 @@ func FakeMoney() types.Money {
 func NewRPCMoney(host, user, pass string) (types.Money, error) {
 	return internal.NewRPCMoney(host, user, pass)
 }
+
+// Represents an object capable of sending and receiving packets.
+type DataConnection interface {
+	SendPacket(types.Packet) error
+	Packets() <-chan types.Packet
+}
