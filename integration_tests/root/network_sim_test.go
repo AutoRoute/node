@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"encoding/json"
 	"encoding/hex"
+	"fmt"
 )
 
 type settings struct {
@@ -25,6 +26,7 @@ type ConnectionType struct {
 	Source      string
 	Destination string
 }
+
 
 func TestNetwork(t *testing.T) {
 	WarnRoot(t)
@@ -61,6 +63,7 @@ func TestNetwork(t *testing.T) {
 	devs := make(map[string][]string)
 	// binaries
 	bins := make(map[string]integration.AutoRouteBinary)
+	// socket names
 	sockets := make(map[string]string)
 	// generate connection pairs
 	// goes through each pair of connections
@@ -143,7 +146,9 @@ func TestNetwork(t *testing.T) {
 			listen.Start()
 			defer listen.KillAndPrint(t)
 		} else {
+			listen_port := integration.GetUnusedPort()
 			connect := integration.NewNodeBinary(integration.BinaryOptions{
+				Listen:               fmt.Sprintf("[::]:%d", listen_port),
 				Fake_money:           true,
 				Autodiscover:         true,
 				Autodiscover_devices: names,
@@ -164,6 +169,7 @@ func TestNetwork(t *testing.T) {
 			looptaps := strings.Split(ifaces,":")
 			listen := bins[looptaps[0]]
 			connect := bins[looptaps[1]]
+
 			listen_id, err := integration.WaitForID(listen)
 			if err != nil {
 				t.Fatal(err)
@@ -173,14 +179,16 @@ func TestNetwork(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-
-			err = integration.WaitForConnection(listen, connect_id)
+			err = integration.WaitForConnection(connect, listen_id)
 			if err != nil {
-				t.Fatal(err)
+				err = integration.WaitForConnection(listen, connect_id)
+				if err != nil {
+					t.Fatal(err)
+				}
 			}
 			raw_id, err := hex.DecodeString(connect_id)
 			p := node.Packet{node.NodeAddress(string(raw_id)), 10, "data"}
-
+			// create unix sockets for both nodes
 			c, err := integration.WaitForSocket(sockets[looptaps[0]])
 			if err != nil {
 				t.Fatal(err)
@@ -195,39 +203,35 @@ func TestNetwork(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-
-			/*
-			//This fails for some reason
-			err = integration.WaitForPacketsReceived(listen, listen_id, 1)
+			// verify packet transmissions for each pair of nodes
+			err = integration.WaitForPacketsReceived(listen, listen_id)
 			if err != nil {
 				t.Fatal(err)
 			}
-			*/
-			err = integration.WaitForPacketsSent(listen, connect_id, 1)
+			err = integration.WaitForPacketsSent(listen, connect_id)
 			if err != nil {
 				t.Fatal(err)
 			}
-			
-			err = integration.WaitForPacketsReceived(connect, listen_id, 1)
+			err = integration.WaitForPacketsReceived(connect, listen_id)
 			if err != nil {
 				t.Fatal(err)
 			}
-			
-			err = integration.WaitForPacketsSent(connect, connect_id, 1)
+			err = integration.WaitForPacketsSent(connect, connect_id)
 			if err != nil {
 				t.Fatal(err)
 			}
-
+			// send a packet between each pair of nodes
 			packets := make(chan node.Packet)
 			go integration.WaitForPacket(c2, t, packets)
 			select {
-			case <-time.After(4 * time.Second):
+			case <-time.After(10* time.Second):
 				t.Fatal("Never received packet")
 			case p2 := <-packets:
 				if p != p2 {
 					t.Fatal("Packets %v != %v", p, p2)
 				}
 			}
+			
 		}
 	}
 
