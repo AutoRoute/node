@@ -53,7 +53,6 @@ func Probe(key node.PrivateKey, n *node.Server, dev net.Interface, port uint16) 
 
 	neighbors := node.FindNeighbors(dev, ll_addr, key.PublicKey(), port)
 	for neighbor := range neighbors {
-		log.Printf("Neighbour Found %x", neighbor.NodeAddr[0:4])
 		err := n.Connect(fmt.Sprintf("[%s%%%s]:%v", neighbor.LLAddrStr, dev.Name, neighbor.Port))
 		if err != nil {
 			log.Printf("Error connecting: %v", err)

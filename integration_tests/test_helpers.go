@@ -101,7 +101,12 @@ func WaitForPacketsSent(b AutoRouteBinary, dest string, amt ...int) error {
 			continue
 		}
 		for destination, amount := range packets_sent {
-			if len(amt) > 0{
+			// amount should always be greater than 0
+			if amount == 0 {
+				return errors.New(fmt.Sprint("Invalid packet amount from destination %x", destination[0:4]))
+			}
+			// makes amount an optional argument
+			if len(amt) > 0 {
 				if destination == dest && amount == amt[0] {
 					return nil
 				}
