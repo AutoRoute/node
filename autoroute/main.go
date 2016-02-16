@@ -53,13 +53,12 @@ func Probe(key node.PrivateKey, n *node.Server, dev net.Interface, port uint16) 
 
 	neighbors := node.FindNeighbors(dev, ll_addr, key.PublicKey(), port)
 	for neighbor := range neighbors {
-		log.Printf("Neighbour Found %x", neighbor.NodeAddr)
 		err := n.Connect(fmt.Sprintf("[%s%%%s]:%v", neighbor.LLAddrStr, dev.Name, neighbor.Port))
 		if err != nil {
 			log.Printf("Error connecting: %v", err)
 			return
 		}
-		log.Printf("Connection established to %x", neighbor.NodeAddr)
+		log.Printf("Connection established to %x", neighbor.NodeAddr[0:4])
 	}
 }
 
@@ -87,7 +86,7 @@ func main() {
 			log.Fatal(err)
 		}
 	}
-	log.Printf("Key is %x", key.PublicKey().Hash())
+	log.Printf("Key is %x", key.PublicKey().Hash()[0:4])
 
 	money := node.FakeMoney()
 	if !*fake_money {
