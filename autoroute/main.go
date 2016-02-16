@@ -1,9 +1,10 @@
+// This binary is the canonical way to use autoroute. It supports most use cases and should
+// be able to provide most needs. Ideally the binary should merely be a wrapper around the core library
+// and should be the canonical example of how to use it. There should be nothing which this binary can
+// do which isn't possible in the core library.
 package main
 
 import (
-	"github.com/AutoRoute/node"
-	"github.com/AutoRoute/tuntap"
-
 	"flag"
 	"fmt"
 	"log"
@@ -11,9 +12,11 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"runtime"
-	"strconv"
 	"strings"
+
+	"github.com/AutoRoute/node"
+	"github.com/AutoRoute/node/types"
+	"github.com/AutoRoute/tuntap"
 )
 
 var listen = flag.String("listen", "[::]:34321",
@@ -24,8 +27,6 @@ var autodiscover = flag.Bool("auto", false,
 	"Whether we should try and find neighboring routers")
 var dev_names = flag.String("devs", "",
 	"Comma separated list of interfaces to discover on")
-var tcptun = flag.String("tcptun", "",
-	"Address to try and tcp tunnel to")
 var keyfile = flag.String("keyfile", "",
 	"The keyfile we should check for a key and write our current key to")
 var btc_host = flag.String("btc_host", "localhost:8333",
@@ -37,63 +38,40 @@ var btc_pass = flag.String("btc_pass", "password",
 var fake_money = flag.Bool("fake_money", false, "Enables a money system which is purely fake")
 var status = flag.String("status", "[::1]:12345", "The port to expose status information on")
 var unix = flag.String("unix", "", "The path to accept / receive packets as unix packets from")
-
-func Probe(key node.PrivateKey, n *node.Server, dev net.Interface, port uint16) {
-	if dev.Name == "lo" {
-		return
-	}
-
-	log.Printf("Probing %q", dev.Name)
-
-	ll_addr, err := node.GetLinkLocalAddr(dev)
-	if err != nil {
-		log.Printf("Error probing %q: %v", dev.Name, err)
-		return
-	}
-
-	neighbors := node.FindNeighbors(dev, ll_addr, key.PublicKey(), port)
-	for neighbor := range neighbors {
-		err := n.Connect(fmt.Sprintf("[%s%%%s]:%v", neighbor.LLAddrStr, dev.Name, neighbor.Port))
-		if err != nil {
-			log.Printf("Error connecting: %v", err)
-			return
-		}
-		log.Printf("Connection established to %x", neighbor.NodeAddr[0:4])
-	}
-}
+var tcptun = flag.String("tcptun", "", "Address to try and tcp tunnel to")
 
 func main() {
-
-	runtime.GOMAXPROCS(runtime.NumCPU())
-
 	log.Print(os.Args)
-
-	log.Print("Starting")
 	flag.Parse()
 
+	// Capture all signals to the quit channel
 	quit := make(chan os.Signal)
 	signal.Notify(quit)
 
-	var key node.PrivateKey
+	// Figure out and load what key we are using for our identity
+	var key node.Key
 	var err error
-
 	if len(*keyfile) > 0 {
 		key, err = node.LoadKey(*keyfile)
+		if err != nil {
+			log.Fatalf("Error loading key: %v", err)
+		}
 	} else {
 		log.Print("Generating key")
-		key, err = node.NewECDSAKey()
+		key, err = node.NewKey()
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalf("Error Generating Key: %v", err)
 		}
 	}
-	log.Printf("Key is %x", key.PublicKey().Hash()[0:4])
+	log.Printf("Key is %x", key)
 
+	// Connect to our money server
 	money := node.FakeMoney()
 	if !*fake_money {
-		log.Printf("Connecting to bitcoin daemon")
+		log.Print("Connecting to bitcoin daemon")
 		rpc, err := node.NewRPCMoney(*btc_host, *btc_user, *btc_pass)
 		if err != nil {
-			log.Printf("Error connection to bitcoin daemon")
+			log.Fatalf("Error connection to bitcoin daemon: %v", err)
 		}
 		money = rpc
 	}
@@ -118,15 +96,8 @@ func main() {
 			}
 		}
 
-		parsed_listen_addr := strings.Split(*listen, ":")
-		port64, err := strconv.ParseUint(parsed_listen_addr[len(parsed_listen_addr)-1], 10, 16)
-		port := uint16(port64)
-		if err != nil {
-			log.Fatal(err)
-		}
-		port = uint16(port)
 		for _, dev := range devs {
-			go Probe(key, n, dev, port)
+			go n.Probe(dev)
 		}
 	}
 
@@ -161,8 +132,8 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		t := node.NewTCPTunnel(i, n.Node(), node.NodeAddress(dest), 10000)
-		t = t
+		t := node.NewTCPTunnel(i, n.Node(), types.NodeAddress(dest), 10000)
+		defer t.Close()
 		<-quit
 		return
 	}

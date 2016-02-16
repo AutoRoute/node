@@ -1,14 +1,21 @@
-package node
+package types
 
 import (
+	"crypto/rand"
 	"encoding/json"
 	"testing"
 )
 
 func TestPacketMarshalling(t *testing.T) {
-	sk, _ := NewECDSAKey()
-	m := Packet{sk.PublicKey().Hash(), 3, "test"}
-	b, err := json.Marshal(m)
+	// Make sure that encoding can handle random binary data.
+	b := make([]byte, 256)
+	_, err := rand.Read(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	m := Packet{NodeAddress(string(b)), 3, "test"}
+	b, err = json.Marshal(m)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"log"
 	"net"
+
+	"github.com/AutoRoute/node/types"
 )
 
 type UnixSocket struct {
@@ -37,7 +39,7 @@ func (u *UnixSocket) awaitConnection() {
 func (u *UnixSocket) sendPackets(c net.Conn) {
 	dec := json.NewDecoder(c)
 	for {
-		p := Packet{}
+		p := types.Packet{}
 		err := dec.Decode(&p)
 		if err != nil {
 			log.Print(err)

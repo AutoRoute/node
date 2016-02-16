@@ -1,12 +1,14 @@
-package node
+package internal
 
 import (
 	"encoding/json"
 	"testing"
+
+	"github.com/AutoRoute/node/types"
 )
 
 func TestSBRM(t *testing.T) {
-	a := NodeAddress("1")
+	a := types.NodeAddress("1")
 
 	bloomMap1 := NewBloomReachabilityMap()
 	bloomMap1.AddEntry(a)
@@ -44,7 +46,7 @@ func TestSBRM(t *testing.T) {
 
 func TestBloomMarshalling(t *testing.T) {
 	m := NewBloomReachabilityMap()
-	m.AddEntry(NodeAddress("1"))
+	m.AddEntry(types.NodeAddress("1"))
 	b, err := json.Marshal(m)
 	if err != nil {
 		t.Fatal(err)

@@ -2,22 +2,35 @@ package node
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
+
+	"github.com/AutoRoute/node/internal"
 )
 
-func LoadKey(keyfile string) (PrivateKey, error) {
-	var key PrivateKey
+type Key struct {
+	k internal.PrivateKey
+}
+
+func (k Key) String() string {
+	return fmt.Sprintf("Key{%v}", k.k.PublicKey().Hash())
+}
+
+func NewKey() (Key, error) {
+	key, err := internal.NewECDSAKey()
+	return Key{key}, err
+}
+
+func LoadKey(keyfile string) (Key, error) {
+	var key internal.PrivateKey
 	f, err := os.Open(keyfile)
 	if err != nil {
 		if !os.IsNotExist(err) {
-			return key, err
+			return Key{key}, err
 		}
-		key, err = NewECDSAKey()
-		if err != nil {
-			return key, err
-		}
-		b, err := json.Marshal(key)
+		key, err := NewKey()
+		b, err := json.Marshal(key.k)
 		if err != nil {
 			return key, err
 		}
@@ -26,21 +39,12 @@ func LoadKey(keyfile string) (PrivateKey, error) {
 			return key, err
 		}
 		_, err = f.Write(b)
-		if err != nil {
-			return key, err
-		}
-		_, err = f.Seek(0, 0)
-		if err != nil {
-			return key, err
-		}
+		return key, err
 	}
 	b, err := ioutil.ReadAll(f)
 	if err != nil {
-		return key, err
+		return Key{key}, err
 	}
 	err = json.Unmarshal(b, &key)
-	if err != nil {
-		return key, err
-	}
-	return key, err
+	return Key{key}, err
 }

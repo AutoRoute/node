@@ -3,19 +3,20 @@ package root
 
 import (
 	integration "github.com/AutoRoute/node/integration_tests"
-	"github.com/AutoRoute/node"
+	"github.com/AutoRoute/node/types"
+
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net"
-	"time"
 	"os"
 	"os/exec"
-	"strings"
-	"strconv"
-	"testing"
 	"path/filepath"
-	"encoding/json"
-	"encoding/hex"
-	"fmt"
+	"strconv"
+	"strings"
+	"testing"
+	"time"
 )
 
 type settings struct {
@@ -27,14 +28,13 @@ type ConnectionType struct {
 	Destination string
 }
 
-
 func TestNetwork(t *testing.T) {
 	WarnRoot(t)
 
 	// config file
 	config := filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "AutoRoute", "loopback2", "examples", "sample.json")
-	
-	cmd := integration.NewWrappedBinary(GetLoopBack2Path(), "--config=" + config)
+
+	cmd := integration.NewWrappedBinary(GetLoopBack2Path(), "--config="+config)
 	err := cmd.Start()
 	if err != nil {
 		t.Fatal(err)
@@ -58,7 +58,7 @@ func TestNetwork(t *testing.T) {
 
 	// various data structures for holding relationships between structures
 	// interfaces
-	interfaces := make(map[string] *net.Interface)
+	interfaces := make(map[string]*net.Interface)
 	// dev list for creating the binaries
 	devs := make(map[string][]string)
 	// binaries
@@ -70,31 +70,31 @@ func TestNetwork(t *testing.T) {
 	for _, v := range s.Connections {
 		src := v.Source
 		dst := v.Destination
-		
+
 		_, ok_src := tap_interfaces[src]
 		_, ok_dst := tap_interfaces[dst][src]
 		// source-destination mapping is not in map at all
 		if !ok_src && !ok_dst {
 			tap_interfaces[src] = make(map[string]string)
-		} 
+		}
 
 		_, ok_src = tap_interfaces[src][dst]
-		
-		if !ok_src && !ok_dst{
+
+		if !ok_src && !ok_dst {
 			i1 := "i" + strconv.Itoa(i) + "-0"
 			i++
 			i2 := "i" + strconv.Itoa(i) + "-0"
 			i++
 			tap_interfaces[src][dst] = i1 + ":" + i2
 			// now add to the devs map
-			devs[src] = append(devs[src],i1)
-			devs[dst] = append(devs[dst],i2)
+			devs[src] = append(devs[src], i1)
+			devs[dst] = append(devs[dst], i2)
 		}
 	}
 	// populate ifaces map, waits for all devices, and sets the links up
 	for _, dsts := range tap_interfaces {
 		for _, ifaces := range dsts {
-			looptaps := strings.Split(ifaces,":")
+			looptaps := strings.Split(ifaces, ":")
 
 			dev1, err := WaitForDevice(looptaps[0])
 			if err != nil {
@@ -107,11 +107,11 @@ func TestNetwork(t *testing.T) {
 			interfaces[looptaps[0]] = dev1
 			interfaces[looptaps[1]] = dev2
 
-			out, err := exec.Command("ip", strings.Split("link set dev " + looptaps[0] + " up", " ")...).CombinedOutput()
+			out, err := exec.Command("ip", strings.Split("link set dev "+looptaps[0]+" up", " ")...).CombinedOutput()
 			if err != nil {
 				t.Fatal(err, string(out))
 			}
-			out, err = exec.Command("ip", strings.Split("link set dev " + looptaps[1] + " up", " ")...).CombinedOutput()
+			out, err = exec.Command("ip", strings.Split("link set dev "+looptaps[1]+" up", " ")...).CombinedOutput()
 			if err != nil {
 				t.Fatal(err, string(out))
 			}
@@ -139,7 +139,7 @@ func TestNetwork(t *testing.T) {
 				Fake_money:           true,
 				Autodiscover:         true,
 				Autodiscover_devices: names,
-				Unix: 				  socket,
+				Unix:                 socket,
 			})
 			bins[name] = listen
 			sockets[name] = socket
@@ -152,7 +152,7 @@ func TestNetwork(t *testing.T) {
 				Fake_money:           true,
 				Autodiscover:         true,
 				Autodiscover_devices: names,
-				Unix:				  socket,
+				Unix:                 socket,
 			})
 			for _, name := range names {
 				bins[name] = connect
@@ -166,7 +166,7 @@ func TestNetwork(t *testing.T) {
 	// wait for each pair of interfaces to connect
 	for _, dsts := range tap_interfaces {
 		for _, ifaces := range dsts {
-			looptaps := strings.Split(ifaces,":")
+			looptaps := strings.Split(ifaces, ":")
 			listen := bins[looptaps[0]]
 			connect := bins[looptaps[1]]
 
@@ -187,7 +187,7 @@ func TestNetwork(t *testing.T) {
 				}
 			}
 			raw_id, err := hex.DecodeString(connect_id)
-			p := node.Packet{node.NodeAddress(string(raw_id)), 10, "data"}
+			p := types.Packet{types.NodeAddress(string(raw_id)), 10, "data"}
 			// create unix sockets for both nodes
 			c, err := integration.WaitForSocket(sockets[looptaps[0]])
 			if err != nil {
@@ -221,19 +221,18 @@ func TestNetwork(t *testing.T) {
 				t.Fatal(err)
 			}
 			// send a packet between each pair of nodes
-			packets := make(chan node.Packet)
+			packets := make(chan types.Packet)
 			go integration.WaitForPacket(c2, t, packets)
 			select {
-			case <-time.After(10* time.Second):
+			case <-time.After(10 * time.Second):
 				t.Fatal("Never received packet")
 			case p2 := <-packets:
 				if p != p2 {
 					t.Fatal("Packets %v != %v", p, p2)
 				}
 			}
-			
+
 		}
 	}
 
-	
 }

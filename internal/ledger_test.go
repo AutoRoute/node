@@ -1,11 +1,13 @@
-package node
+package internal
 
 import (
 	"testing"
 	"time"
+
+	"github.com/AutoRoute/node/types"
 )
 
-func WaitForIncomingDebt(t *testing.T, l *ledger, a NodeAddress, o int64) {
+func WaitForIncomingDebt(t *testing.T, l *Ledger, a types.NodeAddress, o int64) {
 	timeout := time.After(time.Second)
 	tick := time.Tick(time.Millisecond)
 	d := int64(0)
@@ -23,7 +25,7 @@ func WaitForIncomingDebt(t *testing.T, l *ledger, a NodeAddress, o int64) {
 	}
 }
 
-func WaitForOutgoingDebt(t *testing.T, l *ledger, a NodeAddress, o int64) {
+func WaitForOutgoingDebt(t *testing.T, l *Ledger, a types.NodeAddress, o int64) {
 	timeout := time.After(time.Second)
 	tick := time.Tick(time.Millisecond)
 	d := int64(0)
@@ -42,13 +44,13 @@ func WaitForOutgoingDebt(t *testing.T, l *ledger, a NodeAddress, o int64) {
 }
 
 func TestLedger(t *testing.T) {
-	delivered := make(chan PacketHash)
-	a1, a2, a3 := NodeAddress("1"), NodeAddress("2"), NodeAddress("3")
+	delivered := make(chan types.PacketHash)
+	a1, a2, a3 := types.NodeAddress("1"), types.NodeAddress("2"), types.NodeAddress("3")
 
 	routed := make(chan routingDecision)
 
-	ledger := newLedger(a1, delivered, routed)
-	defer ledger.Close()
+	Ledger := newLedger(a1, delivered, routed)
+	defer Ledger.Close()
 
 	// two packets from a1 to a2
 	t1 := testPacket(a2)
@@ -57,43 +59,43 @@ func TestLedger(t *testing.T) {
 	routed <- newRoutingDecision(t2, a1, a2)
 
 	owed := int64(0)
-	WaitForIncomingDebt(t, ledger, a1, owed)
-	WaitForOutgoingDebt(t, ledger, a2, owed)
+	WaitForIncomingDebt(t, Ledger, a1, owed)
+	WaitForOutgoingDebt(t, Ledger, a2, owed)
 
 	// t1 is delivered
 	delivered <- t1.Hash()
 	owed = t1.Amount()
 
-	WaitForIncomingDebt(t, ledger, a1, owed)
-	WaitForOutgoingDebt(t, ledger, a2, owed)
+	WaitForIncomingDebt(t, Ledger, a1, owed)
+	WaitForOutgoingDebt(t, Ledger, a2, owed)
 
 	// t2 is delievered.
 	delivered <- t2.Hash()
 	owed += t2.Amount()
 
-	WaitForIncomingDebt(t, ledger, a1, owed)
-	WaitForOutgoingDebt(t, ledger, a2, owed)
+	WaitForIncomingDebt(t, Ledger, a1, owed)
+	WaitForOutgoingDebt(t, Ledger, a2, owed)
 
 	// We pay for some of it.
 	c := make(chan bool, 1)
 	c <- true
-	ledger.RecordPayment(a2, 4, c)
+	Ledger.RecordPayment(a2, 4, c)
 	owed -= 4
 
-	WaitForIncomingDebt(t, ledger, a1, owed)
-	WaitForOutgoingDebt(t, ledger, a2, owed)
+	WaitForIncomingDebt(t, Ledger, a1, owed)
+	WaitForOutgoingDebt(t, Ledger, a2, owed)
 
 	// We send a payment which is never accepted.
 	c <- false
-	ledger.RecordPayment(a2, 4, c)
-	WaitForIncomingDebt(t, ledger, a1, owed)
-	WaitForOutgoingDebt(t, ledger, a2, owed)
+	Ledger.RecordPayment(a2, 4, c)
+	WaitForIncomingDebt(t, Ledger, a1, owed)
+	WaitForOutgoingDebt(t, Ledger, a2, owed)
 
 	// We pay for the rest.
 	c <- true
-	ledger.RecordPayment(a2, owed, c)
+	Ledger.RecordPayment(a2, owed, c)
 	owed -= owed
 
-	WaitForIncomingDebt(t, ledger, a1, owed)
-	WaitForOutgoingDebt(t, ledger, a2, owed)
+	WaitForIncomingDebt(t, Ledger, a1, owed)
+	WaitForOutgoingDebt(t, Ledger, a2, owed)
 }

@@ -1,31 +1,32 @@
-package node
+package internal
 
 import (
 	"log"
 	"sync"
 	"time"
+
+	"github.com/AutoRoute/node/types"
 )
 
-// A Node is the highest level abstraction over the network. You receive packets
-// from it and send packets to it, and it takes care of everything else.
+// A Node includes various functions which are called by Server but shouldn't be publicly exposed.
 type Node struct {
-	router         *router
+	router         *Router
 	l              *sync.Mutex
 	id             PrivateKey
-	outgoing       chan Packet
-	receipt_buffer []PacketHash
+	outgoing       chan types.Packet
+	receipt_buffer []types.PacketHash
 	receipt_ticker <-chan time.Time
 	payment_ticker <-chan time.Time
-	m              Money
+	m              types.Money
 	quit           chan bool
 }
 
-func NewNode(pk PrivateKey, m Money, receipt_ticker <-chan time.Time, payment_ticker <-chan time.Time) *Node {
+func NewNode(pk PrivateKey, m types.Money, receipt_ticker <-chan time.Time, payment_ticker <-chan time.Time) *Node {
 	n := &Node{
-		newRouter(pk.PublicKey()),
+		NewRouter(pk.PublicKey()),
 		&sync.Mutex{},
 		pk,
-		make(chan Packet),
+		make(chan types.Packet),
 		nil,
 		receipt_ticker,
 		payment_ticker,
@@ -98,11 +99,11 @@ func (n *Node) sendPayments() {
 	}
 }
 
-func (n *Node) SendPacket(p Packet) error {
+func (n *Node) SendPacket(p types.Packet) error {
 	return n.router.SendPacket(p)
 }
 
-func (n *Node) Packets() <-chan Packet {
+func (n *Node) Packets() <-chan types.Packet {
 	return n.outgoing
 }
 
@@ -116,7 +117,7 @@ func (n *Node) GetNewAddress() string {
 	if err != nil {
 		log.Fatal("Failed to get payment address: ", err)
 	}
-	n.router.ledger.AddAddress(address, c)
+	n.router.Ledger.AddAddress(address, c)
 	return address
 }
 
@@ -124,11 +125,15 @@ func (n *Node) GetAddress() PublicKey {
 	return n.id.PublicKey()
 }
 
-func (n *Node) IsReachable(addr NodeAddress) bool {
+func (n *Node) IsReachable(addr types.NodeAddress) bool {
 	_, err := n.router.FindNextHop(addr)
 	return err == nil
 }
 
 func (n *Node) AddConnection(c Connection) {
 	n.router.AddConnection(c)
+}
+
+func (n *Node) ID() PrivateKey {
+	return n.id
 }

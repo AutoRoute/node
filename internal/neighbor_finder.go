@@ -1,10 +1,12 @@
-package node
+package internal
 
 import (
 	"bytes"
 	"encoding/binary"
 	"log"
 	"net"
+
+	"github.com/AutoRoute/node/types"
 
 	"github.com/AutoRoute/l2"
 )
@@ -25,18 +27,18 @@ func init() {
 // Public Key of all neighbors it can find.
 type NeighborFinder struct {
 	pk                 PublicKey
-	link_local_address net.IP
+	Link_local_address net.IP
 	port               uint16
 }
 
-func NewNeighborFinder(pk PublicKey, link_local_address net.IP, port uint16) NeighborFinder {
-	return NeighborFinder{pk, link_local_address, port}
+func NewNeighborFinder(pk PublicKey, Link_local_address net.IP, port uint16) NeighborFinder {
+	return NeighborFinder{pk, Link_local_address, port}
 }
 
 type FrameData struct {
-	NodeAddr  NodeAddress
-	LLAddrStr string
-	Port      uint16
+	FullNodeAddr types.NodeAddress
+	LLAddrStr    string
+	Port         uint16
 }
 
 func (n NeighborFinder) handleLink(mac []byte, frw l2.FrameReadWriter, c chan *FrameData) {
@@ -65,13 +67,13 @@ func (n NeighborFinder) handleLink(mac []byte, frw l2.FrameReadWriter, c chan *F
 			if err != nil {
 				log.Fatal(err)
 			}
-			data := FrameData{NodeAddress(frame.Data()[:64]), net.IP(frame.Data()[64:80]).String(), port}
+			data := FrameData{types.NodeAddress(frame.Data()[:64]), net.IP(frame.Data()[64:80]).String(), port}
 			c <- &data
 		}
 		if !bytes.Equal(frame.Destination(), broadcast) {
 			continue
 		}
-		response := n.BuildResponse(frame, mac, protocol)
+		response := n.buildResponse(frame, mac, protocol)
 		err = frw.WriteFrame(response)
 		if err != nil {
 			log.Printf("Failure writing to connection %v, %v", frw, err)
@@ -87,7 +89,7 @@ func (n NeighborFinder) Find(mac []byte, frw l2.FrameReadWriter) (<-chan *FrameD
 	if err != nil {
 		log.Fatal(err)
 	}
-	frame_data := append([]byte(n.pk.Hash()), n.link_local_address...)
+	frame_data := append([]byte(n.pk.Hash()), n.Link_local_address...)
 	frame_data = append(frame_data, port_buf.Bytes()...)
 	frame := l2.NewEthFrame(broadcast, mac, protocol, frame_data)
 	err = frw.WriteFrame(frame)
@@ -100,13 +102,13 @@ func (n NeighborFinder) Find(mac []byte, frw l2.FrameReadWriter) (<-chan *FrameD
 	return c, nil
 }
 
-func (n NeighborFinder) BuildResponse(frame l2.EthFrame, mac []byte, protocol uint16) l2.EthFrame {
+func (n NeighborFinder) buildResponse(frame l2.EthFrame, mac []byte, protocol uint16) l2.EthFrame {
 	var port_buf bytes.Buffer
 	err := binary.Write(&port_buf, binary.LittleEndian, n.port)
 	if err != nil {
 		log.Fatal(err)
 	}
-	data := append([]byte(n.pk.Hash()), n.link_local_address...)
+	data := append([]byte(n.pk.Hash()), n.Link_local_address...)
 	data = append(data, port_buf.Bytes()...)
 	return l2.NewEthFrame(frame.Source(), mac, protocol, data)
 }

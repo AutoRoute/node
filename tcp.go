@@ -1,16 +1,18 @@
 package node
 
 import (
-	"github.com/AutoRoute/tuntap"
-
 	"encoding/json"
 	"errors"
+
+	"github.com/AutoRoute/tuntap"
+
+	"github.com/AutoRoute/node/types"
 )
 
 type TCP struct {
 	data DataConnection
 	tun  TCPTun
-	dest NodeAddress
+	dest types.NodeAddress
 	amt  int64
 	quit chan bool
 	err  chan error
@@ -23,7 +25,7 @@ type TCPTun interface {
 
 var truncated_error error = errors.New("truncated packet")
 
-func NewTCPTunnel(tun TCPTun, d DataConnection, dest NodeAddress, amt int64) *TCP {
+func NewTCPTunnel(tun TCPTun, d DataConnection, dest types.NodeAddress, amt int64) *TCP {
 	t := &TCP{d, tun, dest, amt, make(chan bool), make(chan error, 1)}
 	go t.readtun()
 	go t.writetun()
@@ -59,7 +61,7 @@ func (t *TCP) readtun() {
 			t.err <- err
 			return
 		}
-		ep := Packet{t.dest, t.amt, string(b)}
+		ep := types.Packet{t.dest, t.amt, string(b)}
 		err = t.data.SendPacket(ep)
 		if err != nil {
 			t.err <- err

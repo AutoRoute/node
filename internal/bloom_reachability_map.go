@@ -1,7 +1,8 @@
-package node
+package internal
 
 import (
 	"github.com/AutoRoute/bloom"
+	"github.com/AutoRoute/node/types"
 )
 
 type BloomReachabilityMap struct {
@@ -20,13 +21,13 @@ func NewBloomReachabilityMap() *BloomReachabilityMap {
 	return &m
 }
 
-func (m *BloomReachabilityMap) IsReachable(n NodeAddress) bool {
+func (m *BloomReachabilityMap) IsReachable(n types.NodeAddress) bool {
 	entry := []byte(n)
 	res := m.Conglomerate.Test(entry)
 	return res
 }
 
-func (m *BloomReachabilityMap) AddEntry(n NodeAddress) {
+func (m *BloomReachabilityMap) AddEntry(n types.NodeAddress) {
 	entry := []byte(n)
 	m.Filters[0].Add(entry)
 	m.Conglomerate.Add(entry)

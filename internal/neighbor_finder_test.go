@@ -1,4 +1,4 @@
-package node
+package internal
 
 import (
 	"net"
@@ -74,46 +74,46 @@ func TestBasicExchange(t *testing.T) {
 	// We should receive the other side twice, once from broadcast, and once
 	// from directed response
 	msg := <-outone
-	if msg.NodeAddr != pk2.Hash() {
-		t.Errorf("Expected %q!=%q", pk2.Hash(), msg.NodeAddr)
+	if msg.FullNodeAddr != pk2.Hash() {
+		t.Errorf("Expected %q!=%q", pk2.Hash(), msg.FullNodeAddr)
 	}
 	if msg.LLAddrStr != ll_addr_str2 {
 		t.Errorf("Expected %q!=%q", ll_addr_str2, msg.LLAddrStr)
 	}
-  if msg.Port != port2 {
-    t.Errorf("Expected %q!=%q", port2, msg.Port)
-  }
+	if msg.Port != port2 {
+		t.Errorf("Expected %q!=%q", port2, msg.Port)
+	}
 
 	msg = <-outtwo
-	if msg.NodeAddr != pk1.Hash() {
-		t.Errorf("Expected %q!=%q", pk1.Hash(), msg.NodeAddr)
+	if msg.FullNodeAddr != pk1.Hash() {
+		t.Errorf("Expected %q!=%q", pk1.Hash(), msg.FullNodeAddr)
 	}
 	if msg.LLAddrStr != ll_addr_str1 {
 		t.Errorf("Expected %q!=%q", ll_addr_str1, msg.LLAddrStr)
 	}
-  if msg.Port != port1 {
-    t.Errorf("Expected %q!=%q", port1, msg.Port)
-  }
+	if msg.Port != port1 {
+		t.Errorf("Expected %q!=%q", port1, msg.Port)
+	}
 
 	msg = <-outone
-	if msg.NodeAddr != pk2.Hash() {
-		t.Errorf("Expected %q!=%q", pk2.Hash(), msg.NodeAddr)
+	if msg.FullNodeAddr != pk2.Hash() {
+		t.Errorf("Expected %q!=%q", pk2.Hash(), msg.FullNodeAddr)
 	}
 	if msg.LLAddrStr != ll_addr_str2 {
 		t.Errorf("Expected %q!=%q", ll_addr_str2, msg.LLAddrStr)
 	}
-  if msg.Port != port2 {
-    t.Errorf("Expected %q!=%q", port2, msg.Port)
-  }
+	if msg.Port != port2 {
+		t.Errorf("Expected %q!=%q", port2, msg.Port)
+	}
 
 	msg = <-outtwo
-	if msg.NodeAddr != pk1.Hash() {
-		t.Errorf("Expected %q!=%q", pk1.Hash(), msg.NodeAddr)
+	if msg.FullNodeAddr != pk1.Hash() {
+		t.Errorf("Expected %q!=%q", pk1.Hash(), msg.FullNodeAddr)
 	}
 	if msg.LLAddrStr != ll_addr_str1 {
 		t.Errorf("Expected %q!=%q", ll_addr_str1, msg.LLAddrStr)
 	}
-  if msg.Port != port1 {
-    t.Errorf("Expected %q!=%q", port1, msg.Port)
-  }
+	if msg.Port != port1 {
+		t.Errorf("Expected %q!=%q", port1, msg.Port)
+	}
 }

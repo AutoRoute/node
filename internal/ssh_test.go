@@ -1,9 +1,11 @@
-package node
+package internal
 
 import (
 	"fmt"
 	"net"
 	"testing"
+
+	"github.com/AutoRoute/node/types"
 )
 
 var port = 10000
@@ -60,13 +62,13 @@ func TestSSHMapTransmission(t *testing.T) {
 	defer c2.Close()
 
 	m := NewBloomReachabilityMap()
-	m.AddEntry(NodeAddress("1"))
+	m.AddEntry(types.NodeAddress("1"))
 	err = c1.SendMap(m)
 	if err != nil {
 		t.Fatal(err)
 	}
 	m2 := <-c2.ReachabilityMaps()
-	if !m2.IsReachable(NodeAddress("1")) {
+	if !m2.IsReachable(types.NodeAddress("1")) {
 		t.Fatalf("1 not in %v", m2)
 	}
 }
@@ -82,7 +84,7 @@ func TestSSHReceiptTransmission(t *testing.T) {
 	defer c1.Close()
 	defer c2.Close()
 
-	m := CreateMerkleReceipt(sk1, []PacketHash{PacketHash("hi")})
+	m := CreateMerkleReceipt(sk1, []types.PacketHash{types.PacketHash("hi")})
 	if m.Verify() != nil {
 		t.Fatalf("Error verifying generated receipt: %v", m.Verify())
 	}
@@ -107,7 +109,7 @@ func TestSSHPacketTransmission(t *testing.T) {
 	defer c1.Close()
 	defer c2.Close()
 
-	p := Packet{NodeAddress("foo"), 3, "test"}
+	p := types.Packet{types.NodeAddress("foo"), 3, "test"}
 	err = c1.SendPacket(p)
 	if err != nil {
 		t.Fatal(err)

@@ -1,8 +1,10 @@
-package node
+package internal
 
 import (
 	"log"
 	"sync"
+
+	"github.com/AutoRoute/node/types"
 )
 
 // This keeps track of our outstanding owed payments and provides an interface
@@ -11,23 +13,23 @@ import (
 // know about. How much we should pay someone, and how much debt + how long
 // it has been since someone paid us (aka stop relaying to them if they haven't
 // paid recently enough or the outstanding balance is too high).
-type ledger struct {
+type Ledger struct {
 	// debt that other people will pay us
-	incoming_debt map[NodeAddress]int64
+	incoming_debt map[types.NodeAddress]int64
 	// debt that we will pay other people
-	outgoing_debt    map[NodeAddress]int64
-	packets          map[PacketHash]routingDecision
+	outgoing_debt    map[types.NodeAddress]int64
+	packets          map[types.PacketHash]routingDecision
 	payment_channels map[string]chan uint64
 	l                *sync.Mutex
-	id               NodeAddress
+	id               types.NodeAddress
 	quit             chan bool
 }
 
-func newLedger(id NodeAddress, c <-chan PacketHash, d <-chan routingDecision) *ledger {
-	p := &ledger{
-		make(map[NodeAddress]int64),
-		make(map[NodeAddress]int64),
-		make(map[PacketHash]routingDecision),
+func newLedger(id types.NodeAddress, c <-chan types.PacketHash, d <-chan routingDecision) *Ledger {
+	p := &Ledger{
+		make(map[types.NodeAddress]int64),
+		make(map[types.NodeAddress]int64),
+		make(map[types.PacketHash]routingDecision),
 		make(map[string]chan uint64),
 		&sync.Mutex{},
 		id,
@@ -38,29 +40,29 @@ func newLedger(id NodeAddress, c <-chan PacketHash, d <-chan routingDecision) *l
 	return p
 }
 
-func (p *ledger) IncomingDebt(n NodeAddress) int64 {
+func (p *Ledger) IncomingDebt(n types.NodeAddress) int64 {
 	p.l.Lock()
 	defer p.l.Unlock()
 	return p.incoming_debt[n]
 }
 
-func (p *ledger) OutgoingDebt(n NodeAddress) int64 {
+func (p *Ledger) OutgoingDebt(n types.NodeAddress) int64 {
 	p.l.Lock()
 	defer p.l.Unlock()
 	return p.outgoing_debt[n]
 }
 
-func (p *ledger) AddAddress(address string, c chan uint64) {
+func (p *Ledger) AddAddress(address string, c chan uint64) {
 	p.l.Lock()
 	defer p.l.Unlock()
 	p.payment_channels[address] = c
 }
 
-func (p *ledger) AddConnection(n NodeAddress, c Connection) {
+func (p *Ledger) AddConnection(n types.NodeAddress, c Connection) {
 	go p.handlePayments(n, c)
 }
 
-func (p *ledger) handleReceipt(c <-chan PacketHash) {
+func (p *Ledger) handleReceipt(c <-chan types.PacketHash) {
 	for {
 		select {
 		case h := <-c:
@@ -80,7 +82,7 @@ func (p *ledger) handleReceipt(c <-chan PacketHash) {
 	}
 }
 
-func (p *ledger) sentPackets(c <-chan routingDecision) {
+func (p *Ledger) sentPackets(c <-chan routingDecision) {
 	for {
 		select {
 		case d := <-c:
@@ -93,7 +95,7 @@ func (p *ledger) sentPackets(c <-chan routingDecision) {
 	}
 }
 
-func (p *ledger) handlePayments(n NodeAddress, c Connection) {
+func (p *Ledger) handlePayments(n types.NodeAddress, c Connection) {
 	p.l.Lock()
 	ch := p.payment_channels[c.MetaData().Payment_Address]
 	p.l.Unlock()
@@ -110,8 +112,8 @@ func (p *ledger) handlePayments(n NodeAddress, c Connection) {
 	}
 }
 
-// Waits for the payment to be confirmed and records it in the ledger.
-func (p *ledger) RecordPayment(destination NodeAddress, amount int64, confirmed chan bool) {
+// Waits for the payment to be confirmed and records it in the Ledger.
+func (p *Ledger) RecordPayment(destination types.NodeAddress, amount int64, confirmed chan bool) {
 	ok := <-confirmed
 	if ok {
 		p.l.Lock()
@@ -121,7 +123,7 @@ func (p *ledger) RecordPayment(destination NodeAddress, amount int64, confirmed 
 	}
 }
 
-func (p *ledger) Close() error {
+func (p *Ledger) Close() error {
 	close(p.quit)
 	return nil
 }

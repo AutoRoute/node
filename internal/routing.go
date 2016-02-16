@@ -1,9 +1,11 @@
-package node
+package internal
 
 import (
 	"expvar"
 	"fmt"
 	"log"
+
+	"github.com/AutoRoute/node/types"
 )
 
 var packets_sent *expvar.Map
@@ -18,14 +20,14 @@ func init() {
 
 // Represents a permanent record of a routing decision.
 type routingDecision struct {
-	hash        PacketHash
+	hash        types.PacketHash
 	amount      int64
-	source      NodeAddress
-	destination NodeAddress
-	nexthop     NodeAddress
+	source      types.NodeAddress
+	destination types.NodeAddress
+	nexthop     types.NodeAddress
 }
 
-func newRoutingDecision(p Packet, src NodeAddress, nexthop NodeAddress) routingDecision {
+func newRoutingDecision(p types.Packet, src types.NodeAddress, nexthop types.NodeAddress) routingDecision {
 	return routingDecision{p.Hash(), p.Amount(), src, p.Destination(), nexthop}
 }
 
@@ -34,10 +36,10 @@ func newRoutingDecision(p Packet, src NodeAddress, nexthop NodeAddress) routingD
 type routingHandler struct {
 	pk PublicKey
 	// A chan down which we send packets destined for ourselves.
-	incoming chan Packet
+	incoming chan types.Packet
 	routes   chan routingDecision
 	// A map of public key hashes to connections
-	connections  map[NodeAddress]DataConnection
+	connections  map[types.NodeAddress]DataConnection
 	reachability *reachabilityHandler
 	quit         chan bool
 }
@@ -45,20 +47,20 @@ type routingHandler struct {
 func newRouting(pk PublicKey, r *reachabilityHandler) *routingHandler {
 	return &routingHandler{
 		pk,
-		make(chan Packet),
+		make(chan types.Packet),
 		make(chan routingDecision),
-		make(map[NodeAddress]DataConnection),
+		make(map[types.NodeAddress]DataConnection),
 		r,
 		make(chan bool),
 	}
 }
 
-func (r *routingHandler) AddConnection(id NodeAddress, c DataConnection) {
+func (r *routingHandler) AddConnection(id types.NodeAddress, c DataConnection) {
 	r.connections[id] = c
 	go r.handleData(id, c)
 }
 
-func (r *routingHandler) handleData(id NodeAddress, p DataConnection) {
+func (r *routingHandler) handleData(id types.NodeAddress, p DataConnection) {
 	for {
 		select {
 		case packet, ok := <-p.Packets():
@@ -76,11 +78,11 @@ func (r *routingHandler) handleData(id NodeAddress, p DataConnection) {
 	}
 }
 
-func (r *routingHandler) SendPacket(p Packet) error {
+func (r *routingHandler) SendPacket(p types.Packet) error {
 	return r.sendPacket(p, r.pk.Hash())
 }
 
-func (r *routingHandler) sendPacket(p Packet, src NodeAddress) error {
+func (r *routingHandler) sendPacket(p types.Packet, src types.NodeAddress) error {
 	packets_received.Add(fmt.Sprintf("%x", src), 1)
 	if p.Destination() == r.pk.Hash() {
 		packets_sent.Add(fmt.Sprintf("%x", r.pk.Hash()), 1)
@@ -98,7 +100,7 @@ func (r *routingHandler) sendPacket(p Packet, src NodeAddress) error {
 	return r.connections[next].SendPacket(p)
 }
 
-func (r *routingHandler) notifyDecision(p Packet, src, next NodeAddress) {
+func (r *routingHandler) notifyDecision(p types.Packet, src, next types.NodeAddress) {
 	r.routes <- routingDecision{p.Hash(), p.Amount(), src, p.Destination(), next}
 }
 
@@ -106,7 +108,7 @@ func (r *routingHandler) Routes() <-chan routingDecision {
 	return r.routes
 }
 
-func (r *routingHandler) Packets() <-chan Packet {
+func (r *routingHandler) Packets() <-chan types.Packet {
 	return r.incoming
 }
 
