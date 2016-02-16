@@ -73,12 +73,12 @@ func WaitForPacketsReceived(b AutoRouteBinary, src string, amt ...int) error {
 			continue
 		}
 		for source, amount := range packets_received {
-			if len(amt) > 0{
+			if len(amt) > 0 {
 				if source == src && amount == amt[0] {
 					return nil
 				}
 			} else {
-				if source == src {
+				if source == src && amount > 0 {
 					return nil
 				}
 			}
