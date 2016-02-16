@@ -42,7 +42,7 @@ func WaitForConnection(b AutoRouteBinary, addr string) error {
 
 		select {
 		case <-stop:
-			return errors.New("Timeout out while waiting for connection")
+			return errors.New(fmt.Sprintf("Timeout while waiting for connection to %v", addr[0:4]))
 		default:
 		}
 	}
@@ -65,7 +65,7 @@ func WaitForSocket(dev string) (net.Conn, error) {
 	panic("Unreachable")
 }
 
-func WaitForPacketsReceived(b AutoRouteBinary, src string, amt int) error {
+func WaitForPacketsReceived(b AutoRouteBinary, src string, amt ...int) error {
 	stop := time.After(time.Second)
 	for range time.Tick(10 * time.Millisecond) {
 		packets_received, err := b.GetPacketsReceived()
@@ -73,8 +73,14 @@ func WaitForPacketsReceived(b AutoRouteBinary, src string, amt int) error {
 			continue
 		}
 		for source, amount := range packets_received {
-			if source == src && amount == amt {
-				return nil
+			if len(amt) > 0{
+				if source == src && amount == amt[0] {
+					return nil
+				}
+			} else {
+				if source == src {
+					return nil
+				}
 			}
 		}
 
@@ -87,7 +93,7 @@ func WaitForPacketsReceived(b AutoRouteBinary, src string, amt int) error {
 	panic("unreachable")
 }
 
-func WaitForPacketsSent(b AutoRouteBinary, dest string, amt int) error {
+func WaitForPacketsSent(b AutoRouteBinary, dest string, amt ...int) error {
 	stop := time.After(time.Second)
 	for range time.Tick(10 * time.Millisecond) {
 		packets_sent, err := b.GetPacketsSent()
@@ -95,8 +101,19 @@ func WaitForPacketsSent(b AutoRouteBinary, dest string, amt int) error {
 			continue
 		}
 		for destination, amount := range packets_sent {
-			if destination == dest && amount == amt {
-				return nil
+			// amount should always be greater than 0
+			if amount == 0 {
+				return errors.New(fmt.Sprint("Invalid packet amount from destination %x", destination[0:4]))
+			}
+			// makes amount an optional argument
+			if len(amt) > 0 {
+				if destination == dest && amount == amt[0] {
+					return nil
+				}
+			} else {
+				if destination == dest {
+					return nil
+				}
 			}
 		}
 
