@@ -103,12 +103,12 @@ func main() {
 		}
 
 		for _, dev := range devs {
-			go func() {
+			go func(dev net.Interface) {
 				err := n.Probe(dev)
 				if err != nil {
 					log.Fatal(err)
 				}
-			}()
+			}(dev)
 		}
 	}
 
