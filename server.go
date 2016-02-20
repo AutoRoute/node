@@ -129,7 +129,7 @@ func (s *Server) Probe(dev net.Interface) error {
 	parsed_listen_addr := strings.Split(s.listen_address, ":")
 	port, err := strconv.ParseUint(parsed_listen_addr[len(parsed_listen_addr)-1], 10, 16)
 	if err != nil {
-		return errors.New("Unable to figure out listening port. Is this server listening?")
+		return errors.New("Unable to figure out listening port from '" + s.listen_address + "'")
 	}
 
 	go s.findNeighbors(dev, ll_addr, uint16(port))

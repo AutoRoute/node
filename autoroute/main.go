@@ -78,6 +78,12 @@ func main() {
 	log.Printf("Connected")
 	n := node.NewServer(key, money)
 
+	log.Printf("Starting to listen on %s", *listen)
+	err = n.Listen(*listen)
+	if err != nil {
+		log.Printf("Error listening: %v", err)
+	}
+
 	if *autodiscover {
 		devs := make([]net.Interface, 0)
 
@@ -97,14 +103,13 @@ func main() {
 		}
 
 		for _, dev := range devs {
-			go n.Probe(dev)
+			go func(dev net.Interface) {
+				err := n.Probe(dev)
+				if err != nil {
+					log.Fatal(err)
+				}
+			}(dev)
 		}
-	}
-
-	log.Printf("Starting to listen on %s", *listen)
-	err = n.Listen(*listen)
-	if err != nil {
-		log.Printf("Error listening: %v", err)
 	}
 
 	for _, ip := range strings.Split(*connect, ",") {
