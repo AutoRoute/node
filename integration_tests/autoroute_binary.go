@@ -22,6 +22,8 @@ type BinaryOptions struct {
 	Unix                 string
 	Autodiscover         bool
 	Autodiscover_devices []string
+	Tcptun               string
+	Keyfile              string
 	BTCHost              string
 	BTCUser              string
 	BTCPass              string
@@ -44,6 +46,12 @@ func ProduceCommandLine(b BinaryOptions) []string {
 	}
 	if len(b.Autodiscover_devices) > 0 {
 		args = append(args, "--devs="+strings.Join(b.Autodiscover_devices, ","))
+	}
+	if len(b.Tcptun) > 0 {
+		args = append(args, "--tcptun="+b.Tcptun)
+	}
+	if len(b.Keyfile) > 0 {
+		args = append(args, "--keyfile="+b.Keyfile)
 	}
 	if len(b.BTCHost) > 0 {
 		args = append(args, "--btc_host="+b.BTCHost)

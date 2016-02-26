@@ -72,6 +72,12 @@ func WaitForListen(s string) error {
 	panic("Unreachable")
 }
 
+func SetDevUp(dev string) error {
+	cmd := fmt.Sprintf("link set dev %s up", dev)
+	_, err := exec.Command("ip", strings.Split(cmd, " ")...).CombinedOutput()
+	return err
+}
+
 func TestConnection(t *testing.T) {
 	// set -e
 	WarnRoot(t)
@@ -90,15 +96,14 @@ func TestConnection(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	//  ip link set dev looptap0-0 up
-	out, err := exec.Command("ip", strings.Split("link set dev looptap0-0 up", " ")...).CombinedOutput()
+
+	err = SetDevUp("looptap0-0")
 	if err != nil {
-		t.Fatal(err, string(out))
+		t.Fatal(err)
 	}
-	// ip link set dev looptap 0-1 up
-	out, err = exec.Command("ip", strings.Split("link set dev looptap0-1 up", " ")...).CombinedOutput()
+	err = SetDevUp("looptap0-1")
 	if err != nil {
-		t.Fatal(err, string(out))
+		t.Fatal(err)
 	}
 	// starts listening on the address
 	err = WaitForListen(BuildListenAddress(listen_dev, integration.GetUnusedPort()))
