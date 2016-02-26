@@ -33,4 +33,5 @@ func (b WrappedBinary) KillAndPrint(f LogFailer) {
 		f.Logf("\n8<----\n%s8<----\n\n", b.output)
 	}
 	b.Process.Signal(os.Interrupt)
+	b.Cmd.Wait()
 }
