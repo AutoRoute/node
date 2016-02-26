@@ -10,9 +10,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
-	"os"
 	"os/exec"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -32,7 +30,7 @@ func TestNetwork(t *testing.T) {
 	WarnRoot(t)
 
 	// config file
-	config := filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "AutoRoute", "loopback2", "examples", "sample.json")
+	config := "network_sim_network.json"
 
 	cmd := integration.NewWrappedBinary(GetLoopBack2Path(), "--config="+config)
 	err := cmd.Start()
