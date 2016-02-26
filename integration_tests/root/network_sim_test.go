@@ -27,13 +27,16 @@ type ConnectionType struct {
 }
 
 func TestNetwork(t *testing.T) {
-	WarnRoot(t)
+	err := CheckRoot()
+	if err != nil {
+		t.Skip(err)
+	}
 
 	// config file
 	config := "network_sim_network.json"
 
 	cmd := integration.NewWrappedBinary(GetLoopBack2Path(), "--config="+config)
-	err := cmd.Start()
+	err = cmd.Start()
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -16,6 +16,11 @@ func SetDevAddr(dev string, addr string) error {
 }
 
 func TestPing(t *testing.T) {
+	err := CheckRoot()
+	if err != nil {
+		t.Skip(err)
+	}
+
 	_, key0, err := node.CreateKey("/tmp/keyfile0")
 	if err != nil {
 		t.Fatal(err)
