@@ -15,7 +15,7 @@ install:
   - export PATH=$PATH:$(pwd)/bitcoin-0.11.2/bin
 
 script:
-  - go test -v github.com/AutoRoute/node/autoroute
+  - go test -v github.com/AutoRoute/node/autoroute -race
   - go test -v github.com/AutoRoute/node -race
   - go test -v github.com/AutoRoute/node/internal -race
-  - go test -v github.com/AutoRoute/node/integration_tests
+  - go test -v github.com/AutoRoute/node/integration_tests -race
