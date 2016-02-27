@@ -6,14 +6,12 @@ import (
 
 	"fmt"
 	"os/exec"
-	"strings"
 	"testing"
 	"time"
 )
 
 func SetDevAddr(dev string, addr string) error {
-	cmd := fmt.Sprintf("addr add %s dev %s", addr, dev)
-	_, err := exec.Command("ip", strings.Split(cmd, " ")...).CombinedOutput()
+	_, err := exec.Command("ip", "addr", "add", addr, "dev", dev).CombinedOutput()
 	return err
 }
 
