@@ -22,6 +22,40 @@ func NewKey() (Key, error) {
 	return Key{key}, err
 }
 
+// Creates a new keyfile
+// Args:
+//	keyfile: name of the keyfile
+// Returns:
+//	file, pirvate key, error
+func CreateKey(keyfile string) (*os.File, internal.PrivateKey, error) {
+	key, err := NewKey()
+	if err != nil {
+		return nil, key.k, err
+	}
+	b, err := json.Marshal(key.k)
+	if err != nil {
+		return nil, key.k, err
+	}
+	f, err := os.Create(keyfile)
+	if err != nil {
+		return f, key.k, err
+	}
+	_, err = f.Write(b)
+	if err != nil {
+		return f, key.k, err
+	}
+	_, err = f.Seek(0, 0)
+	if err != nil {
+		return f, key.k, err
+	}
+	return f, key.k, nil
+}
+
+// Loads a key from a keyfile
+// Args:
+//	keyfile: name of the keyfile
+// Returns:
+//	private key (type Key)
 func LoadKey(keyfile string) (Key, error) {
 	var key internal.PrivateKey
 	f, err := os.Open(keyfile)
@@ -29,17 +63,10 @@ func LoadKey(keyfile string) (Key, error) {
 		if !os.IsNotExist(err) {
 			return Key{key}, err
 		}
-		key, err := NewKey()
-		b, err := json.Marshal(key.k)
+		f, key, err = CreateKey(keyfile)
 		if err != nil {
-			return key, err
+			return Key{key}, err
 		}
-		f, err = os.Create(keyfile)
-		if err != nil {
-			return key, err
-		}
-		_, err = f.Write(b)
-		return key, err
 	}
 	b, err := ioutil.ReadAll(f)
 	if err != nil {
