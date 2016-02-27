@@ -7,7 +7,7 @@ import (
 )
 
 func init() {
-	out, err := integration.BuildBinary("github.com/AutoRoute/loopback2")
+	out, err := integration.BuildBinary("github.com/AutoRoute/loopback2/loopback2")
 	if err != nil {
 		log.Fatalf("%s:%s:", err, out)
 	}
