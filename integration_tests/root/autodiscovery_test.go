@@ -80,10 +80,13 @@ func SetDevUp(dev string) error {
 
 func TestConnection(t *testing.T) {
 	// set -e
-	WarnRoot(t)
+	err := CheckRoot()
+	if err != nil {
+		t.Skip(err)
+	}
 	// loopback2
 	cmd := integration.NewWrappedBinary(GetLoopBack2Path())
-	err := cmd.Start()
+	err = cmd.Start()
 	if err != nil {
 		t.Fatal(err)
 	}

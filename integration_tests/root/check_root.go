@@ -1,19 +1,21 @@
 package root
 
 import (
+	"errors"
+	"fmt"
 	"os/user"
-	"testing"
 )
 
-func WarnRoot(t *testing.T) {
+func CheckRoot() error {
 	user, err := user.Current()
 	if err != nil {
-		t.Log(
+		return errors.New(
 			"Unable to determine user.. These tests require root and may fail.")
 	}
 	if user.Username != "root" {
-		t.Logf(
+		return fmt.Errorf(
 			"Current user is %s which is not root. These tests require root.",
 			user.Username)
 	}
+	return nil
 }
