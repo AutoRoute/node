@@ -4,6 +4,8 @@ import (
 	"expvar"
 	"fmt"
 	"log"
+	"math/rand"
+	"sync"
 
 	"github.com/AutoRoute/node/types"
 )
@@ -42,6 +44,10 @@ type routingHandler struct {
 	connections  map[types.NodeAddress]DataConnection
 	reachability *reachabilityHandler
 	quit         chan bool
+	// Bandwidth estimator for all nodes.
+	bandwidths *bandwidthEstimator
+	// Mutex for protecting operations on the bandwidth estimator.
+	bandwidth_mutex sync.RWMutex
 }
 
 func newRouting(pk PublicKey, r *reachabilityHandler) *routingHandler {
@@ -52,6 +58,8 @@ func newRouting(pk PublicKey, r *reachabilityHandler) *routingHandler {
 		make(map[types.NodeAddress]DataConnection),
 		r,
 		make(chan bool),
+		NewBandwidthEstimator(),
+		sync.RWMutex{},
 	}
 }
 
@@ -90,14 +98,44 @@ func (r *routingHandler) sendPacket(p types.Packet, src types.NodeAddress) error
 		go r.notifyDecision(p, src, r.pk.Hash())
 		return nil
 	}
-	next, err := r.reachability.FindNextHop(p.Destination(), src)
+	possible_next, err := r.reachability.FindNextHop(p.Destination(), src)
 	if err != nil {
 		packets_dropped.Add(1)
 		return err
 	}
+
+	// Decide which one of our possible destinations to send it to.
+	weights := r.bandwidths.GetWeights(possible_next)
+	// Choose a random destination given our weights.
+	choice := rand.Float64()
+	// We pick the last one because if it should be the last one, floating-point
+	// weirdness could cause us not to pick it.
+	next := possible_next[len(possible_next)-1]
+	total := 0.0
+	for i, weight := range weights {
+		total += weight
+		log.Printf("Total: %f\n", total)
+		log.Printf("Choice: %f\n", choice)
+		if total >= choice {
+			next = possible_next[i]
+		}
+	}
+
 	packets_sent.Add(fmt.Sprintf("%x", next), 1)
 	go r.notifyDecision(p, src, next)
-	return r.connections[next].SendPacket(p)
+
+	r.bandwidth_mutex.Lock()
+	r.bandwidths.WillSendPacket(next)
+	r.bandwidth_mutex.Unlock()
+	err = r.connections[next].SendPacket(p)
+	if err != nil {
+		log.Print("Error sending packet.\n")
+		return err
+	}
+	r.bandwidth_mutex.Lock()
+	r.bandwidths.SentPacket(next, int64(len(p.Data)))
+	r.bandwidth_mutex.Unlock()
+	return nil
 }
 
 func (r *routingHandler) notifyDecision(p types.Packet, src, next types.NodeAddress) {

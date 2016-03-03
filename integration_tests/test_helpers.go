@@ -70,7 +70,12 @@ func WaitForPacketsReceived(b AutoRouteBinary, src string, amt ...int) error {
 	for range time.Tick(10 * time.Millisecond) {
 		packets_received, err := b.GetPacketsReceived()
 		if err != nil {
-			continue
+		  select {
+		  case <-stop:
+		    return err
+		  default:
+		    continue
+		  }
 		}
 		for source, amount := range packets_received {
 			if len(amt) > 0 {
