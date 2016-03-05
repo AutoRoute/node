@@ -105,6 +105,10 @@ func (s *Server) findNeighbors(dev net.Interface, ll_addr net.IP, port uint16) {
 	}
 	for neighbor := range neighbors {
 		log.Printf("Neighbour Found %x", neighbor.FullNodeAddr)
+		if neighbor.FullNodeAddr == s.n.GetAddress().Hash() {
+			log.Print("Warning: Ignoring connection from self.\n")
+			continue
+		}
 		err := s.Connect(fmt.Sprintf("[%s%%%s]:%v", neighbor.LLAddrStr, dev.Name, neighbor.Port))
 		if err != nil {
 			log.Printf("Error connecting: %v", err)
