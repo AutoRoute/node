@@ -83,10 +83,10 @@ func waitForOffline(devices map[string]l2.FrameReadWriteCloser) {
 
 		// Check for timeout.
 		select {
-		  case <-timeout:
-		    log.Fatal("Waiting for devices to go offline took too long.\n")
-		  default:
-		    continue
+		case <-timeout:
+			log.Fatal("Waiting for devices to go offline took too long.\n")
+		default:
+			continue
 		}
 	}
 }
@@ -244,8 +244,9 @@ func (t *TapNetwork) doCreateNetwork() {
 	}
 	waitForOffline(devices)
 
-	t.waiter.Done()
 	log.Print("Loopback2: Exiting...\n")
+	// Tell the caller we're done quitting.
+	t.waiter.Done()
 }
 
 // Stops a running network simulation.
