@@ -10,28 +10,34 @@ import (
 )
 
 type TunServer struct {
+  data        DataConnection
 	dev         tuntap.Interface
 	nodes       map[net.IP]types.NodeAddress
 	connections map[types.NodeAddress]*TCP
 }
 
-func NewTunServer() *TunServer {
+func NewTunServer(d DataConnection) *TunServer {
 	i, err := tuntap.Open("tun%d", tuntap.DevTun)
 	if err != nil {
 		log.Fatal(err)
 	}
-	return &TunServer{i, make(map[net.TIP]types.NodeAddress), make(map[net.IP]*TCP)}
+	return &TunServer{d, i, make(map[net.TIP]types.NodeAddress), make(map[net.IP]*TCP)}
 }
 
-func (ts *TunServer) Connect(tcptun string, data DataConnection, amt int64) {
+func (ts *TunServer) Connect(tcptun string, amt int64) {
   dest := ""
   _, err = fmt.Sscanf(*tcptun, "%x", &dest)
   if err != nil {
     log.Fatal(err)
   }
-  t := NewTCPTunnel(ts.dev, data, types.NodeAddress(dest), amt)
+  t := NewTCPTunnel(ts.dev, ts.data, types.NodeAddress(dest), amt)
   connections[types.NodeAddress] = t
 }
 
-func (ts *TunServer) Listen() error {
+func (ts *TunServer) Listen() {
+  go func() {
+    for packet := range data.Packets() {
+      Connect(packet.Data, 10000)
+    }
+  }()
 }
