@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"sync"
 
 	"github.com/AutoRoute/node/types"
 )
@@ -45,6 +46,8 @@ type routingHandler struct {
 	quit         chan bool
 	// Bandwidth estimator for all nodes.
 	bandwidths *bandwidthEstimator
+	// Mutex for protecting operations on the bandwidth estimator.
+	bandwidth_mutex sync.RWMutex
 }
 
 func newRouting(pk PublicKey, r *reachabilityHandler) *routingHandler {
@@ -56,6 +59,7 @@ func newRouting(pk PublicKey, r *reachabilityHandler) *routingHandler {
 		r,
 		make(chan bool),
 		newBandwidthEstimator(),
+		sync.RWMutex{},
 	}
 }
 
@@ -127,12 +131,16 @@ func (r *routingHandler) sendPacket(p types.Packet, src types.NodeAddress) error
 	packets_sent.Add(fmt.Sprintf("%x", next), 1)
 	go r.notifyDecision(p, src, next)
 
+	r.bandwidth_mutex.Lock()
 	r.bandwidths.WillSendPacket(next)
+	r.bandwidth_mutex.Unlock()
 	err = r.connections[next].SendPacket(p)
 	if err != nil {
 		return err
 	}
+	r.bandwidth_mutex.Lock()
 	r.bandwidths.SentPacket(next, int64(len(p.Data)))
+	r.bandwidth_mutex.Unlock()
 	return nil
 }
 
