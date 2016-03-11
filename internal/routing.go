@@ -46,7 +46,7 @@ type routingHandler struct {
 	quit         chan bool
 	// Bandwidth estimator for all nodes.
 	bandwidths *bandwidthEstimator
-	// Mutex for protecting operations on the bandwidth estimator.
+	// Mutex for serializing bandwidthEstimator operations.
 	bandwidth_mutex sync.RWMutex
 }
 
@@ -105,14 +105,9 @@ func (r *routingHandler) sendPacket(p types.Packet, src types.NodeAddress) error
 	}
 
 	// Decide which one of our possible destinations to send it to.
+	r.bandwidth_mutex.RLock()
 	weights := r.bandwidths.GetWeights(possible_next)
-	if len(weights) != len(possible_next) {
-		log.Print("Warning: Not enough data for weight calculation.\n")
-		// Just use equal weights.
-		for range possible_next {
-			weights = append(weights, float64(1)/float64(len(possible_next)))
-		}
-	}
+	r.bandwidth_mutex.RUnlock()
 	// Choose a random destination given our weights.
 	choice := rand.Float64()
 	// We pick the last one because if it should be the last one, floating-point
@@ -136,6 +131,7 @@ func (r *routingHandler) sendPacket(p types.Packet, src types.NodeAddress) error
 	r.bandwidth_mutex.Unlock()
 	err = r.connections[next].SendPacket(p)
 	if err != nil {
+		log.Print("Error sending packet.\n")
 		return err
 	}
 	r.bandwidth_mutex.Lock()

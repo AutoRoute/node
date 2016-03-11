@@ -9,11 +9,15 @@ import (
 
 // A bandwidth estimator estimates bandwidth between us and a neighbor and
 // takes care of making intelligent routing decisions.
+// NOTE: bandwidthEstimator does not inherently support concurrency. Calls to
+// its methods should be protected.
 type bandwidthEstimator struct {
 	// Current estimated bandwidths.
-	bandwidth map[types.NodeAddress]int64
+	bandwidth map[types.NodeAddress]float64
 	// Total number of bytes sent.
-	packets_sent map[types.NodeAddress]int64
+	bytes_sent map[types.NodeAddress]int64
+	// Total elapsed time waiting for that data to send.
+	sent_time map[types.NodeAddress]time.Duration
 	// Time at which the last packet send started.
 	send_start_time map[types.NodeAddress]time.Time
 }
@@ -21,8 +25,9 @@ type bandwidthEstimator struct {
 // Creates a new bandwidthEstimator.
 func newBandwidthEstimator() *bandwidthEstimator {
 	estimator := bandwidthEstimator{
+		make(map[types.NodeAddress]float64),
 		make(map[types.NodeAddress]int64),
-		make(map[types.NodeAddress]int64),
+		make(map[types.NodeAddress]time.Duration),
 		make(map[types.NodeAddress]time.Time),
 	}
 	return &estimator
@@ -40,14 +45,13 @@ func (b *bandwidthEstimator) WillSendPacket(node types.NodeAddress) {
 //  node: Where we sent the packet.
 //  size: How many bytes the packet is.
 func (b *bandwidthEstimator) SentPacket(node types.NodeAddress, size int64) {
-	elapsed := time.Now().Sub(b.send_start_time[node])
-	// Calculate bandwidth.
-	bandwidth := size / int64(elapsed)
-	b.packets_sent[node] += 1
 
-	// Figure that into our moving average.
-	total := b.bandwidth[node] * b.packets_sent[node]
-	b.bandwidth[node] = total + bandwidth - b.bandwidth[node]
+	// Calculate new average.
+	b.bytes_sent[node] += size
+	elapsed := time.Since(b.send_start_time[node])
+	b.sent_time[node] += elapsed
+	b.bandwidth[node] = float64(b.bytes_sent[node]) /
+		(float64(b.sent_time[node]) / float64(time.Second))
 }
 
 // Calculates and returns weights for each node in order to make routing
@@ -58,21 +62,31 @@ func (b *bandwidthEstimator) SentPacket(node types.NodeAddress, size int64) {
 //  A slice with the weights of each node in the same order.
 func (b *bandwidthEstimator) GetWeights(nodes []types.NodeAddress) []float64 {
 	// First, we need to calculate the total bandwidth so we know how to scale it.
-	total := int64(0)
+	total := float64(0)
 	for _, node := range nodes {
 		total += b.bandwidth[node]
 	}
 
 	// For each bandwidth, scale it proportionally to get the weight.
 	weights := []float64{}
+	// This is the weight we use when we don't have enough data to actually
+	// determine it.
+	standard_weight := 1 / float64(len(nodes))
+	num_unknown := 0
 	for _, node := range nodes {
 		node_bandwidth, ok := b.bandwidth[node]
+		var weight float64
 		if !ok {
-			// No valid bandwidth yet.
-			continue
+			// We don't have a valid bandwidth yet.
+			weight = standard_weight
+			num_unknown += 1
+		} else {
+			weight = float64(node_bandwidth) / total
+			// If we have unknowns, scale all the weights appropriately so that everything
+			// still adds up to one.
+			weight *= (1 - float64(num_unknown)*standard_weight)
 		}
-		weight := float64(node_bandwidth) / float64(total)
-		log.Printf("For node %d: bandwidth: %d, weight: %f\n",
+		log.Printf("bandwidth: %f, weight: %f\n",
 			b.bandwidth[node], weight)
 		weights = append(weights, weight)
 	}
