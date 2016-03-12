@@ -3,7 +3,7 @@ package root
 
 import (
 	integration "github.com/AutoRoute/node/integration_tests"
-	"github.com/AutoRoute/loopback2"
+	"github.com/AutoRoute/node/integration_tests/loopback2"
 	"github.com/AutoRoute/node/types"
 
 	"encoding/hex"
@@ -26,18 +26,14 @@ func TestNetwork(t *testing.T) {
 	// config file
 	config := "network_sim_network.json"
 
-	cmd := integration.NewWrappedBinary(GetLoopBack2Path(), "--config="+config)
-	err = cmd.Start()
-	if err != nil {
-		t.Fatal(err)
-	}
+	network := loopback2.NewTapNetwork(config, "-0")
 
-	tap_interfaces, _, err := loopback2.ReadConfigFile(config)
+	tap_interfaces, _, err := network.ReadConfigFile()
 	if err != nil {
 		t.Fatal("Error opening the configuration file.")
 	}
 
-	defer cmd.KillAndPrint(t)
+	defer network.Stop()
 
 	// various data structures for holding relationships between structures
 	// interfaces
