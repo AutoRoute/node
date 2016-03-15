@@ -25,19 +25,22 @@ func NewTapDevice(mac, dev string) (FrameReadWriteCloser, error) {
 		return nil, err
 	}
 
-	cmd := exec.Command(ip_path, "link", "set", "dev", dev, "address", mac)
+	if mac != "" {
+		cmd := exec.Command(ip_path, "link", "set", "dev", dev, "address", mac)
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			log.Print("Command output:", string(output))
+			return nil, err
+		}
+	}
+
+	cmd := exec.Command(ip_path, "link", "set", "dev", dev, "up")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Print("Command output:", string(output))
 		return nil, err
 	}
 
-	cmd = exec.Command(ip_path, "link", "set", "dev", dev, "up")
-	output, err = cmd.CombinedOutput()
-	if err != nil {
-		log.Print("Command output:", string(output))
-		return nil, err
-	}
 	return &tapDevice{fd}, nil
 }
 
