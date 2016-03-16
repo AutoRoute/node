@@ -7,7 +7,7 @@ import (
 )
 
 func BuildBinary(path string) (string, error) {
-	cmd := exec.Command("go", "install", path)
+	cmd := exec.Command("go", "install", "-race", path)
 	cmd.Env = os.Environ()
 	cmd.Env = append(cmd.Env, "GOBIN=/tmp")
 	out, err := cmd.CombinedOutput()

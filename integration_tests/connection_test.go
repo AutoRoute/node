@@ -20,6 +20,9 @@ func TestConnection(t *testing.T) {
 	connect.Start()
 	defer connect.KillAndPrint(t)
 	connect_id, err := WaitForID(connect)
+	if err != nil {
+	  t.Fatal(err)
+	}
 
 	err = WaitForConnection(listen, connect_id)
 	if err != nil {
