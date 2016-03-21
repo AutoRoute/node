@@ -22,6 +22,7 @@ import (
 // Args:
 //  t: T instance to use for logging.
 //  config: The path to the config file to use for setting up the network.
+//  race: Whether to use autoroute binaries with race checking enabled.
 // Returns:
 //  * Map that contains the names of each device mapped with the devices it
 //  connects to, each one of which is mapped to the pair of the actual tap
@@ -29,7 +30,7 @@ import (
 //  * Map that contains the autoroute binaries for each device.
 //  * Map that contains the socket for each interface.
 //  * Loopback2 TapNetwork.
-func SetupNetwork(t *testing.T, config string) (
+func SetupNetwork(t *testing.T, config string, race bool) (
 	map[string]map[string]string,
 	map[string]integration.AutoRouteBinary,
 	map[string]string,
@@ -104,6 +105,7 @@ func SetupNetwork(t *testing.T, config string) (
 				Autodiscover:         true,
 				Autodiscover_devices: names,
 				Unix:                 socket,
+				Race:                 race,
 			})
 			bins[name] = listen
 			sockets[name] = socket
@@ -116,6 +118,7 @@ func SetupNetwork(t *testing.T, config string) (
 				Autodiscover:         true,
 				Autodiscover_devices: names,
 				Unix:                 socket,
+				Race:                 race,
 			})
 			for _, name := range names {
 				bins[name] = connect
@@ -136,7 +139,7 @@ func TestNetwork(t *testing.T) {
 	}
 
 	tap_interfaces, bins,
-		sockets, taps := SetupNetwork(t, "network_sim_network.json")
+		sockets, taps := SetupNetwork(t, "network_sim_network.json", true)
 
 	// Clean up everything when we're done.
 	defer taps.Stop()

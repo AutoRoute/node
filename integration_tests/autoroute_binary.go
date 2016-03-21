@@ -27,6 +27,8 @@ type BinaryOptions struct {
 	BTCHost              string
 	BTCUser              string
 	BTCPass              string
+	// Whether to enable race condition checker.
+	Race bool
 }
 
 // Transforms a BinaryOptions into a valid AutoRoute command line.
@@ -70,11 +72,18 @@ func ProduceCommandLine(b BinaryOptions) []string {
 
 // Produces a AutoRoute Binary which can be run. Must call Start in order to
 // make it start running.
+// Args:
+//  b: Options for the binary.
+// Returns:
+//  The new autoroute binary.
 func NewNodeBinary(b BinaryOptions) AutoRouteBinary {
 	port := GetUnusedPort()
 	args := ProduceCommandLine(b)
 	args = append(args, "--status=[::1]:"+fmt.Sprint(port))
-	binary := NewWrappedBinary(GetAutoRoutePath(), args...)
+
+	path := GetAutoRoutePath(b.Race)
+	binary := NewWrappedBinary(path, args...)
+
 	return AutoRouteBinary{binary, port}
 }
 

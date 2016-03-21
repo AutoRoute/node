@@ -73,6 +73,7 @@ func TestBitcoin(t *testing.T) {
 		BTCHost: "[::1]:19001",
 		BTCUser: "admin1",
 		BTCPass: "123",
+		Race: true,
 	})
 	listen.Start()
 	defer listen.KillAndPrint(t)
