@@ -122,7 +122,7 @@ func TestConnection(t *testing.T) {
 		Fake_money:           true,
 		Autodiscover:         true,
 		Autodiscover_devices: []string{listen_dev.Name},
-	})
+	}, true)
 	listen.Start()
 	defer listen.KillAndPrint(t)
 	// autoroute -fake_money -listen "[%ip1%looptap0-1]:31337" -auto=true -devs='looptap0-1'
@@ -132,7 +132,7 @@ func TestConnection(t *testing.T) {
 		Fake_money:           true,
 		Autodiscover:         true,
 		Autodiscover_devices: []string{connect_dev.Name},
-	})
+	}, true)
 	connect.Start()
 	defer connect.KillAndPrint(t)
 

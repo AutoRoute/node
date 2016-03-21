@@ -38,7 +38,7 @@ func TestPing(t *testing.T) {
 		Listen:     "localhost:9999",
 		Fake_money: true,
 		Tcptun:     node_addr1,
-		Keyfile:    "/tmp/keyfile0"})
+		Keyfile:    "/tmp/keyfile0"}, true)
 	ponger.Start()
 	defer ponger.KillAndPrint(t)
 	_, err = WaitForDevice("tun0")
@@ -60,7 +60,7 @@ func TestPing(t *testing.T) {
 		Fake_money: true,
 		Connect:    []string{"localhost:9999"},
 		Tcptun:     node_addr0,
-		Keyfile:    "/tmp/keyfile1"})
+		Keyfile:    "/tmp/keyfile1"}, true)
 	pinger.Start()
 	defer pinger.KillAndPrint(t)
 	_, err = WaitForDevice("tun1")

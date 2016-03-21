@@ -73,7 +73,7 @@ func TestBitcoin(t *testing.T) {
 		BTCHost: "[::1]:19001",
 		BTCUser: "admin1",
 		BTCPass: "123",
-	})
+	}, true)
 	listen.Start()
 	defer listen.KillAndPrint(t)
 	_, err = WaitForID(listen)
@@ -87,7 +87,7 @@ func TestBitcoin(t *testing.T) {
 		BTCHost: "[::1]:19011",
 		BTCUser: "admin2",
 		BTCPass: "123",
-	})
+	}, true)
 	connect.Start()
 	defer connect.KillAndPrint(t)
 	connect_id, err := WaitForID(connect)

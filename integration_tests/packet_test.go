@@ -24,7 +24,7 @@ func TestPacket(t *testing.T) {
 		Listen:     "[::1]:9999",
 		Fake_money: true,
 		Unix:       "/tmp/unix",
-	})
+	}, true)
 	listen.Start()
 	defer listen.KillAndPrint(t)
 	listen_id, err := WaitForID(listen)
@@ -37,7 +37,7 @@ func TestPacket(t *testing.T) {
 		Connect:    []string{"[::1]:9999"},
 		Fake_money: true,
 		Unix:       "/tmp/unix2",
-	})
+	}, true)
 	connect.Start()
 	defer connect.KillAndPrint(t)
 	connect_id, err := WaitForID(connect)

@@ -70,11 +70,22 @@ func ProduceCommandLine(b BinaryOptions) []string {
 
 // Produces a AutoRoute Binary which can be run. Must call Start in order to
 // make it start running.
-func NewNodeBinary(b BinaryOptions) AutoRouteBinary {
+// Args:
+//  b: Options for the binary.
+//  race: Whether to use the binary with race condition checking enabled.
+// Returns:
+//  The new autoroute binary.
+func NewNodeBinary(b BinaryOptions, race bool) AutoRouteBinary {
 	port := GetUnusedPort()
 	args := ProduceCommandLine(b)
 	args = append(args, "--status=[::1]:"+fmt.Sprint(port))
-	binary := NewWrappedBinary(GetAutoRoutePath(), args...)
+
+	path := GetAutoRoutePath()
+	if !race {
+		path = GetAutoRoutePathNoRace()
+	}
+	binary := NewWrappedBinary(path, args...)
+
 	return AutoRouteBinary{binary, port}
 }
 
