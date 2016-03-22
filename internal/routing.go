@@ -58,7 +58,7 @@ func newRouting(pk PublicKey, r *reachabilityHandler) *routingHandler {
 		make(map[types.NodeAddress]DataConnection),
 		r,
 		make(chan bool),
-		newBandwidthEstimator(),
+		NewBandwidthEstimator(),
 		sync.RWMutex{},
 	}
 }

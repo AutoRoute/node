@@ -23,7 +23,7 @@ type bandwidthEstimator struct {
 }
 
 // Creates a new bandwidthEstimator.
-func newBandwidthEstimator() *bandwidthEstimator {
+func NewBandwidthEstimator() *bandwidthEstimator {
 	estimator := bandwidthEstimator{
 		make(map[types.NodeAddress]float64),
 		make(map[types.NodeAddress]int64),
