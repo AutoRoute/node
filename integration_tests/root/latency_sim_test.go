@@ -2,9 +2,11 @@
 package root
 
 import (
+	"fmt"
 	"net"
 	"strings"
 	"testing"
+	"time"
 
 	integration "github.com/AutoRoute/node/integration_tests"
 	"github.com/AutoRoute/node/types"
@@ -25,6 +27,7 @@ func getNetworkEndpoints(t *testing.T,
 	sockets map[string]string,
 	bins map[string]integration.AutoRouteBinary) (
 	net.Conn, net.Conn, types.NodeAddress, types.NodeAddress) {
+
 	// Try connecting to the A and B nodes in our system.
 	a_index := 0
 	tap_pair_a_c, ok_a_c := tap_interfaces["A"]["C"]
@@ -101,10 +104,6 @@ func doAllSetup(t *testing.T, tap_interfaces map[string]map[string]string,
 	bins map[string]integration.AutoRouteBinary,
 	sockets map[string]string) (
 	net.Conn, net.Conn, types.NodeAddress, types.NodeAddress) {
-	err := CheckRoot()
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	// wait for each pair of interfaces to connect
 	for _, dsts := range tap_interfaces {
@@ -144,8 +143,13 @@ func doAllSetup(t *testing.T, tap_interfaces map[string]map[string]string,
 
 // Make sure nodes A and B can talk to each other at all.
 func TestReadAndWrite(t *testing.T) {
+	err := CheckRoot()
+	if err != nil {
+		t.Skip(err)
+	}
+
 	tap_interfaces, bins,
-		sockets, taps := SetupNetwork(t, "latency_sim_network.json")
+		sockets, taps := SetupNetwork(t, "latency_sim_network.json", true)
 
 	// Clean up everything when we're done.
 	defer taps.Stop()
@@ -164,5 +168,69 @@ func TestReadAndWrite(t *testing.T) {
 	t.Logf("Got message: %s\n", packet.Data)
 	if packet.Data != test_message {
 		t.Fatalf("Expected message '%s', got '%s'.\n", test_message, packet.Data)
+	}
+}
+
+func makeSpaceString(length int) string {
+	str := ""
+	for i := 0; i < length; i++ {
+		str += " "
+	}
+	return str
+}
+
+// Make sure the routing algorithm makes optimal choices for sending packets.
+func TestRoutingAlgorithm(t *testing.T) {
+	err := CheckRoot()
+	if err != nil {
+		t.Skip(err)
+	}
+
+	tap_interfaces, bins,
+		sockets, taps := SetupNetwork(t, "latency_sim_network.json", false)
+
+	// Clean up everything when we're done.
+	defer taps.Stop()
+	for _, bin := range bins {
+		defer bin.KillAndPrint(t)
+	}
+
+	conn_a, conn_b, _, addr_b := doAllSetup(t, tap_interfaces, bins, sockets)
+
+	// Send some data, and it should transmit it through multiple paths.
+	packet_number := 0
+	packet_padding := 30
+	send_packets := 50
+	wait_for := send_packets - 5
+	go func() {
+		for i := 0; i < send_packets; i++ {
+			packet := makeSpaceString(packet_padding)
+			packet += fmt.Sprintf("%d", packet_number)
+			integration.SendPacket(conn_a, t, addr_b, packet)
+			packet_number++
+		}
+	}()
+
+	start_time := time.Now()
+	// Wait for all the packet to make it to the other end.
+	got_packets := 0
+	packet_chan := make(chan types.Packet)
+	go integration.WaitForPackets(conn_b, t, packet_chan, wait_for)
+	// Make it close to account for any dropped packets.
+	for got_packets < wait_for {
+		<-packet_chan
+		got_packets++
+	}
+	transmission_time := float64(time.Since(start_time)) / float64(time.Second)
+	t.Logf("Packet transmission took %f seconds.\n", transmission_time)
+
+	// Do a sanity check on the amount of time it took.
+	overhead := 169
+	min_bandwidth := 5000
+	packet_size := overhead + packet_padding + 3
+	if transmission_time/1.5 >
+		float64(packet_size*wait_for)/
+			float64(min_bandwidth) {
+		t.Fatalf("Packet transmission took too long! (%fs)\n", transmission_time)
 	}
 }
