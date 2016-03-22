@@ -84,7 +84,14 @@ func (m *reachabilityHandler) HandleConnection(id types.NodeAddress, c MapConnec
 	}
 }
 
-func (m *reachabilityHandler) FindNextHop(id types.NodeAddress) (types.NodeAddress, error) {
+// Finds the next node to send a packet to.
+// Args:
+//  id: The destination node.
+//  src: The source node. (So we don't send it backwards.)
+// Returns:
+//  The next place to send the packet.
+func (m *reachabilityHandler) FindNextHop(id types.NodeAddress,
+	src types.NodeAddress) (types.NodeAddress, error) {
 	m.l.Lock()
 	defer m.l.Unlock()
 	_, ok := m.conns[id]
@@ -97,6 +104,11 @@ func (m *reachabilityHandler) FindNextHop(id types.NodeAddress) (types.NodeAddre
 	}
 
 	for rid, rmap := range m.maps {
+		if rid == src {
+			// We're not going to send it backwards.
+			continue
+		}
+
 		if rmap.IsReachable(id) {
 			return rid, nil
 		}
