@@ -133,7 +133,7 @@ func SetupNetwork(t *testing.T, config string, race bool) (
 func TestNetwork(t *testing.T) {
 	err := CheckRoot()
 	if err != nil {
-		t.Fatal(err)
+		t.Skip(err)
 	}
 
 	tap_interfaces, bins,

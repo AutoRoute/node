@@ -131,14 +131,27 @@ func WaitForPacketsSent(b AutoRouteBinary, dest string, amt ...int) error {
 	panic("unreachable")
 }
 
+// Waits for a single packet.
 func WaitForPacket(c net.Conn, t *testing.T, s chan types.Packet) {
+	WaitForPackets(c, t, s, 1)
+}
+
+// Wait for a number of packets.
+// Args:
+//  c: Connection to read packets from.
+//  t: Testing interface being used.
+//  s: Channel down which to send incomming packets.
+//  amt: The amount of packets to read before exiting.
+func WaitForPackets(c net.Conn, t *testing.T, s chan types.Packet, amt int) {
 	r := json.NewDecoder(c)
-	var p types.Packet
-	err := r.Decode(&p)
-	if err != nil {
-		t.Fatal(err)
+	for i := 0; i < amt; i++ {
+		var p types.Packet
+		err := r.Decode(&p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		s <- p
 	}
-	s <- p
 }
 
 // Sends a new packet with data we specify.
