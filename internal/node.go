@@ -126,7 +126,7 @@ func (n *Node) GetAddress() PublicKey {
 }
 
 func (n *Node) IsReachable(addr types.NodeAddress) bool {
-	_, err := n.router.FindNextHop(addr)
+	_, err := n.router.FindNextHop(addr, "")
 	return err == nil
 }
 

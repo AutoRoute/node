@@ -21,7 +21,7 @@ func TestMapHandler(t *testing.T) {
 	timeout := func(m *reachabilityHandler, id types.NodeAddress) bool {
 		start := time.Now()
 		for now := start; now.Before(start.Add(time.Second)); now = time.Now() {
-			if a, err := m.FindNextHop(id); err == nil {
+			if a, err := m.FindNextHop(id, ""); err == nil {
 				if a == id {
 					return true
 				} else {
@@ -60,7 +60,7 @@ func TestRelayMapHandler(t *testing.T) {
 	timeout := func(m *reachabilityHandler, id types.NodeAddress, nexthop types.NodeAddress) bool {
 		start := time.Now()
 		for now := start; now.Before(start.Add(time.Second)); now = time.Now() {
-			if a, err := m.FindNextHop(id); err == nil {
+			if a, err := m.FindNextHop(id, ""); err == nil {
 				if a == nexthop {
 					return true
 				} else {
@@ -77,4 +77,35 @@ func TestRelayMapHandler(t *testing.T) {
 	if !timeout(m3, a1, a2) {
 		t.Fatal("timed out waiting for m1", m3)
 	}
+}
+
+// Make sure it can't send packets backwards.
+func TestNoBackwardsPackets(t *testing.T) {
+  conn1, conn2 := makePairedMapConnections()
+  // We don't actually care about whether conn3 gets maps or not, because we're
+  // just using it as a destination.
+  conn3, _ := makePairedMapConnections()
+
+  address1 := types.NodeAddress("1")
+  address2 := types.NodeAddress("2")
+  address3 := types.NodeAddress("3")
+
+  reach1 := newReachability(address1)
+  reach2 := newReachability(address2)
+  defer reach1.Close()
+  defer reach2.Close()
+
+  reach1.AddConnection(address2, conn2)
+  reach2.AddConnection(address1, conn1)
+  reach2.AddConnection(address3, conn3)
+
+  // If we tell it the packet came from conn2, it should refuse to send it along
+  // to conn2, even though it could.
+  dest, err := reach1.FindNextHop(address3, address2)
+  if dest != "" {
+    t.Fatalf("Expected empty dest, got '%s'.\n", dest)
+  }
+  if err == nil {
+    t.Fatal("Expected error, but got none.\n")
+  }
 }

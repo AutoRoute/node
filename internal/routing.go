@@ -90,7 +90,7 @@ func (r *routingHandler) sendPacket(p types.Packet, src types.NodeAddress) error
 		go r.notifyDecision(p, src, r.pk.Hash())
 		return nil
 	}
-	next, err := r.reachability.FindNextHop(p.Destination())
+	next, err := r.reachability.FindNextHop(p.Destination(), src)
 	if err != nil {
 		packets_dropped.Add(1)
 		return err
