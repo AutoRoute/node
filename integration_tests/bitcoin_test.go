@@ -32,9 +32,18 @@ func WaitForGetInfo() error {
 }
 
 func TestBitcoin(t *testing.T) {
+  travis, err := CheckTravis()
+	if err != nil {
+		t.Logf("Warning: Checking for Travis failed: %s\n", err)
+	}
+	if travis {
+		// TODO(danielp): Re-enable this once we figure out why it's hanging.
+		t.Skip("TestBitcoin is temporarily disabled on Travis.")
+	}
+
 	cmd := exec.Command("make", "start")
 	cmd.Dir = test_net_path
-	err := cmd.Run()
+	err = cmd.Run()
 	if err != nil {
 		t.Fatal(err)
 	}
