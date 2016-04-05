@@ -37,3 +37,16 @@ type Connection interface {
 	OtherMetaData() SSHMetaData
 	io.Closer
 }
+
+// A simple interface for something that uses an algorithm to route packets.
+type routingHandler interface {
+  // Register a connection to another node.
+  AddConnection(id types.NodeAddress, c DataConnection)
+  // Route a new packet.
+  SendPacket(p types.Packet) error
+
+  // Get all the routes we know of.
+  Routes() <-chan routingDecision
+  Packets() <-chan types.Packet
+  Close() error
+}
