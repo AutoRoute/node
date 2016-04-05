@@ -21,7 +21,7 @@ func TestMapHandler(t *testing.T) {
 	timeout := func(m *reachabilityHandler, id types.NodeAddress) bool {
 		start := time.Now()
 		for now := start; now.Before(start.Add(time.Second)); now = time.Now() {
-			if nodes, err := m.FindNextHop(id, ""); err == nil {
+			if nodes, err := m.FindPossibleDests(id, ""); err == nil {
 				for _, node := range nodes {
 					if node == id {
 						return true
@@ -61,7 +61,7 @@ func TestRelayMapHandler(t *testing.T) {
 	timeout := func(m *reachabilityHandler, id types.NodeAddress, nexthop types.NodeAddress) bool {
 		start := time.Now()
 		for now := start; now.Before(start.Add(time.Second)); now = time.Now() {
-			if nodes, err := m.FindNextHop(id, ""); err == nil {
+			if nodes, err := m.FindPossibleDests(id, ""); err == nil {
 				for _, node := range nodes {
 					if node == nexthop {
 						return true
@@ -103,7 +103,7 @@ func TestNoBackwardsPackets(t *testing.T) {
 
 	// If we tell it the packet came from conn2, it should refuse to send it along
 	// to conn2, even though it could.
-	dest, err := reach1.FindNextHop(address3, address2)
+	dest, err := reach1.FindPossibleDests(address3, address2)
 	if dest != nil {
 		t.Fatalf("Expected empty dest, got '%s'.\n", dest)
 	}

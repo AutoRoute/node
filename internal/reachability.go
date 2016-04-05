@@ -84,13 +84,13 @@ func (m *reachabilityHandler) HandleConnection(id types.NodeAddress, c MapConnec
 	}
 }
 
-// Finds the next node to send a packet to.
+// Finds the set of nodes that we could send the packet to.
 // Args:
 //  id: The destination node.
 //  src: The source node. (So we don't send it backwards.)
 // Returns:
-//  The next place to send the packet.
-func (m *reachabilityHandler) FindNextHop(id types.NodeAddress,
+//  All the nodes that we could possibly send the packet to.
+func (m *reachabilityHandler) FindPossibleDests(id types.NodeAddress,
 	src types.NodeAddress) ([]types.NodeAddress, error) {
 	m.l.Lock()
 	defer m.l.Unlock()
