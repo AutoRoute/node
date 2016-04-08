@@ -84,25 +84,26 @@ func (m *reachabilityHandler) HandleConnection(id types.NodeAddress, c MapConnec
 	}
 }
 
-// Finds the next node to send a packet to.
+// Finds the set of nodes that we could send the packet to.
 // Args:
 //  id: The destination node.
 //  src: The source node. (So we don't send it backwards.)
 // Returns:
-//  The next place to send the packet.
-func (m *reachabilityHandler) FindNextHop(id types.NodeAddress,
-	src types.NodeAddress) (types.NodeAddress, error) {
+//  All the nodes that we could possibly send the packet to.
+func (m *reachabilityHandler) FindPossibleDests(id types.NodeAddress,
+	src types.NodeAddress) ([]types.NodeAddress, error) {
 	m.l.Lock()
 	defer m.l.Unlock()
 	_, ok := m.conns[id]
 	if ok {
-		return id, nil
+		return []types.NodeAddress{id}, nil
 	}
 
 	if id == m.me {
-		return id, nil
+		return []types.NodeAddress{id}, nil
 	}
 
+	dests := []types.NodeAddress{}
 	for rid, rmap := range m.maps {
 		if rid == src {
 			// We're not going to send it backwards.
@@ -110,11 +111,14 @@ func (m *reachabilityHandler) FindNextHop(id types.NodeAddress,
 		}
 
 		if rmap.IsReachable(id) {
-			return rid, nil
+			dests = append(dests, rid)
 		}
 	}
 
-	return "", errors.New("Unable to find host")
+	if len(dests) == 0 {
+		return nil, errors.New("Unable to find host")
+	}
+	return dests, nil
 }
 
 func (m *reachabilityHandler) Close() error {

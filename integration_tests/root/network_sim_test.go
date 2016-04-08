@@ -17,23 +17,30 @@ import (
 	"time"
 )
 
-func TestNetwork(t *testing.T) {
-	err := CheckRoot()
-	if err != nil {
-		t.Skip(err)
-	}
-
-	// config file
-	config := "network_sim_network.json"
-
+// Reads the devices from the config file, starts autoroute binaries for each of
+// them, and waits for everything to connect to each-other.
+// Args:
+//  t: T instance to use for logging.
+//  config: The path to the config file to use for setting up the network.
+//  race: Whether to use autoroute binaries with race checking enabled.
+// Returns:
+//  * Map that contains the names of each device mapped with the devices it
+//  connects to, each one of which is mapped to the pair of the actual tap
+//  interfaces that are being used.
+//  * Map that contains the autoroute binaries for each device.
+//  * Map that contains the socket for each interface.
+//  * Loopback2 TapNetwork.
+func SetupNetwork(t *testing.T, config string, race bool) (
+	map[string]map[string]string,
+	map[string]integration.AutoRouteBinary,
+	map[string]string,
+	*loopback2.TapNetwork) {
 	network := loopback2.NewTapNetwork(config, "-0")
 
 	tap_interfaces, _, err := network.ReadConfigFile()
 	if err != nil {
 		t.Fatal("Error opening the configuration file.")
 	}
-
-	defer network.Stop()
 
 	// various data structures for holding relationships between structures
 	// interfaces
@@ -98,11 +105,11 @@ func TestNetwork(t *testing.T) {
 				Autodiscover:         true,
 				Autodiscover_devices: names,
 				Unix:                 socket,
+				Race:                 race,
 			})
 			bins[name] = listen
 			sockets[name] = socket
 			listen.Start()
-			defer listen.KillAndPrint(t)
 		} else {
 			listen_port := integration.GetUnusedPort()
 			connect := integration.NewNodeBinary(integration.BinaryOptions{
@@ -111,16 +118,35 @@ func TestNetwork(t *testing.T) {
 				Autodiscover:         true,
 				Autodiscover_devices: names,
 				Unix:                 socket,
+				Race:                 race,
 			})
 			for _, name := range names {
 				bins[name] = connect
 				sockets[name] = socket
 			}
 			connect.Start()
-			defer connect.KillAndPrint(t)
 		}
 		i++
 	}
+
+	return tap_interfaces, bins, sockets, network
+}
+
+func TestNetwork(t *testing.T) {
+	err := CheckRoot()
+	if err != nil {
+		t.Skip(err)
+	}
+
+	tap_interfaces, bins,
+		sockets, taps := SetupNetwork(t, "network_sim_network.json", true)
+
+	// Clean up everything when we're done.
+	defer taps.Stop()
+	for _, bin := range bins {
+		defer bin.KillAndPrint(t)
+	}
+
 	// wait for each pair of interfaces to connect
 	for _, dsts := range tap_interfaces {
 		for _, ifaces := range dsts {
@@ -178,7 +204,7 @@ func TestNetwork(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			// send a packet between each pair of nodes
+			// Send a packet between each pair of nodes.
 			packets := make(chan types.Packet)
 			go integration.WaitForPacket(c2, t, packets)
 			select {
@@ -189,8 +215,6 @@ func TestNetwork(t *testing.T) {
 					t.Fatal("Packets %v != %v", p, p2)
 				}
 			}
-
 		}
 	}
-
 }

@@ -70,7 +70,12 @@ func WaitForPacketsReceived(b AutoRouteBinary, src string, amt ...int) error {
 	for range time.Tick(10 * time.Millisecond) {
 		packets_received, err := b.GetPacketsReceived()
 		if err != nil {
-			continue
+			select {
+			case <-stop:
+				return err
+			default:
+				continue
+			}
 		}
 		for source, amount := range packets_received {
 			if len(amt) > 0 {
@@ -126,12 +131,43 @@ func WaitForPacketsSent(b AutoRouteBinary, dest string, amt ...int) error {
 	panic("unreachable")
 }
 
+// Waits for a single packet.
 func WaitForPacket(c net.Conn, t *testing.T, s chan types.Packet) {
+	WaitForPackets(c, t, s, 1)
+}
+
+// Wait for a number of packets.
+// Args:
+//  c: Connection to read packets from.
+//  t: Testing interface being used.
+//  s: Channel down which to send incomming packets.
+//  amt: The amount of packets to read before exiting.
+func WaitForPackets(c net.Conn, t *testing.T, s chan types.Packet, amt int) {
 	r := json.NewDecoder(c)
-	var p types.Packet
-	err := r.Decode(&p)
-	if err != nil {
-		t.Fatal(err)
+	for i := 0; i < amt; i++ {
+		var p types.Packet
+		err := r.Decode(&p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		s <- p
 	}
-	s <- p
+}
+
+// Sends a new packet with data we specify.
+// Args:
+//  conn: The connection we are sending it on.
+//  t: The test interface we are using.
+//  address: The address of the node where it is going.
+//  data: The actual data.
+func SendPacket(conn net.Conn, t *testing.T, address types.NodeAddress,
+	data string) {
+	// Make the packet.
+	packet := types.Packet{address, 1, data}
+
+	encoder := json.NewEncoder(conn)
+	err := encoder.Encode(packet)
+	if err != nil {
+		t.Fatalf("Sending packet failed: %s\n", err)
+	}
 }
