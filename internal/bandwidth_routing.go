@@ -1,9 +1,8 @@
 package internal
 
 import (
-  "log"
+	"log"
 	"math/rand"
-  "sync"
 
 	"github.com/AutoRoute/node/types"
 )
@@ -11,13 +10,11 @@ import (
 // A more advanced routing algorithm that makes decisions based on what it knows
 // about the bandwidth between nodes.
 type bandwidthRouting struct {
-  // Reachability handler for deciding where we can send it to.
-  reachability *reachabilityHandler
+	// Reachability handler for deciding where we can send it to.
+	reachability *reachabilityHandler
 
-  // Bandwidth estimator for all nodes.
-  bandwidths *bandwidthEstimator
-  // Mutex for serializing bandwidthEstimator operations.
-	bandwidth_mutex sync.RWMutex
+	// Bandwidth estimator for all nodes.
+	bandwidths *bandwidthEstimator
 }
 
 // Helper function that, given a set of weights and a possible next hops,
@@ -28,10 +25,10 @@ type bandwidthRouting struct {
 // Returns:
 //  The address of the next hop.
 func chooseNextHop(weights []float64,
-                   possible_next []types.NodeAddress) types.NodeAddress {
-  choice := rand.Float64()
+	possible_next []types.NodeAddress) types.NodeAddress {
+	choice := rand.Float64()
 
-  // We pick the last one because if it should be the last one, floating-point
+	// We pick the last one because if it should be the last one, floating-point
 	// weirdness could cause us not to pick it.
 	next := possible_next[len(possible_next)-1]
 	total := 0.0
@@ -50,45 +47,35 @@ func chooseNextHop(weights []float64,
 
 func newBandwidthRouting(r *reachabilityHandler) *bandwidthRouting {
 	return &bandwidthRouting{
-	  r,
-		NewBandwidthEstimator(),
-		sync.RWMutex{},
+		r,
+		nil,
 	}
 }
 
 // Finds the next place to send a packet.
 // See the routingAlgorithm interface for details.
 func (b *bandwidthRouting) FindNextHop(id types.NodeAddress,
-      src types.NodeAddress) (types.NodeAddress, error) {
-  possible_next, err := b.reachability.FindPossibleDests(id, src)
+	src types.NodeAddress) (types.NodeAddress, error) {
+	possible_next, err := b.reachability.FindPossibleDests(id, src)
 	if err != nil {
 		return "", err
 	}
 
 	// Decide which one of our possible destinations to send it to.
-	b.bandwidth_mutex.RLock()
 	weights := b.bandwidths.GetWeights(possible_next)
-	b.bandwidth_mutex.RUnlock()
 
 	// Choose a random destination given our weights.
 	return chooseNextHop(weights, possible_next), nil
 }
 
-// Send a packet. See routingAlgorithm interface for details.
-func (b *bandwidthRouting) SendPacket(dest DataConnection,
-                                      addr types.NodeAddress,
-                                      packet types.Packet) error {
-	b.bandwidth_mutex.Lock()
-	b.bandwidths.WillSendPacket(addr)
-	b.bandwidth_mutex.Unlock()
+// Sets the routing handler that we will use with this algorithm.
+// See the routingAlgorithm interface for details.
+func (b *bandwidthRouting) BindToRouting(routing *routingHandler) {
+	// Create bandwidth estimator.
+	b.bandwidths = newBandwidthEstimator(routing.Routes())
+}
 
-	err := dest.SendPacket(packet)
-	if err != nil {
-		log.Print("Error sending packet.\n")
-		return err
-	}
-	b.bandwidth_mutex.Lock()
-	b.bandwidths.SentPacket(addr, int64(len(packet.Data)))
-	b.bandwidth_mutex.Unlock()
-	return nil
+// Clean up the bandwidth estimator.
+func (b *bandwidthRouting) Cleanup() {
+	b.bandwidths.Close()
 }
