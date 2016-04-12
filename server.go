@@ -22,7 +22,7 @@ type Server struct {
 	listeners map[string]*internal.SSHListener
 	// This contains the addresses of the nodes that we are currently connecting
 	// to, so we don't try to connect to them twice at the same time.
-	currently_connecting map[string]bool
+	currently_connecting map[types.NodeAddress]bool
 	// Mutex to protect accesses to te currently_connecting map.
 	connecting_mutex sync.RWMutex
 	listen_address   string
@@ -31,27 +31,11 @@ type Server struct {
 func NewServer(key Key, m types.Money) *Server {
 	n := internal.NewNode(key.k, m, time.Tick(30*time.Second), time.Tick(30*time.Second))
 	return &Server{n, make(map[string]*internal.SSHListener),
-		make(map[string]bool), sync.RWMutex{}, ""}
+		make(map[types.NodeAddress]bool), sync.RWMutex{}, ""}
 }
 
 func (s *Server) Connect(addr string) error {
-	// Check that we should be connecting.
-	s.connecting_mutex.RLock()
-	_, addr_present := s.currently_connecting[addr]
-	s.connecting_mutex.RUnlock()
-	if addr_present {
-		return errors.New(fmt.Sprintf("Already connecting to %s.\n", addr))
-	}
-	s.connecting_mutex.Lock()
-	s.currently_connecting[addr] = true
-	s.connecting_mutex.Unlock()
-
 	c, err := net.Dial("tcp6", addr)
-
-	// Now that we've tried connecting, remove it as a pending connection.
-	s.connecting_mutex.Lock()
-	delete(s.currently_connecting, addr)
-	s.connecting_mutex.Unlock()
 
 	if err != nil {
 		return err
@@ -133,7 +117,27 @@ func (s *Server) findNeighbors(dev net.Interface, ll_addr net.IP, port uint16) {
 			log.Print("Warning: Ignoring connection from self.\n")
 			continue
 		}
-		err := s.Connect(fmt.Sprintf("[%s%%%s]:%v", neighbor.LLAddrStr, dev.Name, neighbor.Port))
+
+		// Check that we should be connecting.
+		s.connecting_mutex.RLock()
+		_, addr_present := s.currently_connecting[neighbor.FullNodeAddr]
+		s.connecting_mutex.RUnlock()
+		if addr_present {
+			log.Printf("Already connecting to %s.\n", neighbor.FullNodeAddr)
+			continue
+		}
+		s.connecting_mutex.Lock()
+		s.currently_connecting[neighbor.FullNodeAddr] = true
+		s.connecting_mutex.Unlock()
+
+		err := s.Connect(fmt.Sprintf("[%s%%%s]:%v", neighbor.LLAddrStr, dev.Name,
+			neighbor.Port))
+
+		// Now that we've tried connecting, remove it as a pending connection.
+		s.connecting_mutex.Lock()
+		delete(s.currently_connecting, neighbor.FullNodeAddr)
+		s.connecting_mutex.Unlock()
+
 		if err != nil {
 			log.Printf("Error connecting: %v", err)
 			continue
