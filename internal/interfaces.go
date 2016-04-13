@@ -41,20 +41,21 @@ type Connection interface {
 // A simple interface for something that uses an algorithm decide where to send
 // packets.
 type routingAlgorithm interface {
-  // Finds the next place to send a packet.
-  // Args:
-  //  id: The destination node.
-  //  src: The source node. (So we don't send it backwards.)
-  // Returns:
-  //  The next node that we should send the packet to, error
-  FindNextHop(id types.NodeAddress,
-              src types.NodeAddress) (types.NodeAddress, error)
-  // Sends a packet to the specified destination. Some routing algorithms care
-  // about when/how a packet gets sent, so it's better to just let them do it.
-  // Args:
-  //  dest: The connection that we will send the packet on.
-  //  addr: The address of the node we are sending it to.
-  //  packet: The packet to send.
-  SendPacket(dest DataConnection, addr types.NodeAddress,
-             packet types.Packet) error
+	// Finds the next place to send a packet.
+	// Args:
+	//  id: The destination node.
+	//  src: The source node. (So we don't send it backwards.)
+	// Returns:
+	//  The next node that we should send the packet to, error
+	FindNextHop(id types.NodeAddress,
+		src types.NodeAddress) (types.NodeAddress, error)
+	// Sets the routingHandler that will be used with this routingAlgorithm. This
+	// should be called by the routingHandler upon initialization. A routing
+	// algorithm will generally require this method to be called before it can be
+	// used.
+	// Args:
+	//  routing: The routingHandler to use.
+	BindToRouting(routing *routingHandler)
+	// Does any required cleanup.
+	Cleanup()
 }

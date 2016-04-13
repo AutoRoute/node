@@ -55,8 +55,8 @@ func TestLedger(t *testing.T) {
 	// two packets from a1 to a2
 	t1 := testPacket(a2)
 	t2 := testPacket(a3)
-	routed <- newRoutingDecision(t1, a1, a2)
-	routed <- newRoutingDecision(t2, a1, a2)
+	routed <- newRoutingDecision(t1, a1, a2, 1)
+	routed <- newRoutingDecision(t2, a1, a2, 1)
 
 	owed := int64(0)
 	WaitForIncomingDebt(t, Ledger, a1, owed)
