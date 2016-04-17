@@ -1,0 +1,18 @@
+language: go
+
+go:
+  - 1.5.2
+
+env:
+  - GO15VENDOREXPERIMENT=1
+
+install:
+  - mkdir ${GOPATH}/src/github.com/freewil
+  - mkdir ${GOPATH}/src/github.com/freewil/bitcoin-testnet-box
+  - git clone https://github.com/freewil/bitcoin-testnet-box.git ${GOPATH}/src/github.com/freewil/bitcoin-testnet-box
+  - wget https://bitcoin.org/bin/bitcoin-core-0.11.2/bitcoin-0.11.2-linux64.tar.gz -O /tmp/bitcoin.tar.gz
+  - tar -xvf /tmp/bitcoin.tar.gz
+  - export PATH=$PATH:$(pwd)/bitcoin-0.11.2/bin
+
+script:
+  - go test -v github.com/AutoRoute/node/... -race

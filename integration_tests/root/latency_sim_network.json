@@ -1,0 +1,50 @@
+{
+  "connections": [
+    {
+      "source": "A",
+      "destination": "C"
+    },
+    {
+      "source": "C",
+      "destination": "D"
+    },
+    {
+      "source": "D",
+      "destination": "B"
+    },
+    {
+      "source": "A",
+      "destination": "E"
+    },
+    {
+      "source": "E",
+      "destination": "B"
+    },
+    {
+      "source": "A",
+      "destination": "F"
+    },
+    {
+      "source": "F",
+      "destination": "B"
+    }
+  ],
+  "devices": [
+    {
+      "name": "C",
+      "bandwidth": "25000"
+    },
+    {
+      "name": "D",
+      "bandwidth": "15000"
+    },
+    {
+      "name": "E",
+      "bandwidth": "5000"
+    },
+    {
+      "name": "F",
+      "bandwidth": "25000"
+    }
+  ]
+}
