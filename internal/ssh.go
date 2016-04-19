@@ -342,11 +342,14 @@ func (s *SSHConnection) Close() error {
 }
 
 type SSHListener struct {
-	err error
-	c   chan *SSHConnection
+	lock *sync.Mutex
+	err  error
+	c    chan *SSHConnection
 }
 
 func (l *SSHListener) Error() error {
+	l.lock.Lock()
+	defer l.lock.Unlock()
 	return l.err
 }
 
@@ -355,12 +358,14 @@ func (l *SSHListener) Connections() <-chan *SSHConnection {
 }
 
 func ListenSSH(c net.Listener, key PrivateKey, metadata func() SSHMetaData) *SSHListener {
-	l := &SSHListener{nil, make(chan *SSHConnection)}
+	l := &SSHListener{&sync.Mutex{}, nil, make(chan *SSHConnection)}
 	l.listen(c, key, metadata)
 	return l
 }
 
 func (l *SSHListener) error(err error) {
+	l.lock.Lock()
+	defer l.lock.Unlock()
 	l.err = err
 	close(l.c)
 	return

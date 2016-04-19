@@ -32,18 +32,9 @@ func WaitForGetInfo() error {
 }
 
 func TestBitcoin(t *testing.T) {
-  travis, err := CheckTravis()
-	if err != nil {
-		t.Logf("Warning: Checking for Travis failed: %s\n", err)
-	}
-	if travis {
-		// TODO(danielp): Re-enable this once we figure out why it's hanging.
-		t.Skip("TestBitcoin is temporarily disabled on Travis.")
-	}
-
 	cmd := exec.Command("make", "start")
 	cmd.Dir = test_net_path
-	err = cmd.Run()
+	err := cmd.Run()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,7 +64,7 @@ func TestBitcoin(t *testing.T) {
 		BTCHost: "[::1]:19001",
 		BTCUser: "admin1",
 		BTCPass: "123",
-		Race: true,
+		Race:    true,
 	})
 	listen.Start()
 	defer listen.KillAndPrint(t)
@@ -88,6 +79,7 @@ func TestBitcoin(t *testing.T) {
 		BTCHost: "[::1]:19011",
 		BTCUser: "admin2",
 		BTCPass: "123",
+		Race:    true,
 	})
 	connect.Start()
 	defer connect.KillAndPrint(t)
