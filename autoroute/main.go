@@ -127,11 +127,11 @@ func main() {
 		log.Fatal(http.ListenAndServe(*status, nil))
 	}()
 
-  if *tcptunserve {
-    log.Printf("Starting tcp tunnel server")
-    tunserver := NewTunServer(n.Node())
-    tunserver.Listen()
-  }
+	if *tcptunserve {
+		log.Printf("Starting tcp tunnel server")
+		tunserver := NewTunServer(n.Node())
+		tunserver.Listen()
+	}
 
 	if len(*tcptun) > 0 {
 		log.Printf("Establishing tcp tunnel to %v", *tcptun)

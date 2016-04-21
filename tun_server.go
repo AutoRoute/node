@@ -1,54 +1,48 @@
 package node
 
 import (
-  "fmt"
+	"fmt"
+    "log"
 	"net"
-
-	"github.com/AutoRoute/tuntap"
+    
+    "github.com/AutoRoute/tuntap"
 
 	"github.com/AutoRoute/node/types"
 )
 
-var request_header string = "hello"
-var begin_ip_block net.IP = net.ParseIP("6666::0")
-var end_ip_block net.IP = net.PasrseIP("6666::6666")
+var requestHeader = "hello"
+var beginIPBlock = net.ParseIP("6666::0")
+var endIPBlock = net.ParseIP("6666::6666")
 
 type TunServer struct {
-  data        DataConnection
-	dev         tuntap.Interface
-	nodes       map[net.IP]types.NodeAddress
-	connections map[types.NodeAddress]*TCP
-  curr_ip     int
+	data        DataConnection
+    tun         TCPTun
+	nodes       map[string]types.NodeAddress
+	currIP      int
 }
 
 func NewTunServer(d DataConnection) *TunServer {
-	i, err := tuntap.Open("tun%d", tuntap.DevTun)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return &TunServer{d, i, make(map[net.TIP]types.NodeAddress), make(map[net.IP]*TCP, 0)}
+    i, err := tuntap.Open("tun%d", tuntap.DevTun)
+    if err != nil {
+        log.Fatal(err)
+    }
+	return &TunServer{d, i, make(map[string]types.NodeAddress), 0}
 }
 
-func (ts *TunServer) Connect(tcptun string, amt int64) {
-  dest := ""
-  _, err = fmt.Sscanf(*tcptun, "%x", &dest)
-  if err != nil {
-    log.Fatal(err)
-  }
-  t := NewTCPTunnel(ts.dev, ts.data, types.NodeAddress(dest), amt)
-  ip := net.ParseIP(net.Sprintf("6666::%d", ts.curr_ip++))
-  nodes[ip] = types.NodeAddress(dest)
-  connections[types.NodeAddress] = t
+func (ts *TunServer) connect(connectingNode string) {
+    ip := fmt.Sprintf("6666::%d", ts.currIP)
+	ts.currIP++
+	ts.nodes[ip] = types.NodeAddress(connectingNode)
 }
 
 func (ts *TunServer) Listen() {
-  go func() {
-    for packet := range data.Packets() {
-      if packet.Data == request_header {
-        Connect(packet.Data, 10000)
-      } else {
-        /* do something with packet */
-      }
-    }
-  }()
+	go func() {
+		for packet := range ts.data.Packets() {
+			if packet.Data == requestHeader {
+				ts.connect(packet.Data)
+			} else {
+				/* do something with packet */
+			}
+		}
+	}()
 }
