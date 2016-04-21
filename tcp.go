@@ -10,12 +10,12 @@ import (
 )
 
 type TCP struct {
-	data    DataConnection
-	tun     TCPTun
-	dest    types.NodeAddress
-	amt     int64
-	quit    chan bool
-	err     chan error
+	data DataConnection
+	tun  TCPTun
+	dest types.NodeAddress
+	amt  int64
+	quit chan bool
+	err  chan error
 }
 
 type TCPTun interface {

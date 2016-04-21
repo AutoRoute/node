@@ -2,10 +2,10 @@ package node
 
 import (
 	"fmt"
-    "log"
+	"log"
 	"net"
-    
-    "github.com/AutoRoute/tuntap"
+
+	"github.com/AutoRoute/tuntap"
 
 	"github.com/AutoRoute/node/types"
 )
@@ -15,22 +15,22 @@ var beginIPBlock = net.ParseIP("6666::0")
 var endIPBlock = net.ParseIP("6666::6666")
 
 type TunServer struct {
-	data        DataConnection
-    tun         TCPTun
-	nodes       map[string]types.NodeAddress
-	currIP      int
+	data   DataConnection
+	tun    TCPTun
+	nodes  map[string]types.NodeAddress
+	currIP int
 }
 
 func NewTunServer(d DataConnection) *TunServer {
-    i, err := tuntap.Open("tun%d", tuntap.DevTun)
-    if err != nil {
-        log.Fatal(err)
-    }
+	i, err := tuntap.Open("tun%d", tuntap.DevTun)
+	if err != nil {
+		log.Fatal(err)
+	}
 	return &TunServer{d, i, make(map[string]types.NodeAddress), 0}
 }
 
 func (ts *TunServer) connect(connectingNode string) {
-    ip := fmt.Sprintf("6666::%d", ts.currIP)
+	ip := fmt.Sprintf("6666::%d", ts.currIP)
 	ts.currIP++
 	ts.nodes[ip] = types.NodeAddress(connectingNode)
 }
