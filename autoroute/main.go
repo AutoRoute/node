@@ -39,7 +39,7 @@ var fake_money = flag.Bool("fake_money", false, "Enables a money system which is
 var status = flag.String("status", "[::1]:12345", "The port to expose status information on")
 var unix = flag.String("unix", "", "The path to accept / receive packets as unix packets from")
 var tcptun = flag.String("tcptun", "", "Address to try and tcp tunnel to")
-var tcptunserve = flag.Bool("tcptunserve", false)
+var tcptunserve = flag.Bool("tcptunserve", false, "Enables this node to be an exit node")
 
 func main() {
 	log.Print(os.Args)
@@ -129,7 +129,7 @@ func main() {
 
 	if *tcptunserve {
 		log.Printf("Starting tcp tunnel server")
-		tunserver := NewTunServer(n.Node())
+		tunserver := node.NewTunServer(n.Node(), 10000)
 		tunserver.Listen()
 	}
 

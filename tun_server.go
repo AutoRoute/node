@@ -1,6 +1,7 @@
 package node
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net"
@@ -17,16 +18,22 @@ var endIPBlock = net.ParseIP("6666::6666")
 type TunServer struct {
 	data   DataConnection
 	tun    TCPTun
+	amt    int64
 	nodes  map[string]types.NodeAddress
 	currIP int
+	err    chan error
 }
 
-func NewTunServer(d DataConnection) *TunServer {
+func NewTunServer(d DataConnection, amt int64) *TunServer {
 	i, err := tuntap.Open("tun%d", tuntap.DevTun)
 	if err != nil {
 		log.Fatal(err)
 	}
-	return &TunServer{d, i, make(map[string]types.NodeAddress), 0}
+	return &TunServer{d, i, amt, make(map[string]types.NodeAddress), 0, make(chan error, 1)}
+}
+
+func (ts *TunServer) Error() chan error {
+	return ts.err
 }
 
 func (ts *TunServer) connect(connectingNode string) {
@@ -35,14 +42,61 @@ func (ts *TunServer) connect(connectingNode string) {
 	ts.nodes[ip] = types.NodeAddress(connectingNode)
 }
 
-func (ts *TunServer) Listen() {
-	go func() {
-		for packet := range ts.data.Packets() {
-			if packet.Data == requestHeader {
-				ts.connect(packet.Data)
-			} else {
-				/* do something with packet */
+func (ts *TunServer) Listen() *TunServer {
+	go ts.listenNode()
+	go ts.listenTun()
+	return ts
+}
+
+func (ts *TunServer) listenNode() {
+	for p := range ts.data.Packets() {
+		if p.Data == requestHeader {
+			ts.connect(p.Data)
+		} else {
+			/* do something with packet */
+			ep := &tuntap.Packet{}
+			err := json.Unmarshal([]byte(p.Data), ep)
+			if err != nil {
+				ts.err <- err
+				return
+			}
+			err = ts.tun.WritePacket(ep)
+			if err != nil {
+				ts.err <- err
+				return
+			}
+			err = ts.tun.WritePacket(ep)
+			if err != nil {
+				ts.err <- err
+				return
 			}
 		}
-	}()
+	}
+}
+
+func (ts *TunServer) listenTun() {
+	for {
+		p, err := ts.tun.ReadPacket()
+		if err != nil {
+			ts.err <- err
+			return
+		}
+		if p.Truncated {
+			ts.err <- truncated_error
+			return
+		}
+		b, err := json.Marshal(p)
+		if err != nil {
+			ts.err <- err
+			return
+		}
+		ip := string(p.Packet[0:6])
+		dest_node := ts.nodes[ip]
+		ep := types.Packet{dest_node, ts.amt, string(b)}
+		err = ts.data.SendPacket(ep)
+		if err != nil {
+			ts.err <- err
+			return
+		}
+	}
 }
