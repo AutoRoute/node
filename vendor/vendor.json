@@ -9,8 +9,8 @@
 		},
 		{
 			"path": "github.com/AutoRoute/l2",
-			"revision": "cf486746480705003674c39a6bc72aabdbc8ffff",
-			"revisionTime": "2016-02-26T17:59:23-05:00"
+			"revision": "5eb7ed649a3b05bfdb3c39dc4ff9e024715ef9df",
+			"revisionTime": "2016-02-19T20:43:35-05:00"
 		},
 		{
 			"path": "github.com/AutoRoute/tuntap",

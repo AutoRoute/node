@@ -23,8 +23,7 @@ type deviceWithLatency struct {
 // Basically initializes latency and then delegates to the tapDevice version of
 // NewTapDevice. For bandwidth parameters, 0 means no limitation.
 // Args:
-//	mac: MAC address of the device. If it is an empty string, no specific
-//	address will be set.
+//	mac: MAC address of the device.
 //  dev: A name for the device.
 //	send_bandwidth: Maximum number of outgoing bytes per second.
 //  receive_bandwidth: Maximum number of incoming bytes per second.
