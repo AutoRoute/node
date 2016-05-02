@@ -16,12 +16,13 @@ var beginIPBlock = net.ParseIP("6666::0")
 var endIPBlock = net.ParseIP("6666::6666")
 
 type TunServer struct {
-	data   DataConnection
-	tun    TCPTun
-	amt    int64
-	nodes  map[string]types.NodeAddress
-	currIP int
-	err    chan error
+	data        DataConnection
+	tun         TCPTun
+	amt         int64
+	nodes       map[string]types.NodeAddress
+	connections map[types.NodeAddress]bool
+	currIP      int
+	err         chan error
 }
 
 func NewTunServer(d DataConnection, amt int64) *TunServer {
@@ -29,7 +30,7 @@ func NewTunServer(d DataConnection, amt int64) *TunServer {
 	if err != nil {
 		log.Fatal(err)
 	}
-	return &TunServer{d, i, amt, make(map[string]types.NodeAddress), 0, make(chan error, 1)}
+	return &TunServer{d, i, amt, make(map[string]types.NodeAddress), make(map[types.NodeAddress]bool), 0, make(chan error, 1)}
 }
 
 func (ts *TunServer) Error() chan error {
@@ -40,6 +41,7 @@ func (ts *TunServer) connect(connectingNode string) {
 	ip := fmt.Sprintf("6666::%d", ts.currIP)
 	ts.currIP++
 	ts.nodes[ip] = types.NodeAddress(connectingNode)
+	ts.connections[types.NodeAddress(connectingNode)] = true
 }
 
 func (ts *TunServer) Listen() *TunServer {
@@ -50,7 +52,7 @@ func (ts *TunServer) Listen() *TunServer {
 
 func (ts *TunServer) listenNode() {
 	for p := range ts.data.Packets() {
-		if p.Data == requestHeader {
+		if _, ok := ts.connections[p.Dest]; ok {
 			ts.connect(p.Data)
 		} else {
 			/* do something with packet */
