@@ -2,11 +2,22 @@ package internal
 
 import (
 	"errors"
+	"expvar"
 	"log"
 	"sync"
 
 	"github.com/AutoRoute/node/types"
 )
+
+// Export the last number of possible nexthops, and the destination we were
+// trying to reach.
+var next_hops *expvar.Int
+var destination *expvar.String
+
+func init() {
+	next_hops = expvar.NewInt("next_hops")
+	destination = expvar.NewString("destination")
+}
 
 // Takes care of maintaining and relaying maps and insures that we know which
 // interfaces can reach which addresses.
@@ -37,8 +48,16 @@ func newReachability(me types.NodeAddress) *reachabilityHandler {
 func (m *reachabilityHandler) addMap(address types.NodeAddress, new_map *BloomReachabilityMap) {
 	m.l.Lock()
 	defer m.l.Unlock()
-	m.maps[address].Merge(new_map)
+
+	if !m.maps[address].Merge(new_map) {
+		// If this returns false, then we know we have already seen this map and
+		// passed it along.
+		log.Print("Dropping duplicate map.")
+		return
+	}
+
 	m.merged_map.Merge(new_map)
+
 	for addr, conn := range m.conns {
 		if addr != address {
 			conn.SendMap(new_map.Copy())
@@ -61,7 +80,7 @@ func (m *reachabilityHandler) AddConnection(id types.NodeAddress, c MapConnectio
 		defer m.l.Unlock()
 		err := c.SendMap(initial_map)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalf("Sending map failed: %s\n", err)
 		}
 	}()
 
@@ -92,14 +111,17 @@ func (m *reachabilityHandler) HandleConnection(id types.NodeAddress, c MapConnec
 //  All the nodes that we could possibly send the packet to.
 func (m *reachabilityHandler) FindPossibleDests(id types.NodeAddress,
 	src types.NodeAddress) ([]types.NodeAddress, error) {
+	human_address, err := id.MarshalText()
+	if err != nil {
+		log.Printf("Warning: Converting to human-readable address failed: %s\n", err)
+	}
+	destination.Set(string(human_address))
+
 	m.l.Lock()
 	defer m.l.Unlock()
 	_, ok := m.conns[id]
-	if ok {
-		return []types.NodeAddress{id}, nil
-	}
-
-	if id == m.me {
+	if ok || id == m.me {
+		next_hops.Set(1)
 		return []types.NodeAddress{id}, nil
 	}
 
@@ -116,8 +138,10 @@ func (m *reachabilityHandler) FindPossibleDests(id types.NodeAddress,
 	}
 
 	if len(dests) == 0 {
+		next_hops.Set(0)
 		return nil, errors.New("Unable to find host")
 	}
+	next_hops.Set(int64(len(dests)))
 	return dests, nil
 }
 
