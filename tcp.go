@@ -1,10 +1,10 @@
 package node
 
-import (    
+import (
 	"encoding/json"
 	"errors"
-    "log"
-    "os/exec"
+	"log"
+	"os/exec"
 
 	"github.com/AutoRoute/tuntap"
 
@@ -28,19 +28,19 @@ type TCPTun interface {
 var truncated_error error = errors.New("truncated packet")
 
 func SetDevAddr(dev string, addr string) error {
-    _, err := exec.Command("ip", "addr", "add", addr, "dev", dev).CombinedOutput()
-    return err
+	_, err := exec.Command("ip", "addr", "add", addr, "dev", dev).CombinedOutput()
+	return err
 }
 
 func NewTCPTunnel(tun TCPTun, d DataConnection, dest types.NodeAddress, amt int64, name string) *TCP {
 	t := &TCP{d, tun, dest, amt, make(chan bool), make(chan error, 1)}
-    ep := types.Packet{dest, amt, ""}
-    t.data.SendPacket(ep)
-    p := <-t.data.Packets()
-    err := SetDevAddr(p.Data, name)
-    if err != nil {
-        log.Fatal(err)
-    }
+	ep := types.Packet{dest, amt, ""}
+	t.data.SendPacket(ep)
+	p := <-t.data.Packets()
+	err := SetDevAddr(p.Data, name)
+	if err != nil {
+		log.Fatal(err)
+	}
 	go t.readtun()
 	go t.writetun()
 	return t
