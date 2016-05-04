@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"log"
 	"math/rand"
 
 	"github.com/AutoRoute/node/types"
@@ -34,8 +33,6 @@ func chooseNextHop(weights []float64,
 	total := 0.0
 	for i, weight := range weights {
 		total += weight
-		log.Printf("Total: %f\n", total)
-		log.Printf("Choice: %f\n", choice)
 		if total >= choice {
 			next = possible_next[i]
 			break

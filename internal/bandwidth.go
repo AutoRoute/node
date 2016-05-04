@@ -128,7 +128,7 @@ func (b *bandwidthEstimator) GetWeights(nodes []types.NodeAddress) []float64 {
 	// First, we need to calculate the total bandwidth so we know how to scale it.
 	total := float64(0)
 	b.bandwidth_lock.RLock()
-  defer b.bandwidth_lock.RUnlock()
+	defer b.bandwidth_lock.RUnlock()
 
 	for _, node := range nodes {
 		total += b.bandwidth[node]
@@ -152,9 +152,6 @@ func (b *bandwidthEstimator) GetWeights(nodes []types.NodeAddress) []float64 {
 		weight := standard_weight
 		num_unknown += 1
 
-		log.Printf("bandwidth: %f, weight: %f\n",
-			b.bandwidth[node], weight)
-
 		weights = append(weights, weight)
 	}
 
@@ -169,8 +166,6 @@ func (b *bandwidthEstimator) GetWeights(nodes []types.NodeAddress) []float64 {
 		// If we have unknowns, scale all the weights appropriately so that everything
 		// still adds up to one.
 		weight *= (1 - float64(num_unknown)*standard_weight)
-		log.Printf("bandwidth: %f, weight: %f\n",
-			b.bandwidth[node], weight)
 		weights = append(weights, weight)
 	}
 
