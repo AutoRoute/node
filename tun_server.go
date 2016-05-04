@@ -40,8 +40,15 @@ func (ts *TunServer) Error() chan error {
 func (ts *TunServer) connect(connectingNode string) {
 	ip := fmt.Sprintf("6666::%d", ts.currIP)
 	ts.currIP++
-	ts.nodes[ip] = types.NodeAddress(connectingNode)
-	ts.connections[types.NodeAddress(connectingNode)] = true
+    nodeAddr := types.NodeAddress(connectingNode)
+	ts.nodes[ip] = nodeAddr
+	ts.connections[nodeAddr] = true
+    ep := types.Packet{nodeAddr, ts.amt, ip}
+    err := ts.data.SendPacket(ep)
+    if err != nil {
+        ts.err <- err
+        return
+    }
 }
 
 func (ts *TunServer) Listen() *TunServer {
