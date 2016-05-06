@@ -39,14 +39,14 @@ func TestBasic(t *testing.T) {
 	nodes[1] = node2
 	weight_total := float64(0)
 	for _, weight := range estimator.GetWeights(nodes) {
-		if math.Abs(weight-0.5) > 0.004 {
+		if math.Abs(weight-0.5) > 0.1 {
 			t.Fatalf("Expected weight of 0.5, got weight of %f\n", weight)
 		}
 		weight_total += weight
 	}
 
 	// The weights should also approximately add to 1.
-	if math.Abs(weight_total-1.0) > 0.004 {
+	if math.Abs(weight_total-1.0) > 0.1 {
 		t.Fatalf("Expected total weight of 1.0, got %f\n", weight_total)
 	}
 }
@@ -83,9 +83,9 @@ func TestDifferingBandwidths(t *testing.T) {
 	weight_total := float64(0)
 	for _, weight := range estimator.GetWeights(nodes) {
 		ok := false
-		if math.Abs(weight-0.666) <= 0.004 {
+		if math.Abs(weight-0.666) <= 0.1 {
 			ok = true
-		} else if math.Abs(weight-0.333) <= 0.004 {
+		} else if math.Abs(weight-0.333) <= 0.1 {
 			ok = true
 		}
 		if !ok {
@@ -95,7 +95,7 @@ func TestDifferingBandwidths(t *testing.T) {
 	}
 
 	// The weights should also approximately add to 1.
-	if math.Abs(weight_total-1.0) > 0.004 {
+	if math.Abs(weight_total-1.0) > 0.1 {
 		t.Fatalf("Expected total weight of 1.0, got %f\n", weight_total)
 	}
 }
@@ -126,7 +126,7 @@ func TestPartialData(t *testing.T) {
 	// anything.
 	weight_total := float64(0)
 	for _, weight := range estimator.GetWeights(nodes) {
-		if math.Abs(weight-0.333) > 0.004 {
+		if math.Abs(weight-0.333) > 0.1 {
 			t.Fatalf("Expected weight of 0.333, got weight of %f\n", weight)
 		}
 		weight_total += weight
@@ -152,11 +152,11 @@ func TestPartialData(t *testing.T) {
 	weight_total = 0
 	for _, weight := range estimator.GetWeights(nodes) {
 		ok := false
-		if math.Abs(weight-0.222) <= 0.004 {
+		if math.Abs(weight-0.222) <= 0.1 {
 			ok = true
-		} else if math.Abs(weight-0.444) <= 0.004 {
+		} else if math.Abs(weight-0.444) <= 0.1 {
 			ok = true
-		} else if math.Abs(weight-0.333) <= 0.004 {
+		} else if math.Abs(weight-0.333) <= 0.1 {
 			ok = true
 		}
 		if !ok {
@@ -167,7 +167,7 @@ func TestPartialData(t *testing.T) {
 	}
 
 	// The weights should also approximately add to 1.
-	if math.Abs(weight_total-1.0) > 0.004 {
+	if math.Abs(weight_total-1.0) > 0.1 {
 		t.Fatalf("Expected total weight of 1.0, got %f\n", weight_total)
 	}
 }

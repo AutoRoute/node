@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2016 The btcsuite developers
+// Copyright (c) 2014-2015 The btcsuite developers
 // Use of this source code is governed by an ISC
 // license that can be found in the LICENSE file.
 
@@ -1182,7 +1182,7 @@ func dial(config *ConnConfig) (*websocket.Conn, error) {
 
 // New creates a new RPC client based on the provided connection configuration
 // details.  The notification handlers parameter may be nil if you are not
-// interested in receiving notifications and will be ignored if the
+// interested in receiving notifications and will be ignored when if the
 // configuration is set to run in HTTP POST mode.
 func New(config *ConnConfig, ntfnHandlers *NotificationHandlers) (*Client, error) {
 	// Either open a websocket connection or create an HTTP client depending
@@ -1211,6 +1211,8 @@ func New(config *ConnConfig, ntfnHandlers *NotificationHandlers) (*Client, error
 			start = true
 		}
 	}
+	log.Infof("Established connection to RPC server %s",
+		config.Host)
 
 	client := &Client{
 		config:          config,
@@ -1228,8 +1230,6 @@ func New(config *ConnConfig, ntfnHandlers *NotificationHandlers) (*Client, error
 	}
 
 	if start {
-		log.Infof("Established connection to RPC server %s",
-			config.Host)
 		close(connEstablished)
 		client.start()
 		if !client.config.HTTPPostMode && !client.config.DisableAutoReconnect {
@@ -1282,8 +1282,6 @@ func (c *Client) Connect(tries int) error {
 		// Connection was established.  Set the websocket connection
 		// member of the client and start the goroutines necessary
 		// to run the client.
-		log.Infof("Established connection to RPC server %s",
-			c.config.Host)
 		c.wsConn = wsConn
 		close(c.connEstablished)
 		c.start()
