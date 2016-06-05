@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/exec"
 	"os/signal"
 	"strings"
 
@@ -39,8 +40,10 @@ var fake_money = flag.Bool("fake_money", false, "Enables a money system which is
 var status = flag.String("status", "[::1]:12345", "The port to expose status information on")
 var unix = flag.String("unix", "", "The path to accept / receive packets as unix packets from")
 var tcptun = flag.String("tcptun", "", "Address to try and tcp tunnel to")
+var tcpaddress = flag.String("tcp_address", "", "IP address to assign to the tcp tunnel")
 
 func main() {
+	log.SetFlags(log.LstdFlags | log.Lmicroseconds | log.Lshortfile)
 	log.Print(os.Args)
 	flag.Parse()
 
@@ -139,6 +142,32 @@ func main() {
 		}
 		t := node.NewTCPTunnel(i, n.Node(), types.NodeAddress(dest), 10000)
 		defer t.Close()
+
+		if len(*tcpaddress) > 0 {
+			ip, _, err := net.ParseCIDR(*tcpaddress)
+			if err != nil {
+				log.Fatal(err)
+			}
+			err = exec.Command("ip", "link", "set", "dev", strings.TrimRight(i.Name(), "\x00"), "up").Run()
+			if err != nil {
+				log.Fatal(err)
+				quit := make(chan int)
+				<-quit
+			}
+			err := exec.Command("ip", "addr", "add", *tcpaddress, "dev", strings.TrimRight(i.Name(), "\x00")).Run()
+			if err != nil {
+				log.Fatal(err)
+			}
+			err = exec.Command("ip", "route", "add", "0/1", "via", ip.String(), "dev", strings.TrimRight(i.Name(), "\x00")).Run()
+			if err != nil {
+				log.Fatal(err)
+			}
+			err = exec.Command("ip", "route", "add", "128/1", "via", ip.String(), "dev", strings.TrimRight(i.Name(), "\x00")).Run()
+			if err != nil {
+				log.Fatal(err)
+			}
+
+		}
 		<-quit
 		return
 	}
