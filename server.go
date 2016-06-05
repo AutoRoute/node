@@ -35,7 +35,7 @@ func NewServer(key Key, m types.Money) *Server {
 }
 
 func (s *Server) Connect(addr string) error {
-	c, err := net.Dial("tcp6", addr)
+	c, err := net.Dial("tcp", addr)
 
 	if err != nil {
 		return err
@@ -51,7 +51,7 @@ func (s *Server) Connect(addr string) error {
 }
 
 func (s *Server) Listen(addr string) error {
-	ln, err := net.Listen("tcp6", addr)
+	ln, err := net.Listen("tcp", addr)
 	if err != nil {
 		return err
 	}

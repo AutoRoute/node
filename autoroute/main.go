@@ -154,7 +154,7 @@ func main() {
 				quit := make(chan int)
 				<-quit
 			}
-			err := exec.Command("ip", "addr", "add", *tcpaddress, "dev", strings.TrimRight(i.Name(), "\x00")).Run()
+			err = exec.Command("ip", "addr", "add", *tcpaddress, "dev", strings.TrimRight(i.Name(), "\x00")).Run()
 			if err != nil {
 				log.Fatal(err)
 			}
