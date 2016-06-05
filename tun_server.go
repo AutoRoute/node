@@ -59,7 +59,8 @@ func (ts *TunServer) Listen() *TunServer {
 
 func (ts *TunServer) listenNode() {
 	for p := range ts.data.Packets() {
-		if _, ok := ts.connections[p.Dest]; ok {
+        src := types.NodeAddress([]byte(p.Data)[12:16])
+		if _, ok := ts.connections[src]; !ok {
 			ts.connect(p.Data)
 		} else {
 			/* do something with packet */
