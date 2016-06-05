@@ -49,7 +49,7 @@ func main() {
 
 	// Capture all signals to the quit channel
 	quit := make(chan os.Signal)
-	signal.Notify(quit)
+	signal.Notify(quit, os.Interrupt, os.Kill)
 
 	// Figure out and load what key we are using for our identity
 	var key node.Key
@@ -151,8 +151,6 @@ func main() {
 			err = exec.Command("ip", "link", "set", "dev", strings.TrimRight(i.Name(), "\x00"), "up").Run()
 			if err != nil {
 				log.Fatal(err)
-				quit := make(chan int)
-				<-quit
 			}
 			err = exec.Command("ip", "addr", "add", *tcpaddress, "dev", strings.TrimRight(i.Name(), "\x00")).Run()
 			if err != nil {
@@ -168,7 +166,8 @@ func main() {
 			}
 
 		}
-		<-quit
+		m := <-quit
+		log.Print(m)
 		return
 	}
 

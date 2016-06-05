@@ -61,7 +61,7 @@ func (m *reachabilityHandler) AddConnection(id types.NodeAddress, c MapConnectio
 		defer m.l.Unlock()
 		err := c.SendMap(initial_map)
 		if err != nil {
-			log.Fatal(err)
+			log.Print(err)
 		}
 	}()
 
