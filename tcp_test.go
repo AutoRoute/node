@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"os/user"
 	"strings"
 	"testing"
 
@@ -11,6 +12,17 @@ import (
 
 	"github.com/AutoRoute/node/types"
 )
+
+func isRoot() bool {
+	user, err := user.Current()
+	if err != nil {
+		return false
+	}
+	if user.Username != "root" {
+		return false
+	}
+	return true
+}
 
 type testTun struct {
 	in          chan *tuntap.Packet
@@ -47,6 +59,10 @@ func (d testTCPData) Packets() <-chan types.Packet {
 }
 
 func TestTCPTunToData(t *testing.T) {
+	if !isRoot() {
+		t.Skip()
+	}
+
 	amt := int64(7)
 	dest := types.NodeAddress("destination")
 	tun := testTun{make(chan *tuntap.Packet), make(chan *tuntap.Packet), nil, nil}
@@ -85,6 +101,10 @@ func TestTCPTunToData(t *testing.T) {
 }
 
 func TestTCPTunReadError(t *testing.T) {
+	if !isRoot() {
+		t.Skip()
+	}
+
 	amt := int64(7)
 	dest := types.NodeAddress("destination")
 	read_error := errors.New("Read Error")
@@ -111,6 +131,10 @@ func TestTCPTunReadError(t *testing.T) {
 }
 
 func TestTCPTunReadTruncated(t *testing.T) {
+	if !isRoot() {
+		t.Skip()
+	}
+
 	amt := int64(7)
 	dest := types.NodeAddress("destination")
 	tun := testTun{make(chan *tuntap.Packet), make(chan *tuntap.Packet), nil, nil}
@@ -136,6 +160,10 @@ func TestTCPTunReadTruncated(t *testing.T) {
 }
 
 func TestTCPTunReadWriteFails(t *testing.T) {
+	if !isRoot() {
+		t.Skip()
+	}
+
 	amt := int64(7)
 	dest := types.NodeAddress("destination")
 	write_error := errors.New("Write Error")
@@ -162,6 +190,10 @@ func TestTCPTunReadWriteFails(t *testing.T) {
 }
 
 func TestTCPTunWrite(t *testing.T) {
+	if !isRoot() {
+		t.Skip()
+	}
+
 	amt := int64(7)
 	dest := types.NodeAddress("destination")
 	tun := testTun{make(chan *tuntap.Packet), make(chan *tuntap.Packet), nil, nil}
@@ -194,6 +226,10 @@ func TestTCPTunWrite(t *testing.T) {
 }
 
 func TestTCPTunWriteSendError(t *testing.T) {
+	if !isRoot() {
+		t.Skip()
+	}
+
 	amt := int64(7)
 	dest := types.NodeAddress("destination")
 	write_error := errors.New("Write Error")
@@ -224,6 +260,10 @@ func TestTCPTunWriteSendError(t *testing.T) {
 }
 
 func TestTCPTunWriteUnmarshalError(t *testing.T) {
+	if !isRoot() {
+		t.Skip()
+	}
+
 	amt := int64(7)
 	dest := types.NodeAddress("destination")
 	tun := testTun{make(chan *tuntap.Packet), make(chan *tuntap.Packet), nil, nil}
