@@ -34,10 +34,17 @@ func SetDevAddr(dev string, addr string) error {
 
 func NewTCPTunnel(tun TCPTun, d DataConnection, dest types.NodeAddress, amt int64, name string) *TCP {
 	t := &TCP{d, tun, dest, amt, make(chan bool), make(chan error, 1)}
-	ep := types.Packet{dest, amt, ""}
-	t.data.SendPacket(ep)
+	ep := types.Packet{dest, amt, "hello"}
+	go func() {
+		err := t.data.SendPacket(ep)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
+
 	p := <-t.data.Packets()
-	err := SetDevAddr(p.Data, name)
+
+	err := SetDevAddr(name, p.Data)
 	if err != nil {
 		log.Fatal(err)
 	}

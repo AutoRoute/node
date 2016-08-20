@@ -3,7 +3,6 @@ package node
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net"
 
 	"github.com/AutoRoute/tuntap"
@@ -22,25 +21,26 @@ type TunServer struct {
 	nodes       map[string]types.NodeAddress
 	connections map[types.NodeAddress]bool
 	currIP      int
+	quit        chan bool
 	err         chan error
 }
 
-func NewTunServer(d DataConnection, amt int64) *TunServer {
-	i, err := tuntap.Open("tun%d", tuntap.DevTun)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return &TunServer{d, i, amt, make(map[string]types.NodeAddress), make(map[types.NodeAddress]bool), 0, make(chan error, 1)}
+func NewTunServer(tun TCPTun, d DataConnection, amt int64) *TunServer {
+	return &TunServer{d, tun, amt, make(map[string]types.NodeAddress), make(map[types.NodeAddress]bool), 0, make(chan bool), make(chan error, 1)}
+}
+
+func (ts *TunServer) Close() {
+	close(ts.quit)
 }
 
 func (ts *TunServer) Error() chan error {
 	return ts.err
 }
 
-func (ts *TunServer) connect(connectingNode string) {
+func (ts *TunServer) connect(connectingNode types.NodeAddress) {
 	ip := fmt.Sprintf("6666::%d", ts.currIP)
 	ts.currIP++
-	nodeAddr := types.NodeAddress(connectingNode)
+	nodeAddr := connectingNode
 	ts.nodes[ip] = nodeAddr
 	ts.connections[nodeAddr] = true
 	ep := types.Packet{nodeAddr, ts.amt, ip}
@@ -59,18 +59,13 @@ func (ts *TunServer) Listen() *TunServer {
 
 func (ts *TunServer) listenNode() {
 	for p := range ts.data.Packets() {
-        src := types.NodeAddress([]byte(p.Data)[12:16])
+		src := types.NodeAddress(p.Dest)
 		if _, ok := ts.connections[src]; !ok {
-			ts.connect(p.Data)
+			ts.connect(src)
 		} else {
 			/* do something with packet */
 			ep := &tuntap.Packet{}
 			err := json.Unmarshal([]byte(p.Data), ep)
-			if err != nil {
-				ts.err <- err
-				return
-			}
-			err = ts.tun.WritePacket(ep)
 			if err != nil {
 				ts.err <- err
 				return

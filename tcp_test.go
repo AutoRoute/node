@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/AutoRoute/tuntap"
@@ -26,17 +27,22 @@ func (t testTun) WritePacket(p *tuntap.Packet) error {
 	return t.write_error
 }
 
-type testData struct {
+type testTCPData struct {
 	in          chan types.Packet
 	out         chan types.Packet
 	write_error error
 }
 
-func (d testData) SendPacket(p types.Packet) error {
-	d.in <- p
-	return d.write_error
+func (d testTCPData) SendPacket(p types.Packet) error {
+	if p.Data == "hello" {
+		d.out <- types.Packet{"test", 7, "fe80::"}
+		return nil
+	} else {
+		d.in <- p
+		return d.write_error
+	}
 }
-func (d testData) Packets() <-chan types.Packet {
+func (d testTCPData) Packets() <-chan types.Packet {
 	return d.out
 }
 
@@ -44,8 +50,14 @@ func TestTCPTunToData(t *testing.T) {
 	amt := int64(7)
 	dest := types.NodeAddress("destination")
 	tun := testTun{make(chan *tuntap.Packet), make(chan *tuntap.Packet), nil, nil}
-	data := testData{make(chan types.Packet), make(chan types.Packet), nil}
-	tcp := NewTCPTunnel(tun, data, dest, amt)
+	data := testTCPData{make(chan types.Packet), make(chan types.Packet), nil}
+
+	i, err := tuntap.Open("tun%d", tuntap.DevTun)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tcp := NewTCPTunnel(tun, data, dest, amt, strings.TrimRight(i.Name(), "\x00"))
 	defer tcp.Close()
 
 	// Send in a test packet
@@ -55,7 +67,7 @@ func TestTCPTunToData(t *testing.T) {
 
 	// Make sure the output packet is correct
 	var p_after tuntap.Packet
-	err := json.Unmarshal([]byte(p_enc.Data), &p_after)
+	err = json.Unmarshal([]byte(p_enc.Data), &p_after)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -77,8 +89,14 @@ func TestTCPTunReadError(t *testing.T) {
 	dest := types.NodeAddress("destination")
 	read_error := errors.New("Read Error")
 	tun := testTun{make(chan *tuntap.Packet), make(chan *tuntap.Packet), read_error, nil}
-	data := testData{make(chan types.Packet), make(chan types.Packet), nil}
-	tcp := NewTCPTunnel(tun, data, dest, amt)
+	data := testTCPData{make(chan types.Packet), make(chan types.Packet), nil}
+
+	i, err := tuntap.Open("tun%d", tuntap.DevTun)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tcp := NewTCPTunnel(tun, data, dest, amt, strings.TrimRight(i.Name(), "\x00"))
 	defer tcp.Close()
 
 	// Send in a test packet
@@ -86,7 +104,7 @@ func TestTCPTunReadError(t *testing.T) {
 	tun.out <- &p
 
 	// Make sure the error appears
-	err := <-tcp.Error()
+	err = <-tcp.Error()
 	if err != read_error {
 		t.Fatalf("%v != %v", read_error, err)
 	}
@@ -96,8 +114,14 @@ func TestTCPTunReadTruncated(t *testing.T) {
 	amt := int64(7)
 	dest := types.NodeAddress("destination")
 	tun := testTun{make(chan *tuntap.Packet), make(chan *tuntap.Packet), nil, nil}
-	data := testData{make(chan types.Packet), make(chan types.Packet), nil}
-	tcp := NewTCPTunnel(tun, data, dest, amt)
+	data := testTCPData{make(chan types.Packet), make(chan types.Packet), nil}
+
+	i, err := tuntap.Open("tun%d", tuntap.DevTun)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tcp := NewTCPTunnel(tun, data, dest, amt, strings.TrimRight(i.Name(), "\x00"))
 	defer tcp.Close()
 
 	// Send in a test packet
@@ -105,7 +129,7 @@ func TestTCPTunReadTruncated(t *testing.T) {
 	tun.out <- &p
 
 	// Make sure the error appears
-	err := <-tcp.Error()
+	err = <-tcp.Error()
 	if err != truncated_error {
 		t.Fatalf("%v != %v", truncated_error, err)
 	}
@@ -116,8 +140,14 @@ func TestTCPTunReadWriteFails(t *testing.T) {
 	dest := types.NodeAddress("destination")
 	write_error := errors.New("Write Error")
 	tun := testTun{make(chan *tuntap.Packet), make(chan *tuntap.Packet), nil, nil}
-	data := testData{make(chan types.Packet, 1), make(chan types.Packet), write_error}
-	tcp := NewTCPTunnel(tun, data, dest, amt)
+	data := testTCPData{make(chan types.Packet, 1), make(chan types.Packet), write_error}
+
+	i, err := tuntap.Open("tun%d", tuntap.DevTun)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tcp := NewTCPTunnel(tun, data, dest, amt, strings.TrimRight(i.Name(), "\x00"))
 	defer tcp.Close()
 
 	// Send in a test packet
@@ -125,7 +155,7 @@ func TestTCPTunReadWriteFails(t *testing.T) {
 	tun.out <- &p
 
 	// Make sure the error appears
-	err := <-tcp.Error()
+	err = <-tcp.Error()
 	if err != write_error {
 		t.Fatalf("%v != %v", write_error, err)
 	}
@@ -135,8 +165,14 @@ func TestTCPTunWrite(t *testing.T) {
 	amt := int64(7)
 	dest := types.NodeAddress("destination")
 	tun := testTun{make(chan *tuntap.Packet), make(chan *tuntap.Packet), nil, nil}
-	data := testData{make(chan types.Packet), make(chan types.Packet), nil}
-	tcp := NewTCPTunnel(tun, data, dest, amt)
+	data := testTCPData{make(chan types.Packet), make(chan types.Packet), nil}
+
+	i, err := tuntap.Open("tun%d", tuntap.DevTun)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tcp := NewTCPTunnel(tun, data, dest, amt, strings.TrimRight(i.Name(), "\x00"))
 	defer tcp.Close()
 
 	// Send in a test packet
@@ -162,8 +198,14 @@ func TestTCPTunWriteSendError(t *testing.T) {
 	dest := types.NodeAddress("destination")
 	write_error := errors.New("Write Error")
 	tun := testTun{make(chan *tuntap.Packet, 1), make(chan *tuntap.Packet), nil, write_error}
-	data := testData{make(chan types.Packet), make(chan types.Packet), nil}
-	tcp := NewTCPTunnel(tun, data, dest, amt)
+	data := testTCPData{make(chan types.Packet), make(chan types.Packet), nil}
+
+	i, err := tuntap.Open("tun%d", tuntap.DevTun)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tcp := NewTCPTunnel(tun, data, dest, amt, strings.TrimRight(i.Name(), "\x00"))
 	defer tcp.Close()
 
 	// Send in a test packet
@@ -185,16 +227,22 @@ func TestTCPTunWriteUnmarshalError(t *testing.T) {
 	amt := int64(7)
 	dest := types.NodeAddress("destination")
 	tun := testTun{make(chan *tuntap.Packet), make(chan *tuntap.Packet), nil, nil}
-	data := testData{make(chan types.Packet), make(chan types.Packet), nil}
-	tcp := NewTCPTunnel(tun, data, dest, amt)
+	data := testTCPData{make(chan types.Packet), make(chan types.Packet), nil}
+
+	i, err := tuntap.Open("tun%d", tuntap.DevTun)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tcp := NewTCPTunnel(tun, data, dest, amt, strings.TrimRight(i.Name(), "\x00"))
 	defer tcp.Close()
 
 	// Send in a test packet
 	p_in := types.Packet{dest, amt, string("NOTJSON")}
 	data.out <- p_in
 
-	err := <-tcp.Error()
+	err = <-tcp.Error()
 	if err == nil {
-		t.Fatalf("v != nil", err, nil)
+		t.Fatalf("%v != nil", err)
 	}
 }
