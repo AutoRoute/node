@@ -13,7 +13,6 @@ install:
   - wget https://bitcoin.org/bin/bitcoin-core-0.11.2/bitcoin-0.11.2-linux64.tar.gz -O /tmp/bitcoin.tar.gz
   - tar -xvf /tmp/bitcoin.tar.gz
   - export PATH=$PATH:$(pwd)/bitcoin-0.11.2/bin
-  - go get github.com/AutoRoute/loopback2
 
 script:
   - go test -v github.com/AutoRoute/node/... -race
