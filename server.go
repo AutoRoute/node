@@ -26,12 +26,22 @@ type Server struct {
 	// Mutex to protect accesses to te currently_connecting map.
 	connecting_mutex sync.Mutex
 	listen_address   string
+	logger           *log.Logger
 }
 
-func NewServer(key Key, m types.Money) *Server {
+type emptywriter struct{}
+
+func (e emptywriter) Write(p []byte) (n int, err error) {
+	return len(p), nil
+}
+
+func NewServer(key Key, m types.Money, logger *log.Logger) *Server {
 	n := internal.NewNode(key.k, m, time.Tick(30*time.Second), time.Tick(30*time.Second))
+	if logger == nil {
+		logger = log.New(emptywriter{}, "", 0)
+	}
 	return &Server{n, make(map[string]*internal.SSHListener),
-		make(map[types.NodeAddress]bool), sync.Mutex{}, ""}
+		make(map[types.NodeAddress]bool), sync.Mutex{}, "", logger}
 }
 
 func (s *Server) Connect(addr string) error {
@@ -45,7 +55,7 @@ func (s *Server) Connect(addr string) error {
 	if err != nil {
 		return err
 	}
-	log.Printf("Outgoing connection: %x", sc.Key().Hash()[0:4])
+	s.logger.Printf("Outgoing connection: %x", sc.Key().Hash()[0:4])
 	s.n.AddConnection(sc)
 	return nil
 }
@@ -67,7 +77,7 @@ func (s *Server) Listen(addr string) error {
 	s.listeners[addr] = l
 	go func() {
 		for c := range l.Connections() {
-			log.Printf("Incoming connection: %x", c.Key().Hash()[0:4])
+			s.logger.Printf("Incoming connection: %x", c.Key().Hash()[0:4])
 			s.n.AddConnection(c)
 		}
 	}()

@@ -15,9 +15,9 @@ func TestConnection(t *testing.T) {
 	key1, _ := NewKey()
 	key2, _ := NewKey()
 
-	n1 := NewServer(key1, internal.FakeMoney{})
+	n1 := NewServer(key1, internal.FakeMoney{}, nil)
 	defer n1.Close()
-	n2 := NewServer(key2, internal.FakeMoney{})
+	n2 := NewServer(key2, internal.FakeMoney{}, nil)
 	defer n2.Close()
 
 	err := n1.Listen("[::1]:16543")
@@ -50,9 +50,9 @@ func TestDataTransmission(t *testing.T) {
 	key1, _ := NewKey()
 	key2, _ := NewKey()
 
-	n1 := NewServer(key1, internal.FakeMoney{})
+	n1 := NewServer(key1, internal.FakeMoney{}, nil)
 	defer n1.Close()
-	n2 := NewServer(key2, internal.FakeMoney{})
+	n2 := NewServer(key2, internal.FakeMoney{}, nil)
 	defer n2.Close()
 	err := n1.Listen("[::1]:16544")
 	if err != nil {
@@ -93,9 +93,9 @@ func benchmarkDataTransmission(size int, b *testing.B) {
 	key1, _ := NewKey()
 	key2, _ := NewKey()
 
-	n1 := NewServer(key1, internal.FakeMoney{})
+	n1 := NewServer(key1, internal.FakeMoney{}, nil)
 	defer n1.Close()
-	n2 := NewServer(key2, internal.FakeMoney{})
+	n2 := NewServer(key2, internal.FakeMoney{}, nil)
 	defer n2.Close()
 	err := n1.Listen(fmt.Sprintf("[::1]:16%03d", (size+b.N)%127+1))
 	if err != nil {
