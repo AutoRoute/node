@@ -18,41 +18,51 @@ func init() {
 	packets_dropped = expvar.NewInt("packets_dropped")
 }
 
-// Represents a permanent record of a routing decision.
-type routingDecision struct {
-	hash        types.PacketHash
-	amount      int64
-	source      types.NodeAddress
-	destination types.NodeAddress
-	nexthop     types.NodeAddress
+func newRoutingDecision(p types.Packet, src types.NodeAddress,
+	nexthop types.NodeAddress, size int) routingDecision {
+	return routingDecision{p.Hash(), p.Amount(), src, p.Destination(), nexthop,
+		size}
 }
 
-func newRoutingDecision(p types.Packet, src types.NodeAddress, nexthop types.NodeAddress) routingDecision {
-	return routingDecision{p.Hash(), p.Amount(), src, p.Destination(), nexthop}
-}
-
-// A routing handler takes care of relaying packets and produces notifications
-// about it's routing decisions.
+// A routingHandler handler takes care of relaying packets and produces notifications
+// about its routingHandler decisions.
 type routingHandler struct {
 	pk PublicKey
 	// A chan down which we send packets destined for ourselves.
 	incoming chan types.Packet
 	routes   chan routingDecision
 	// A map of public key hashes to connections
-	connections  map[types.NodeAddress]DataConnection
-	reachability *reachabilityHandler
-	quit         chan bool
+	connections map[types.NodeAddress]DataConnection
+	quit        chan bool
+	// The routing algorithm to use.
+	routing_algo routingAlgorithm
 }
 
-func newRouting(pk PublicKey, r *reachabilityHandler) *routingHandler {
-	return &routingHandler{
+// Represents a permanent record of a routingHandler decision.
+type routingDecision struct {
+	hash        types.PacketHash
+	amount      int64
+	source      types.NodeAddress
+	destination types.NodeAddress
+	nexthop     types.NodeAddress
+	// Length of packet.Data.
+	size int
+}
+
+func newRoutingHandler(pk PublicKey,
+	algo routingAlgorithm) *routingHandler {
+	handler := &routingHandler{
 		pk,
 		make(chan types.Packet),
 		make(chan routingDecision),
 		make(map[types.NodeAddress]DataConnection),
-		r,
 		make(chan bool),
+		algo,
 	}
+
+	handler.routing_algo.BindToRouting(handler)
+
+	return handler
 }
 
 func (r *routingHandler) AddConnection(id types.NodeAddress, c DataConnection) {
@@ -82,26 +92,53 @@ func (r *routingHandler) SendPacket(p types.Packet) error {
 	return r.sendPacket(p, r.pk.Hash())
 }
 
-func (r *routingHandler) sendPacket(p types.Packet, src types.NodeAddress) error {
+// Checks if it's being sent to us and handles it accordingly.
+// Args:
+//  p: The packet to check.
+//  src: Where the packet came from.
+// Returns:
+//  True if it is for us. In this case, nothing else need be done. False
+//  otherwise.
+func (r *routingHandler) checkIfWeAreDest(p types.Packet,
+	src types.NodeAddress) bool {
 	packets_received.Add(fmt.Sprintf("%x", src), 1)
 	if p.Destination() == r.pk.Hash() {
 		packets_sent.Add(fmt.Sprintf("%x", r.pk.Hash()), 1)
 		r.incoming <- p
 		go r.notifyDecision(p, src, r.pk.Hash())
+		return true
+	}
+
+	return false
+}
+
+func (r *routingHandler) sendPacket(p types.Packet, src types.NodeAddress) error {
+	if r.checkIfWeAreDest(p, src) {
+		// We're done here.
 		return nil
 	}
-	next, err := r.reachability.FindNextHop(p.Destination())
+
+	next, err := r.routing_algo.FindNextHop(p.Destination(), src)
 	if err != nil {
 		packets_dropped.Add(1)
 		return err
 	}
+
 	packets_sent.Add(fmt.Sprintf("%x", next), 1)
 	go r.notifyDecision(p, src, next)
-	return r.connections[next].SendPacket(p)
+
+	err = r.connections[next].SendPacket(p)
+	if err != nil {
+		log.Print("Error sending packet.\n")
+		return err
+	}
+
+	return nil
 }
 
 func (r *routingHandler) notifyDecision(p types.Packet, src, next types.NodeAddress) {
-	r.routes <- routingDecision{p.Hash(), p.Amount(), src, p.Destination(), next}
+	r.routes <- routingDecision{p.Hash(), p.Amount(), src, p.Destination(), next,
+		len(p.Data)}
 }
 
 func (r *routingHandler) Routes() <-chan routingDecision {
@@ -113,6 +150,8 @@ func (r *routingHandler) Packets() <-chan types.Packet {
 }
 
 func (r *routingHandler) Close() error {
+	r.routing_algo.Cleanup()
+
 	close(r.quit)
 	return nil
 }

@@ -3,6 +3,7 @@ package root
 
 import (
 	integration "github.com/AutoRoute/node/integration_tests"
+	"github.com/AutoRoute/node/integration_tests/loopback2"
 
 	"errors"
 	"fmt"
@@ -85,12 +86,8 @@ func TestConnection(t *testing.T) {
 		t.Skip(err)
 	}
 	// loopback2
-	cmd := integration.NewWrappedBinary(GetLoopBack2Path())
-	err = cmd.Start()
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer cmd.KillAndPrint(t)
+	network := loopback2.NewTapNetwork("", "")
+	defer network.Stop()
 	listen_dev, err := WaitForDevice("looptap0-0")
 	if err != nil {
 		t.Fatal(err)
@@ -125,6 +122,7 @@ func TestConnection(t *testing.T) {
 		Fake_money:           true,
 		Autodiscover:         true,
 		Autodiscover_devices: []string{listen_dev.Name},
+		Race:                 true,
 	})
 	listen.Start()
 	defer listen.KillAndPrint(t)
@@ -135,6 +133,7 @@ func TestConnection(t *testing.T) {
 		Fake_money:           true,
 		Autodiscover:         true,
 		Autodiscover_devices: []string{connect_dev.Name},
+		Race:                 true,
 	})
 	connect.Start()
 	defer connect.KillAndPrint(t)

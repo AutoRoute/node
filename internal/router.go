@@ -25,8 +25,8 @@ type Router struct {
 	// A map of public key hashes to connections
 	connections map[types.NodeAddress]Connection
 
-	*reachabilityHandler
 	*routingHandler
+	*reachabilityHandler
 	*receiptHandler
 	*Ledger
 
@@ -37,15 +37,18 @@ type Router struct {
 func NewRouter(pk PublicKey) *Router {
 	id_export.Set(fmt.Sprintf("%x", pk.Hash()))
 	reach := newReachability(pk.Hash())
-	routing := newRouting(pk, reach)
+	// TODO(daniel): Eventually, add flags that allow a user to specify alternate
+	// routing algorithms.
+	algorithm := newBandwidthRouting(reach)
+	routing := newRoutingHandler(pk, algorithm)
 	c1, c2, quit := splitChannel(routing.Routes())
 	receipt := newReceipt(pk.Hash(), c1)
 	Ledger := newLedger(pk.Hash(), receipt.PacketHashes(), c2)
 	return &Router{
 		pk,
 		make(map[types.NodeAddress]Connection),
-		reach,
 		routing,
+		reach,
 		receipt,
 		Ledger,
 		&sync.Mutex{},

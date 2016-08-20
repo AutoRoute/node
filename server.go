@@ -7,6 +7,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/AutoRoute/l2"
@@ -17,18 +18,35 @@ import (
 
 // The server handles creating connections and listening on various ports.
 type Server struct {
-	n              *internal.Node
-	listeners      map[string]*internal.SSHListener
-	listen_address string
+	n         *internal.Node
+	listeners map[string]*internal.SSHListener
+	// This contains the addresses of the nodes that we are currently connecting
+	// to, so we don't try to connect to them twice at the same time.
+	currently_connecting map[types.NodeAddress]bool
+	// Mutex to protect accesses to te currently_connecting map.
+	connecting_mutex sync.Mutex
+	listen_address   string
+	logger           *log.Logger
 }
 
-func NewServer(key Key, m types.Money) *Server {
+type emptywriter struct{}
+
+func (e emptywriter) Write(p []byte) (n int, err error) {
+	return len(p), nil
+}
+
+func NewServer(key Key, m types.Money, logger *log.Logger) *Server {
 	n := internal.NewNode(key.k, m, time.Tick(30*time.Second), time.Tick(30*time.Second))
-	return &Server{n, make(map[string]*internal.SSHListener), ""}
+	if logger == nil {
+		logger = log.New(emptywriter{}, "", 0)
+	}
+	return &Server{n, make(map[string]*internal.SSHListener),
+		make(map[types.NodeAddress]bool), sync.Mutex{}, "", logger}
 }
 
 func (s *Server) Connect(addr string) error {
-	c, err := net.Dial("tcp6", addr)
+	c, err := net.Dial("tcp", addr)
+
 	if err != nil {
 		return err
 	}
@@ -37,13 +55,13 @@ func (s *Server) Connect(addr string) error {
 	if err != nil {
 		return err
 	}
-	log.Printf("Outgoing connection: %x", sc.Key().Hash()[0:4])
+	s.logger.Printf("Outgoing connection: %x", sc.Key().Hash()[0:4])
 	s.n.AddConnection(sc)
 	return nil
 }
 
 func (s *Server) Listen(addr string) error {
-	ln, err := net.Listen("tcp6", addr)
+	ln, err := net.Listen("tcp", addr)
 	if err != nil {
 		return err
 	}
@@ -59,7 +77,7 @@ func (s *Server) Listen(addr string) error {
 	s.listeners[addr] = l
 	go func() {
 		for c := range l.Connections() {
-			log.Printf("Incoming connection: %x", c.Key().Hash()[0:4])
+			s.logger.Printf("Incoming connection: %x", c.Key().Hash()[0:4])
 			s.n.AddConnection(c)
 		}
 	}()
@@ -105,10 +123,30 @@ func (s *Server) findNeighbors(dev net.Interface, ll_addr net.IP, port uint16) {
 	}
 	for neighbor := range neighbors {
 		log.Printf("Neighbour Found %x", neighbor.FullNodeAddr)
-		err := s.Connect(fmt.Sprintf("[%s%%%s]:%v", neighbor.LLAddrStr, dev.Name, neighbor.Port))
+		if neighbor.FullNodeAddr == s.n.GetAddress().Hash() {
+			log.Print("Warning: Ignoring connection from self.\n")
+			continue
+		}
+
+		// Check that we should be connecting.
+		s.connecting_mutex.Lock()
+		_, addr_present := s.currently_connecting[neighbor.FullNodeAddr]
+		if addr_present {
+			log.Printf("Already connecting to %s.\n", neighbor.FullNodeAddr)
+			continue
+		}
+		s.currently_connecting[neighbor.FullNodeAddr] = true
+
+		err := s.Connect(fmt.Sprintf("[%s%%%s]:%v", neighbor.LLAddrStr, dev.Name,
+			neighbor.Port))
+
+		// Now that we've tried connecting, remove it as a pending connection.
+		delete(s.currently_connecting, neighbor.FullNodeAddr)
+		s.connecting_mutex.Unlock()
+
 		if err != nil {
 			log.Printf("Error connecting: %v", err)
-			return
+			continue
 		}
 		log.Printf("Connection established to %x", neighbor.FullNodeAddr)
 	}

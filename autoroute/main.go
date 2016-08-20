@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/exec"
 	"os/signal"
 	"strings"
 
@@ -40,14 +41,16 @@ var status = flag.String("status", "[::1]:12345", "The port to expose status inf
 var unix = flag.String("unix", "", "The path to accept / receive packets as unix packets from")
 var tcptun = flag.String("tcptun", "", "Address to try and tcp tunnel to")
 var tcptunserve = flag.Bool("tcptunserve", false, "Enables this node to be an exit node")
+var tcpaddress = flag.String("tcp_address", "", "IP address to assign to the tcp tunnel")
 
 func main() {
+	log.SetFlags(log.LstdFlags | log.Lmicroseconds | log.Lshortfile)
 	log.Print(os.Args)
 	flag.Parse()
 
 	// Capture all signals to the quit channel
 	quit := make(chan os.Signal)
-	signal.Notify(quit)
+	signal.Notify(quit, os.Interrupt, os.Kill)
 
 	// Figure out and load what key we are using for our identity
 	var key node.Key
@@ -77,7 +80,7 @@ func main() {
 		money = rpc
 	}
 	log.Printf("Connected")
-	n := node.NewServer(key, money)
+	n := node.NewServer(key, money, log.New(os.Stderr, "", log.LstdFlags))
 
 	log.Printf("Starting to listen on %s", *listen)
 	err = n.Listen(*listen)
@@ -146,7 +149,32 @@ func main() {
 		}
 		t := node.NewTCPTunnel(i, n.Node(), types.NodeAddress(dest), 10000, i.name)
 		defer t.Close()
-		<-quit
+
+		if len(*tcpaddress) > 0 {
+			ip, _, err := net.ParseCIDR(*tcpaddress)
+			if err != nil {
+				log.Fatal(err)
+			}
+			err = exec.Command("ip", "link", "set", "dev", strings.TrimRight(i.Name(), "\x00"), "up").Run()
+			if err != nil {
+				log.Fatal(err)
+			}
+			err = exec.Command("ip", "addr", "add", *tcpaddress, "dev", strings.TrimRight(i.Name(), "\x00")).Run()
+			if err != nil {
+				log.Fatal(err)
+			}
+			err = exec.Command("ip", "route", "add", "0/1", "via", ip.String(), "dev", strings.TrimRight(i.Name(), "\x00")).Run()
+			if err != nil {
+				log.Fatal(err)
+			}
+			err = exec.Command("ip", "route", "add", "128/1", "via", ip.String(), "dev", strings.TrimRight(i.Name(), "\x00")).Run()
+			if err != nil {
+				log.Fatal(err)
+			}
+
+		}
+		m := <-quit
+		log.Print(m)
 		return
 	}
 

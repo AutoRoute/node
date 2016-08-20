@@ -38,6 +38,7 @@ func NewTapDevice(mac, dev string) (FrameReadWriteCloser, error) {
 		log.Print("Command output:", string(output))
 		return nil, err
 	}
+
 	return &tapDevice{fd}, nil
 }
 

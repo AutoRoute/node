@@ -20,8 +20,8 @@ func TestReceiptHandler(t *testing.T) {
 
 	p := testPacket(a2)
 
-	i1 <- newRoutingDecision(p, a1, a2)
-	i2 <- newRoutingDecision(p, a1, a2)
+	i1 <- newRoutingDecision(p, a1, a2, 1)
+	i2 <- newRoutingDecision(p, a1, a2, 1)
 
 	go ri2.SendReceipt(CreateMerkleReceipt(pk2, []types.PacketHash{p.Hash()}))
 
