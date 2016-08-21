@@ -132,7 +132,12 @@ func main() {
 
 	if *tcptunserve {
 		log.Printf("Starting tcp tunnel server")
-		tunserver := node.NewTunServer(n.Node(), 10000)
+		log.Printf("Establishing tcp tunnel to %v", *tcptun)
+		i, err := tuntap.Open("tun%d", tuntap.DevTun)
+		if err != nil {
+			log.Fatal(err)
+		}
+		tunserver := node.NewTunServer(i, n.Node(), 10000)
 		tunserver.Listen()
 	}
 
@@ -147,7 +152,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		t := node.NewTCPTunnel(i, n.Node(), types.NodeAddress(dest), 10000, i.name)
+		t := node.NewTCPTunnel(i, n.Node(), types.NodeAddress(dest), 10000, strings.TrimRight(i.Name(), "\x00"))
 		defer t.Close()
 
 		if len(*tcpaddress) > 0 {
