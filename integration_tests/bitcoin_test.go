@@ -59,6 +59,13 @@ func TestBitcoin(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	cmd = exec.Command("make", "generate")
+	cmd.Dir = test_net_path
+	err = cmd.Run()
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	listen := NewNodeBinary(BinaryOptions{
 		Listen:  "[::1]:9999",
 		BTCHost: "[::1]:19001",
