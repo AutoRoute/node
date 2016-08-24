@@ -152,7 +152,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		t := node.NewTCPTunnel(i, n.Node(), types.NodeAddress(dest), 10000, strings.TrimRight(i.Name(), "\x00"))
+		t := node.NewTCPTunnel(i, n.Node(), types.NodeAddress(dest), 10000, i.Name())
 		defer t.Close()
 
 		if len(*tcpaddress) > 0 {

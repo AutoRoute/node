@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 	"os/exec"
+	"strings"
 
 	"github.com/AutoRoute/tuntap"
 
@@ -44,6 +45,7 @@ func NewTCPTunnel(tun TCPTun, d DataConnection, dest types.NodeAddress, amt int6
 
 	p := <-t.data.Packets()
 
+	strings.Trim(name, "\x00")
 	err := SetDevAddr(name, p.Data)
 	if err != nil {
 		log.Fatal(err)
