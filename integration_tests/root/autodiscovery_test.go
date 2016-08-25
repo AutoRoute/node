@@ -43,7 +43,7 @@ func BuildListenAddress(i *net.Interface, port int) string {
 }
 
 func WaitForDevice(s string) (*net.Interface, error) {
-	timeout := time.After(1 * time.Second)
+	timeout := time.After(10 * time.Second)
 	tick := time.Tick(10 * time.Millisecond)
 	for {
 		select {
@@ -60,7 +60,7 @@ func WaitForDevice(s string) (*net.Interface, error) {
 }
 
 func WaitForListen(s string) error {
-	timeout := time.After(1 * time.Second)
+	timeout := time.After(10 * time.Second)
 	tick := time.Tick(10 * time.Millisecond)
 	for {
 		select {
@@ -120,7 +120,6 @@ func TestConnection(t *testing.T) {
 	// starts listening on the address
 	err = WaitForListen(BuildListenAddress(listen_dev, integration.GetUnusedPort()))
 	if err != nil {
-		time.Sleep(time.Minute)
 		t.Fatal(err)
 	}
 	err = WaitForListen(BuildListenAddress(connect_dev, integration.GetUnusedPort()))
