@@ -37,22 +37,23 @@ type DeviceType struct {
 // Returns:
 //	The new tap device.
 func makeTap(name string, bandwidth int) l2.FrameReadWriteCloser {
-	var err error
-	var tap l2.FrameReadWriteCloser
 	if bandwidth == 0 {
 		// For some reason, some of the integration tests don't like it when we set
 		// our own address.
-		tap, err = l2.NewTapDevice("", name)
-	} else {
-		log.Printf("Setting bandwidth on %s to %d.\n", name, bandwidth)
-		tap, err = l2.NewTapDeviceWithLatency("", name, bandwidth,
-			bandwidth)
-	}
-	if err != nil {
-		log.Fatal("Error opening tap device:", err)
+		tap, err := l2.NewTapDevice("", name)
+		if err != nil {
+			log.Fatal("Error opening tap device:", err)
+		}
+		return tap
 	}
 
-	return tap
+	log.Printf("Setting bandwidth on %s to %d.\n", name, bandwidth)
+	tap, err := l2.NewTapDevice("", name)
+	if err != nil {
+		log.Fatal("Error opening tap device with bandwidth:", err)
+	}
+	return l2.NewDeviceWithLatency(tap, bandwidth,
+		bandwidth)
 }
 
 // Waits for a set of devices to go offline.
@@ -216,20 +217,6 @@ func (t *TapNetwork) doCreateNetwork() {
 			}
 		}
 
-	} else { // set up the testing as normal
-		device_number := int64(0)
-		name1 := fmt.Sprintf("looptap0-%d", device_number)
-		device_number += 1
-		name2 := fmt.Sprintf("looptap0-%d", device_number)
-		device_number += 1
-
-		lo0 := makeTap(name1, 0)
-		lo1 := makeTap(name2, 0)
-		devices[name1] = lo0
-		devices[name2] = lo1
-
-		go l2.SendFrames(lo0, lo1)
-		go l2.SendFrames(lo1, lo0)
 	}
 
 	// We're done initializing.
