@@ -50,7 +50,7 @@ func makeTap(name string, bandwidth int) l2.FrameReadWriteCloser {
 	log.Printf("Setting bandwidth on %s to %d.\n", name, bandwidth)
 	tap, err := l2.NewTapDevice("", name)
 	if err != nil {
-		log.Fatal("Error opening tap device:", err)
+		log.Fatal("Error opening tap device with bandwidth:", err)
 	}
 	return l2.NewDeviceWithLatency(tap, bandwidth,
 		bandwidth)
@@ -217,20 +217,6 @@ func (t *TapNetwork) doCreateNetwork() {
 			}
 		}
 
-	} else { // set up the testing as normal
-		device_number := int64(0)
-		name1 := fmt.Sprintf("looptap0-%d", device_number)
-		device_number += 1
-		name2 := fmt.Sprintf("looptap0-%d", device_number)
-		device_number += 1
-
-		lo0 := makeTap(name1, 0)
-		lo1 := makeTap(name2, 0)
-		devices[name1] = lo0
-		devices[name2] = lo1
-
-		go l2.SendFrames(lo0, lo1)
-		go l2.SendFrames(lo1, lo0)
 	}
 
 	// We're done initializing.
