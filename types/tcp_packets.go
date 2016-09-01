@@ -1,4 +1,4 @@
-package node
+package types
 
 import (
 	"errors"
@@ -35,7 +35,7 @@ func (req *TCPTunnelRequest) UnmarshalBinary(data []byte) error {
 // TCP tunneling response packet
 // Server sends ip addres for client after receiving a request to tunnel
 type TCPTunnelResponse struct {
-	ip net.IP
+	IP net.IP
 }
 
 // Returns the TCPTunnelResponse as a byte slice.
@@ -43,7 +43,7 @@ type TCPTunnelResponse struct {
 //   Version number is always 0 for now
 //   Message type is 1 for TCPTunnelResponse
 func (resp *TCPTunnelResponse) MarshalBinary() ([]byte, error) {
-	return append([]byte{0, 1}, resp.ip...), nil
+	return append([]byte{0, 1}, resp.IP...), nil
 }
 
 // Takes byte slice from the wire and unmarshals it.
@@ -58,7 +58,7 @@ func (resp *TCPTunnelResponse) UnmarshalBinary(data []byte) error {
 		return errors.New("Wrong packet type")
 	}
 
-	resp.ip = data[2:]
+	resp.IP = data[2:]
 
 	return nil
 }
@@ -66,7 +66,7 @@ func (resp *TCPTunnelResponse) UnmarshalBinary(data []byte) error {
 // TCP tunneling response packet
 // Data packet sent during normal transmission, after handshake
 type TCPTunnelData struct {
-	data []byte
+	Data []byte
 }
 
 // Returns the TCPTunnelData as a byte slice.
@@ -74,7 +74,7 @@ type TCPTunnelData struct {
 //   Version number is always 0 for now
 //   Message type is 2 for TCPTunnelData
 func (d *TCPTunnelData) MarshalBinary() ([]byte, error) {
-	return append([]byte{0, 2}, d.data...), nil
+	return append([]byte{0, 2}, d.Data...), nil
 }
 
 // Takes byte slice from the wire and unmarshals it.
@@ -82,14 +82,14 @@ func (d *TCPTunnelData) MarshalBinary() ([]byte, error) {
 // Rest of the data in the packet is the message data
 func (d *TCPTunnelData) UnmarshalBinary(data []byte) error {
 	if data[0] != 0 {
-		return errors.New("Wrong packer version")
+		return errors.New("Wrong packet version")
 	}
 
 	if data[1] != 2 {
 		return errors.New("Wrong packet type")
 	}
 
-	d.data = data[2:]
+	d.Data = data[2:]
 
 	return nil
 }

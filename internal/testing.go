@@ -84,7 +84,7 @@ func MakePairedConnections(k1, k2 PublicKey) (Connection, Connection) {
 }
 
 func testPacket(n types.NodeAddress) types.Packet {
-	return types.Packet{n, 3, "test"}
+	return types.Packet{n, 3, []byte("test")}
 }
 
 type Linkable interface {

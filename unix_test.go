@@ -1,6 +1,7 @@
 package node
 
 import (
+	"bytes"
 	"encoding/json"
 	"net"
 	"testing"
@@ -22,7 +23,7 @@ func TestUnixSocket(t *testing.T) {
 	}
 	defer c.Close()
 
-	p := types.Packet{"dest", 10, "data"}
+	p := types.Packet{"dest", 10, []byte("data")}
 	c2, err := net.Dial("unix", "/tmp/test")
 	if err != nil {
 		t.Fatal(err)
@@ -40,7 +41,7 @@ func TestUnixSocket(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if p3 != p {
-		t.Fatalf("Error %v != %v", p3, p)
+	if p3.Dest != p.Dest || p3.Amt != p.Amt || bytes.Compare(p3.Data, p.Data) != 0 {
+		t.Fatalf("Error %q != %q", p3, p)
 	}
 }

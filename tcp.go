@@ -35,7 +35,9 @@ func SetDevAddr(dev string, addr string) error {
 
 func NewTCPTunnel(tun TCPTun, d DataConnection, dest types.NodeAddress, amt int64, name string) *TCP {
 	t := &TCP{d, tun, dest, amt, make(chan bool), make(chan error, 1)}
-	ep := types.Packet{dest, amt, "hello"}
+	req := types.TCPTunnelRequest{}
+	req_b, _ := req.MarshalBinary()
+	ep := types.Packet{dest, amt, req_b}
 	go func() {
 		err := t.data.SendPacket(ep)
 		if err != nil {
@@ -43,10 +45,15 @@ func NewTCPTunnel(tun TCPTun, d DataConnection, dest types.NodeAddress, amt int6
 		}
 	}()
 
+	var resp types.TCPTunnelResponse
 	p := <-t.data.Packets()
+	err := resp.UnmarshalBinary(p.Data)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	strings.Trim(name, "\x00")
-	err := SetDevAddr(name, p.Data)
+	err = SetDevAddr(name, string(resp.IP))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -84,7 +91,10 @@ func (t *TCP) readtun() {
 			t.err <- err
 			return
 		}
-		ep := types.Packet{t.dest, t.amt, string(b)}
+
+		tcp_data := types.TCPTunnelData{b}
+		tcp_data_b, _ := tcp_data.MarshalBinary()
+		ep := types.Packet{t.dest, t.amt, tcp_data_b}
 		err = t.data.SendPacket(ep)
 		if err != nil {
 			t.err <- err
@@ -97,8 +107,15 @@ func (t *TCP) writetun() {
 	for {
 		select {
 		case p := <-t.data.Packets():
+			var tcp_data types.TCPTunnelData
+			err := tcp_data.UnmarshalBinary(p.Data)
+			if err != nil {
+				t.err <- err
+				return
+			}
+
 			ep := &tuntap.Packet{}
-			err := json.Unmarshal([]byte(p.Data), ep)
+			err = json.Unmarshal(tcp_data.Data, ep)
 			if err != nil {
 				t.err <- err
 				return

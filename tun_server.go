@@ -10,10 +10,6 @@ import (
 	"github.com/AutoRoute/node/types"
 )
 
-var requestHeader = "hello"
-var beginIPBlock = net.ParseIP("6666::0")
-var endIPBlock = net.ParseIP("6666::6666")
-
 type TunServer struct {
 	data        DataConnection
 	tun         TCPTun
@@ -38,12 +34,15 @@ func (ts *TunServer) Error() chan error {
 }
 
 func (ts *TunServer) connect(connectingNode types.NodeAddress) {
-	ip := fmt.Sprintf("6666::%d", ts.currIP)
+	ip := fmt.Sprintf("2001::%d", ts.currIP)
 	ts.currIP++
 	nodeAddr := connectingNode
 	ts.nodes[ip] = nodeAddr
 	ts.connections[nodeAddr] = true
-	ep := types.Packet{nodeAddr, ts.amt, ip}
+
+	resp := types.TCPTunnelResponse{net.ParseIP(ip)}
+	resp_b, _ := resp.MarshalBinary()
+	ep := types.Packet{nodeAddr, ts.amt, resp_b}
 	err := ts.data.SendPacket(ep)
 	if err != nil {
 		ts.err <- err
@@ -61,11 +60,23 @@ func (ts *TunServer) listenNode() {
 	for p := range ts.data.Packets() {
 		src := types.NodeAddress(p.Dest)
 		if _, ok := ts.connections[src]; !ok {
+			var req types.TCPTunnelRequest
+			err := req.UnmarshalBinary(p.Data)
+			if err != nil {
+				ts.err <- err
+			}
+
 			ts.connect(src)
 		} else {
 			/* do something with packet */
+			var tcp_data types.TCPTunnelData
+			err := tcp_data.UnmarshalBinary(p.Data)
+			if err != nil {
+				ts.err <- err
+			}
+
 			ep := &tuntap.Packet{}
-			err := json.Unmarshal([]byte(p.Data), ep)
+			err = json.Unmarshal(tcp_data.Data, ep)
 			if err != nil {
 				ts.err <- err
 				return
@@ -95,9 +106,17 @@ func (ts *TunServer) listenTun() {
 			ts.err <- err
 			return
 		}
-		ip := string(p.Packet[0:6])
-		dest_node := ts.nodes[ip]
-		ep := types.Packet{dest_node, ts.amt, string(b)}
+		version := p.Packet[0]
+		if (version & 0xF) != 0x6 {
+			continue
+		}
+
+		ip := net.IP(p.Packet[64:192])
+		dest_node := ts.nodes[string(ip)]
+
+		tcp_data := types.TCPTunnelData{b}
+		tcp_data_b, _ := tcp_data.MarshalBinary()
+		ep := types.Packet{dest_node, ts.amt, tcp_data_b}
 		err = ts.data.SendPacket(ep)
 		if err != nil {
 			ts.err <- err

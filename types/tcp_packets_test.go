@@ -1,4 +1,4 @@
-package node
+package types
 
 import (
 	"bytes"
@@ -72,7 +72,7 @@ func TestValidResponsePacket(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if bytes.Compare(out_resp.ip, in_resp.ip) != 0 {
+	if bytes.Compare(out_resp.IP, in_resp.IP) != 0 {
 		t.Fatalf("IP addresses are not the same")
 	}
 }
@@ -126,7 +126,7 @@ func TestValidDataPacket(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if bytes.Compare(out_data.data, in_data.data) != 0 {
+	if bytes.Compare(out_data.Data, in_data.Data) != 0 {
 		t.Fatalf("Data is not the same")
 	}
 }
