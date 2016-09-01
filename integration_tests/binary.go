@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"sync"
+	"time"
 )
 
 // This type represents a running binary with some nice features for test integration.
@@ -50,6 +51,17 @@ func (b WrappedBinary) KillAndPrint(f LogFailer) {
 		f.Log(b.Cmd.Path)
 		f.Logf("\n8<----\n%s8<----\n\n", b.buf.Output())
 	}
+	done := make(chan bool)
+	go func() {
+		b.Cmd.Wait()
+		done <- true
+	}()
 	b.Process.Signal(os.Interrupt)
-	b.Cmd.Wait()
+	select {
+	case <-done:
+		return
+	case <-time.After(time.Second * 10):
+		b.Process.Signal(os.Kill)
+	}
+	<-done
 }
