@@ -3,7 +3,8 @@ package root
 
 import (
 	integration "github.com/AutoRoute/node/integration_tests"
-	"github.com/AutoRoute/node/integration_tests/loopback2"
+
+	"github.com/AutoRoute/l2"
 
 	"errors"
 	"fmt"
@@ -42,32 +43,34 @@ func BuildListenAddress(i *net.Interface, port int) string {
 }
 
 func WaitForDevice(s string) (*net.Interface, error) {
-	timeout := time.After(1 * time.Second)
-	for range time.Tick(10 * time.Millisecond) {
+	timeout := time.After(10 * time.Second)
+	tick := time.Tick(10 * time.Millisecond)
+	for {
 		select {
 		case <-timeout:
-			return nil, errors.New(fmt.Sprintf("Error waiting for %s to be reachable", s))
-		default:
-		}
-		d, err := net.InterfaceByName(s)
-		if err == nil {
-			return d, nil
+			return nil, errors.New(fmt.Sprintf("Error waiting for device %s to be reachable", s))
+		case <-tick:
+			d, err := net.InterfaceByName(s)
+			if err == nil {
+				return d, nil
+			}
 		}
 	}
 	panic("Unreachable")
 }
 
 func WaitForListen(s string) error {
-	timeout := time.After(2 * time.Second)
-	for range time.Tick(10 * time.Millisecond) {
+	timeout := time.After(10 * time.Second)
+	tick := time.Tick(10 * time.Millisecond)
+	for {
 		select {
 		case <-timeout:
-			return errors.New(fmt.Sprintf("Error waiting for %s to be reachable", s))
-		default:
-		}
-		_, err := net.Listen("tcp6", s)
-		if err == nil {
-			return nil
+			return errors.New(fmt.Sprintf("Error waiting for address %s to be reachable", s))
+		case <-tick:
+			_, err := net.Listen("tcp", s)
+			if err == nil {
+				return nil
+			}
 		}
 	}
 	panic("Unreachable")
@@ -80,14 +83,23 @@ func SetDevUp(dev string) error {
 }
 
 func TestConnection(t *testing.T) {
-	// set -e
 	err := CheckRoot()
 	if err != nil {
 		t.Skip(err)
 	}
-	// loopback2
-	network := loopback2.NewTapNetwork("", "")
-	defer network.Stop()
+	lo0, err := l2.NewTapDevice("", "looptap0-0")
+	if err != nil {
+		t.Fatal("Error creating tap device", err)
+	}
+	lo1, err := l2.NewTapDevice("", "looptap0-1")
+	if err != nil {
+		t.Fatal("Error creating tap device", err)
+	}
+	go l2.SendFrames(lo0, lo1)
+	go l2.SendFrames(lo1, lo0)
+	defer lo0.Close()
+	defer lo1.Close()
+
 	listen_dev, err := WaitForDevice("looptap0-0")
 	if err != nil {
 		t.Fatal(err)
