@@ -1,75 +1,106 @@
 package integration_tests
 
 import (
+	"github.com/btcsuite/btcrpcclient"
+
 	"errors"
 	"fmt"
-	"log"
 	"os"
-	"os/exec"
-	"path/filepath"
 	"testing"
 	"time"
 )
 
-var test_net_path string = filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "freewil", "bitcoin-testnet-box")
-
-func WaitForGetInfo() error {
-	timeout := time.After(10 * time.Second)
-	for range time.Tick(10 * time.Millisecond) {
-		cmd := exec.Command("make", "getinfo")
-		cmd.Dir = test_net_path
-		out, err := cmd.CombinedOutput()
-		if err == nil {
-			return nil
+func WaitForGetInfo(host, user, pass string) error {
+	timeout := time.After(30 * time.Second)
+	for range time.Tick(1 * time.Second) {
+		config := &btcrpcclient.ConnConfig{
+			Host:                 host,
+			User:                 user,
+			Pass:                 pass,
+			HTTPPostMode:         true,
+			DisableTLS:           true,
+			DisableAutoReconnect: true,
 		}
+		client, err := btcrpcclient.New(config, nil)
+		if err == nil {
+			_, err = client.GetInfo()
+			if err == nil {
+				return nil
+			}
+		}
+		client.Shutdown()
+
 		select {
 		case <-timeout:
-			return errors.New(fmt.Sprint(err, string(out)))
+			return errors.New(fmt.Sprint(err))
 		default:
 		}
 	}
 	panic("unreachable")
 }
 
+func GenerateBlocks(host, user, pass string) error {
+	config := &btcrpcclient.ConnConfig{
+		Host:         host,
+		User:         user,
+		Pass:         pass,
+		HTTPPostMode: true,
+		DisableTLS:   true,
+	}
+	client, err := btcrpcclient.New(config, nil)
+	if err != nil {
+		return err
+	}
+	// 101 blocks so the first one is usable
+	_, err = client.Generate(101)
+	return err
+}
+
 func TestBitcoin(t *testing.T) {
-	t.Skip("Bitcoin test is broken on travis, not sure why")
-	cmd := exec.Command("make", "start")
-	cmd.Dir = test_net_path
-	err := cmd.Run()
+
+	err := os.Mkdir("/tmp/1", 0777)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll("/tmp/1")
+	os.Mkdir("/tmp/2", 0777)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll("/tmp/2")
+
+	bitcoin1 := NewWrappedBinary(
+		"bitcoind", "-printoconsole", "-server=1", "-regtest=1", "-dnsseed=0", "-upnp=0",
+		"-port=19000", "-rpcport=19001", "-rpcallowip=0.0.0.0/0",
+		"-rpcuser=admin1", "-rpcpassword=123", "-datadir=/tmp/1")
+	bitcoin1.Start()
+	defer bitcoin1.KillAndPrint(t)
+
+	bitcoin2 := NewWrappedBinary(
+		"bitcoind", "-printoconsole", "-server=1", "-regtest=1", "-dnsseed=0", "-upnp=0",
+		"-connect=127.0.0.1:19000",
+		"-port=19010", "-rpcport=19011", "-rpcallowip=0.0.0.0/0",
+		"-rpcuser=admin2", "-rpcpassword=123", "-datadir=/tmp/2")
+	bitcoin2.Start()
+	defer bitcoin2.KillAndPrint(t)
+
+	err = WaitForGetInfo("127.0.0.1:19001", "admin1", "123")
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = WaitForGetInfo("127.0.0.1:19011", "admin2", "123")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	defer func() {
-		cmd := exec.Command("make", "stop")
-		cmd.Dir = test_net_path
-		err = cmd.Run()
-		if err != nil {
-			log.Print(err)
-		}
-		cmd = exec.Command("make", "clean")
-		cmd.Dir = test_net_path
-		err = cmd.Run()
-		if err != nil {
-			log.Print(err)
-		}
-	}()
-
-	err = WaitForGetInfo()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	cmd = exec.Command("make", "generate")
-	cmd.Dir = test_net_path
-	err = cmd.Run()
+	err = GenerateBlocks("127.0.0.1:19001", "admin1", "123")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	listen := NewNodeBinary(BinaryOptions{
 		Listen:  "[::1]:9999",
-		BTCHost: "[::1]:19001",
+		BTCHost: "127.0.0.1:19001",
 		BTCUser: "admin1",
 		BTCPass: "123",
 		Race:    true,
@@ -84,7 +115,7 @@ func TestBitcoin(t *testing.T) {
 	connect := NewNodeBinary(BinaryOptions{
 		Listen:  "[::1]:9998",
 		Connect: []string{"[::1]:9999"},
-		BTCHost: "[::1]:19011",
+		BTCHost: "127.0.0.1:19011",
 		BTCUser: "admin2",
 		BTCPass: "123",
 		Race:    true,
