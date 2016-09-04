@@ -8,6 +8,7 @@ import (
 // TCP tunneling request packet
 // Client sends empty struct to request tunneling
 type TCPTunnelRequest struct {
+	Source NodeAddress
 }
 
 // Returns the TCPTunnelRequest as a byte slice.
@@ -15,7 +16,7 @@ type TCPTunnelRequest struct {
 //   Version number is always 0 for now
 //   Message type is 0 for TCPTunnelRequest
 func (req *TCPTunnelRequest) MarshalBinary() ([]byte, error) {
-	return []byte{0, 0}, nil
+	return append([]byte{0, 0}, []byte(req.Source)...), nil
 }
 
 // Takes byte slice from the wire and unmarshals it.
@@ -28,6 +29,8 @@ func (req *TCPTunnelRequest) UnmarshalBinary(data []byte) error {
 	if data[1] != 0 {
 		return errors.New("Wrong packet type")
 	}
+
+	req.Source = NodeAddress(data[2:])
 
 	return nil
 }

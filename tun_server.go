@@ -11,7 +11,7 @@ import (
 )
 
 type TunServer struct {
-	data        DataConnection
+	node        NodeConnection
 	tun         TCPTun
 	amt         int64
 	nodes       map[string]types.NodeAddress
@@ -21,8 +21,8 @@ type TunServer struct {
 	err         chan error
 }
 
-func NewTunServer(tun TCPTun, d DataConnection, amt int64) *TunServer {
-	return &TunServer{d, tun, amt, make(map[string]types.NodeAddress), make(map[types.NodeAddress]bool), 0, make(chan bool), make(chan error, 1)}
+func NewTunServer(n NodeConnection, tun TCPTun, amt int64) *TunServer {
+	return &TunServer{n, tun, amt, make(map[string]types.NodeAddress), make(map[types.NodeAddress]bool), 0, make(chan bool), make(chan error, 1)}
 }
 
 func (ts *TunServer) Close() {
@@ -43,7 +43,7 @@ func (ts *TunServer) connect(connectingNode types.NodeAddress) {
 	resp := types.TCPTunnelResponse{net.ParseIP(ip)}
 	resp_b, _ := resp.MarshalBinary()
 	ep := types.Packet{nodeAddr, ts.amt, resp_b}
-	err := ts.data.SendPacket(ep)
+	err := ts.node.SendPacket(ep)
 	if err != nil {
 		ts.err <- err
 		return
@@ -57,17 +57,25 @@ func (ts *TunServer) Listen() *TunServer {
 }
 
 func (ts *TunServer) listenNode() {
-	for p := range ts.data.Packets() {
-		src := types.NodeAddress(p.Dest)
-		if _, ok := ts.connections[src]; !ok {
+	for p := range ts.node.Packets() {
+		// src := types.NodeAddress(p.Dest)
+		// if _, ok := ts.connections[src]; !ok {
+		if p.Data[1] == 0 {
 			var req types.TCPTunnelRequest
 			err := req.UnmarshalBinary(p.Data)
 			if err != nil {
 				ts.err <- err
 			}
 
-			ts.connect(src)
-		} else {
+			if _, ok := ts.connections[req.Source]; ok {
+				// If we are getting a request from someone that
+				// we're already tunneling with we should figure
+				// out how to handle that
+				continue
+			}
+
+			ts.connect(req.Source)
+		} else if p.Data[1] == 2 {
 			/* do something with packet */
 			var tcp_data types.TCPTunnelData
 			err := tcp_data.UnmarshalBinary(p.Data)
@@ -87,6 +95,8 @@ func (ts *TunServer) listenNode() {
 				return
 			}
 		}
+		// else don't do anyting with the packet
+		// We don't handle response packets
 	}
 }
 
@@ -117,7 +127,7 @@ func (ts *TunServer) listenTun() {
 		tcp_data := types.TCPTunnelData{b}
 		tcp_data_b, _ := tcp_data.MarshalBinary()
 		ep := types.Packet{dest_node, ts.amt, tcp_data_b}
-		err = ts.data.SendPacket(ep)
+		err = ts.node.SendPacket(ep)
 		if err != nil {
 			ts.err <- err
 			return

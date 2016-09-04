@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"bytes"
 	"log"
 	"testing"
 	"time"
@@ -71,7 +72,7 @@ func TestDirectRouter(t *testing.T) {
 	}()
 
 	received := <-r2.Packets()
-	if received != p2 {
+	if received.Dest != p2.Dest || received.Amt != p2.Amt || !bytes.Equal(received.Data, p2.Data) {
 		t.Fatalf("%q != %q", received, p2)
 	}
 
@@ -129,7 +130,7 @@ func TestRelayRouter(t *testing.T) {
 	}()
 
 	received := <-r3.Packets()
-	if received != p3 {
+	if received.Dest != p3.Dest || received.Amt != p3.Amt || !bytes.Equal(received.Data, p3.Data) {
 		t.Fatalf("%q != %q", received, p3)
 	}
 }

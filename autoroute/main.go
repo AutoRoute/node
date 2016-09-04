@@ -137,7 +137,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		tunserver := node.NewTunServer(i, n.Node(), 10000)
+		tunserver := node.NewTunServer(n.Node(), i, 10000)
 		tunserver.Listen()
 	}
 
@@ -152,7 +152,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		t := node.NewTCPTunnel(i, n.Node(), types.NodeAddress(dest), 10000, i.Name())
+		t := node.NewTCPTunnel(n.Node(), i, types.NodeAddress(dest), 10000, i.Name())
 		defer t.Close()
 
 		if len(*tcpaddress) > 0 {

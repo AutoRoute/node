@@ -7,7 +7,8 @@ import (
 )
 
 func TestValidRequestPacket(t *testing.T) {
-	out_req := TCPTunnelRequest{}
+	source := NodeAddress("source")
+	out_req := TCPTunnelRequest{source}
 	var in_req TCPTunnelRequest
 
 	in_req_wire, err := out_req.MarshalBinary()
@@ -20,8 +21,8 @@ func TestValidRequestPacket(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if out_req != in_req {
-		t.Fatalf("Empty structs not equal?")
+	if out_req.Source != in_req.Source {
+		t.Fatalf("Source NodeAddresses not the same")
 	}
 }
 

@@ -163,7 +163,7 @@ func WaitForPackets(c net.Conn, t *testing.T, s chan types.Packet, amt int) {
 func SendPacket(conn net.Conn, t *testing.T, address types.NodeAddress,
 	data string) {
 	// Make the packet.
-	packet := types.Packet{address, 1, data}
+	packet := types.Packet{address, 1, []byte(data)}
 
 	encoder := json.NewEncoder(conn)
 	err := encoder.Encode(packet)
