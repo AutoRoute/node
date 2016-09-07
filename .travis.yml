@@ -1,21 +1,15 @@
 language: go
 
 go:
-  - 1.6.1
+  - 1.7
 
 install:
-  - mkdir ${GOPATH}/src/github.com/freewil
-  - mkdir ${GOPATH}/src/github.com/freewil/bitcoin-testnet-box
-  - git clone https://github.com/freewil/bitcoin-testnet-box.git ${GOPATH}/src/github.com/freewil/bitcoin-testnet-box
-  - wget https://bitcoin.org/bin/bitcoin-core-0.12.1/bitcoin-0.12.1-linux64.tar.gz -O /tmp/bitcoin.tar.gz
+  - wget https://bitcoin.org/bin/bitcoin-core-0.13.0/bitcoin-0.13.0-x86_64-linux-gnu.tar.gz -O /tmp/bitcoin.tar.gz
   - tar -xvf /tmp/bitcoin.tar.gz
-  - export PATH=$PATH:$(pwd)/bitcoin-0.12.1/bin
+  - export PATH=$PATH:$(pwd)/bitcoin-0.13.0/bin
   - go get github.com/AutoRoute/bloom
   - go get github.com/AutoRoute/l2
   - go get github.com/AutoRoute/tuntap
-  - make -C ${GOPATH}/src/github.com/freewil/bitcoin-testnet-box start
-  - bash -c 'while ! make -C ${GOPATH}/src/github.com/freewil/bitcoin-testnet-box/ getinfo; do sleep 1; done;'
-  - make -C ${GOPATH}/src/github.com/freewil/bitcoin-testnet-box stop
 
 script:
   - go test -v ./... -race

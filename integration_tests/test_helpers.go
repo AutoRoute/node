@@ -12,7 +12,7 @@ import (
 )
 
 func WaitForID(b AutoRouteBinary) (string, error) {
-	timeout := time.After(2 * time.Second)
+	timeout := time.After(10 * time.Second)
 	for range time.Tick(10 * time.Millisecond) {
 		id, err := b.GetID()
 		if err == nil {
