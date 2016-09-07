@@ -38,3 +38,7 @@ func (n Node) SendPacket(p types.Packet) error {
 func (n Node) Packets() <-chan types.Packet {
 	return n.private.Packets()
 }
+
+func (n Node) GetNodeAddress() types.NodeAddress {
+	return n.GetNodeAddress()
+}

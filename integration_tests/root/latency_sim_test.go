@@ -2,6 +2,7 @@
 package root
 
 import (
+	"bytes"
 	"fmt"
 	"net"
 	"strings"
@@ -160,13 +161,13 @@ func TestReadAndWrite(t *testing.T) {
 	conn_a, conn_b, _, addr_b := doAllSetup(t, tap_interfaces, bins, sockets)
 
 	// Write a simple message and read it out.
-	test_message := "Damn, Daniel!"
+	test_message := []byte("Damn, Daniel!")
 	integration.SendPacket(conn_a, t, addr_b, test_message)
 	packets := make(chan types.Packet)
 	go integration.WaitForPacket(conn_b, t, packets)
 	packet := <-packets
 	t.Logf("Got message: %s\n", packet.Data)
-	if packet.Data != test_message {
+	if !bytes.Equal(packet.Data, test_message) {
 		t.Fatalf("Expected message '%s', got '%s'.\n", test_message, packet.Data)
 	}
 }
@@ -206,7 +207,7 @@ func TestRoutingAlgorithm(t *testing.T) {
 		for i := 0; i < send_packets; i++ {
 			packet := makeSpaceString(packet_padding)
 			packet += fmt.Sprintf("%d", packet_number)
-			integration.SendPacket(conn_a, t, addr_b, packet)
+			integration.SendPacket(conn_a, t, addr_b, []byte(packet))
 			packet_number++
 		}
 	}()
