@@ -25,21 +25,16 @@ func TestPing(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, key1, err := node.CreateKey("/tmp/keyfile1")
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	node_addr0 := fmt.Sprintf("%x", key0.PublicKey().Hash())
-	node_addr1 := fmt.Sprintf("%x", key1.PublicKey().Hash())
 
 	// tun0
 	ponger := integration.NewNodeBinary(integration.BinaryOptions{
-		Listen:     "localhost:9999",
-		Fake_money: true,
-		Tcptun:     node_addr1,
-		Keyfile:    "/tmp/keyfile0",
-		Race:       true})
+		Listen:      "localhost:9999",
+		Fake_money:  true,
+		Tcptunserve: true,
+		Keyfile:     "/tmp/keyfile0",
+		Race:        true})
 	ponger.Start()
 	defer ponger.KillAndPrint(t)
 	_, err = WaitForDevice("tun0")
@@ -66,14 +61,6 @@ func TestPing(t *testing.T) {
 	pinger.Start()
 	defer pinger.KillAndPrint(t)
 	_, err = WaitForDevice("tun1")
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = SetDevUp("tun1")
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = SetDevAddr("tun1", "fe80::2/64")
 	if err != nil {
 		t.Fatal(err)
 	}
