@@ -134,7 +134,6 @@ func TestConnection(t *testing.T) {
 		Fake_money:           true,
 		Autodiscover:         true,
 		Autodiscover_devices: []string{listen_dev.Name},
-		Race:                 true,
 	})
 	listen.Start()
 	defer listen.KillAndPrint(t)
@@ -145,7 +144,6 @@ func TestConnection(t *testing.T) {
 		Fake_money:           true,
 		Autodiscover:         true,
 		Autodiscover_devices: []string{connect_dev.Name},
-		Race:                 true,
 	})
 	connect.Start()
 	defer connect.KillAndPrint(t)
