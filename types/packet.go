@@ -13,7 +13,7 @@ type Packet struct {
 	// The Amt is the amount of money in satoshis that will be paid upon packet delivery.
 	Amt int64
 	// The data is the physical data which will be sent.
-	Data string
+	Data []byte
 }
 
 func (p Packet) Destination() NodeAddress {
@@ -31,5 +31,5 @@ func (p Packet) Amount() int64 {
 }
 
 func (p Packet) String() string {
-	return fmt.Sprintf("{%x %v %v}", p.Dest, p.Amt, p.Data)
+	return fmt.Sprintf("{%x %v %q}", p.Dest, p.Amt, p.Data)
 }

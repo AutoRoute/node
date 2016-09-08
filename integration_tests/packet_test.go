@@ -3,6 +3,7 @@ package integration_tests
 import (
 	"github.com/AutoRoute/node/types"
 
+	"bytes"
 	"encoding/hex"
 	"encoding/json"
 	"testing"
@@ -42,7 +43,7 @@ func TestPacket(t *testing.T) {
 	}
 
 	raw_id, err := hex.DecodeString(connect_id)
-	p := types.Packet{types.NodeAddress(string(raw_id)), 10, "data"}
+	p := types.Packet{types.NodeAddress(string(raw_id)), 10, []byte("data")}
 
 	c, err := WaitForSocket("/tmp/unix")
 	if err != nil {
@@ -85,7 +86,7 @@ func TestPacket(t *testing.T) {
 	case <-time.After(4 * time.Second):
 		t.Fatal("Never received packet")
 	case p2 := <-packets:
-		if p != p2 {
+		if p.Dest != p2.Dest || p.Amt != p2.Amt || !bytes.Equal(p.Data, p2.Data) {
 			t.Fatal("Packets %v != %v", p, p2)
 		}
 	}

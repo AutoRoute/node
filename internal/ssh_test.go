@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"bytes"
 	"fmt"
 	"net"
 	"testing"
@@ -109,13 +110,13 @@ func TestSSHPacketTransmission(t *testing.T) {
 	defer c1.Close()
 	defer c2.Close()
 
-	p := types.Packet{types.NodeAddress("foo"), 3, "test"}
+	p := types.Packet{types.NodeAddress("foo"), 3, []byte("test")}
 	err = c1.SendPacket(p)
 	if err != nil {
 		t.Fatal(err)
 	}
 	p2 := <-c2.Packets()
-	if p2 != p {
+	if p2.Dest != p.Dest || p2.Amt != p.Amt || !bytes.Equal(p2.Data, p.Data) {
 		t.Fatalf("Different packets? %v != %v", p2, p)
 	}
 }

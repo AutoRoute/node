@@ -20,8 +20,8 @@ func TestBasic(t *testing.T) {
 	src := types.NodeAddress("src")
 
 	// Fake packet that we'll say we sent.
-	packet1 := types.Packet{node1, 1, ""}
-	packet2 := types.Packet{node2, 1, ""}
+	packet1 := types.Packet{node1, 1, nil}
+	packet2 := types.Packet{node2, 1, nil}
 
 	decision1 := newRoutingDecision(packet1, src, node1, 10)
 	decision2 := newRoutingDecision(packet2, src, node2, 10)
@@ -63,8 +63,8 @@ func TestDifferingBandwidths(t *testing.T) {
 	src := types.NodeAddress("src")
 
 	// Fake packet that we'll say we sent.
-	packet1 := types.Packet{node1, 1, ""}
-	packet2 := types.Packet{node2, 1, ""}
+	packet1 := types.Packet{node1, 1, nil}
+	packet2 := types.Packet{node2, 1, nil}
 
 	decision1 := newRoutingDecision(packet1, src, node1, 10)
 	decision2 := newRoutingDecision(packet2, src, node2, 10)
@@ -116,8 +116,8 @@ func TestPartialData(t *testing.T) {
 	nodes[2] = node3
 
 	// Fake packets that we'll say we sent.
-	packet1 := types.Packet{node1, 1, ""}
-	packet2 := types.Packet{node2, 1, ""}
+	packet1 := types.Packet{node1, 1, nil}
+	packet2 := types.Packet{node2, 1, nil}
 
 	decision1 := newRoutingDecision(packet1, src, node1, 10)
 	decision2 := newRoutingDecision(packet2, src, node2, 10)

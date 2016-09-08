@@ -161,7 +161,7 @@ func WaitForPackets(c net.Conn, t *testing.T, s chan types.Packet, amt int) {
 //  address: The address of the node where it is going.
 //  data: The actual data.
 func SendPacket(conn net.Conn, t *testing.T, address types.NodeAddress,
-	data string) {
+	data []byte) {
 	// Make the packet.
 	packet := types.Packet{address, 1, data}
 
