@@ -6,7 +6,6 @@ import (
 	"errors"
 	"net"
 	"os/user"
-	"strings"
 	"testing"
 	"time"
 
@@ -136,9 +135,7 @@ func TestTCPTunResponse(t *testing.T) {
 	time.Sleep(300 * time.Millisecond)
 
 	// Make sure the device is set up with the correct address
-	tun_name := strings.Trim(i.Name(), "\x00")
-
-	ifi, err := net.InterfaceByName(tun_name)
+	ifi, err := net.InterfaceByName(i.Name())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -241,7 +238,7 @@ func TestTCPTunReadError(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tcp := NewTCPTunClient(node, tun, dest, amt, strings.TrimRight(i.Name(), "\x00"))
+	tcp := NewTCPTunClient(node, tun, dest, amt, i.Name())
 	defer tcp.Close()
 
 	// Check request from new client
@@ -284,7 +281,7 @@ func TestTCPTunReadTruncated(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tcp := NewTCPTunClient(node, tun, dest, amt, strings.TrimRight(i.Name(), "\x00"))
+	tcp := NewTCPTunClient(node, tun, dest, amt, i.Name())
 	defer tcp.Close()
 
 	// Check request from new client
@@ -329,7 +326,7 @@ func TestTCPTunReadWriteFails(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tcp := NewTCPTunClient(node, tun, dest, amt, strings.TrimRight(i.Name(), "\x00"))
+	tcp := NewTCPTunClient(node, tun, dest, amt, i.Name())
 	defer tcp.Close()
 
 	// Check request from new client
@@ -372,7 +369,7 @@ func TestTCPTunWrite(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tcp := NewTCPTunClient(node, tun, dest, amt, strings.TrimRight(i.Name(), "\x00"))
+	tcp := NewTCPTunClient(node, tun, dest, amt, i.Name())
 	defer tcp.Close()
 
 	// Check request from new client
@@ -427,7 +424,7 @@ func TestTCPTunWriteSendError(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tcp := NewTCPTunClient(node, tun, dest, amt, strings.TrimRight(i.Name(), "\x00"))
+	tcp := NewTCPTunClient(node, tun, dest, amt, i.Name())
 	defer tcp.Close()
 
 	// Check request from new client
@@ -477,7 +474,7 @@ func TestTCPTunWriteUnmarshalError(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tcp := NewTCPTunClient(node, tun, dest, amt, strings.TrimRight(i.Name(), "\x00"))
+	tcp := NewTCPTunClient(node, tun, dest, amt, i.Name())
 	defer tcp.Close()
 
 	// Check request from new client

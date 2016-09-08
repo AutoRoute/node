@@ -160,19 +160,19 @@ func main() {
 			if err != nil {
 				log.Fatal(err)
 			}
-			err = exec.Command("ip", "link", "set", "dev", strings.TrimRight(i.Name(), "\x00"), "up").Run()
+			err = exec.Command("ip", "link", "set", "dev", i.Name(), "up").Run()
 			if err != nil {
 				log.Fatal(err)
 			}
-			err = exec.Command("ip", "addr", "add", *tcpaddress, "dev", strings.TrimRight(i.Name(), "\x00")).Run()
+			err = exec.Command("ip", "addr", "add", *tcpaddress, "dev", i.Name()).Run()
 			if err != nil {
 				log.Fatal(err)
 			}
-			err = exec.Command("ip", "route", "add", "0/1", "via", ip.String(), "dev", strings.TrimRight(i.Name(), "\x00")).Run()
+			err = exec.Command("ip", "route", "add", "0/1", "via", ip.String(), "dev", i.Name()).Run()
 			if err != nil {
 				log.Fatal(err)
 			}
-			err = exec.Command("ip", "route", "add", "128/1", "via", ip.String(), "dev", strings.TrimRight(i.Name(), "\x00")).Run()
+			err = exec.Command("ip", "route", "add", "128/1", "via", ip.String(), "dev", i.Name()).Run()
 			if err != nil {
 				log.Fatal(err)
 			}

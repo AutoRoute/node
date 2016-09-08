@@ -5,7 +5,7 @@ import (
 	"errors"
 	"log"
 	"os/exec"
-	"strings"
+	//"strings"
 	"time"
 
 	"github.com/AutoRoute/tuntap"
@@ -87,7 +87,7 @@ func (t *TCPTunClient) handshake(tun_name string) {
 		log.Fatal(err)
 	}
 
-	tun_name = strings.Trim(tun_name, "\x00")
+	//tun_name = strings.Trim(tun_name, "\x00")
 	err = SetDevAddr(tun_name, resp.IP.String())
 	if err != nil {
 		log.Fatal(err)
