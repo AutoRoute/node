@@ -133,7 +133,7 @@ func TestNoMapCycles(t *testing.T) {
 
 	m := NewBloomReachabilityMap()
 	m.AddEntry(addressSent)
-	conn1.SendMap(m)
+	conn1.SendMap(m.Copy())
 
 	found_address := false
 	timeout := time.After(10 * time.Second)
@@ -156,10 +156,10 @@ loop:
 
 	found_address = false
 	found_address2 := false
-	go conn1.SendMap(m)
+	go conn1.SendMap(m.Copy())
 	m2 := NewBloomReachabilityMap()
 	m2.AddEntry(addressSent2)
-	go conn1.SendMap(m2)
+	go conn1.SendMap(m2.Copy())
 	timeout = time.After(10 * time.Second)
 
 loop2:
