@@ -37,6 +37,11 @@ func newReachability(me types.NodeAddress) *reachabilityHandler {
 func (m *reachabilityHandler) addMap(address types.NodeAddress, new_map *BloomReachabilityMap) {
 	m.l.Lock()
 	defer m.l.Unlock()
+	temp := m.maps[address].Copy()
+	temp.Merge(new_map)
+	if temp.Equal(m.maps[address]) {
+		return
+	}
 	m.maps[address].Merge(new_map)
 	m.merged_map.Merge(new_map)
 	for addr, conn := range m.conns {

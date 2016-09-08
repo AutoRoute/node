@@ -72,3 +72,15 @@ func (m *BloomReachabilityMap) Copy() *BloomReachabilityMap {
 	}
 	return &mc
 }
+
+func (m *BloomReachabilityMap) Equal(b *BloomReachabilityMap) bool {
+	for k, v := range m.Filters {
+		if k >= len(b.Filters) {
+			return false
+		}
+		if b.Filters[k].Equal(v) == false {
+			return false
+		}
+	}
+	return m.Conglomerate.Equal(b.Conglomerate)
+}
