@@ -70,7 +70,7 @@ func TestDataTransmission(t *testing.T) {
 	}
 
 	for i := 0; i < 10; i++ {
-		p2 := types.Packet{key2.k.PublicKey().Hash(), 3, fmt.Sprintf("test%d", i)}
+		p2 := types.Packet{key2.k.PublicKey().Hash(), 3, []byte(fmt.Sprintf("test%d", i))}
 		err = n1.Node().SendPacket(p2)
 		if err != nil {
 			t.Fatalf("Error sending packet: %v", err)
@@ -112,7 +112,7 @@ func benchmarkDataTransmission(size int, b *testing.B) {
 		b.Fatalf("Error waiting for information %v", err)
 	}
 
-	p2 := types.Packet{key2.k.PublicKey().Hash(), 3, strings.Repeat("a", size)}
+	p2 := types.Packet{key2.k.PublicKey().Hash(), 3, []byte(strings.Repeat("a", size))}
 	done := make(chan bool)
 
 	b.ResetTimer()

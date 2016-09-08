@@ -23,6 +23,7 @@ type BinaryOptions struct {
 	Autodiscover         bool
 	Autodiscover_devices []string
 	Tcptun               string
+	Tcptunserve          bool
 	Keyfile              string
 	BTCHost              string
 	BTCUser              string
@@ -51,6 +52,9 @@ func ProduceCommandLine(b BinaryOptions) []string {
 	}
 	if len(b.Tcptun) > 0 {
 		args = append(args, "--tcptun="+b.Tcptun)
+	}
+	if b.Tcptunserve {
+		args = append(args, "--tcptunserve")
 	}
 	if len(b.Keyfile) > 0 {
 		args = append(args, "--keyfile="+b.Keyfile)

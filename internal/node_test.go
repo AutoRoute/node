@@ -21,7 +21,7 @@ func TestNode(t *testing.T) {
 		t.Fatalf("n2 is not reachable")
 	}
 
-	p2 := types.Packet{sk2.PublicKey().Hash(), 3, "data"}
+	p2 := types.Packet{sk2.PublicKey().Hash(), 3, []byte("data")}
 	err := n1.SendPacket(p2)
 	if err != nil {
 		t.Fatalf("Error sending packet: %v", err)

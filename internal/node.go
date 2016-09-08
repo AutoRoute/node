@@ -125,6 +125,10 @@ func (n *Node) GetAddress() PublicKey {
 	return n.id.PublicKey()
 }
 
+func (n *Node) GetNodeAddress() types.NodeAddress {
+	return n.GetAddress().Hash()
+}
+
 func (n *Node) IsReachable(addr types.NodeAddress) bool {
 	_, err := n.router.FindPossibleDests(addr, "")
 	return err == nil

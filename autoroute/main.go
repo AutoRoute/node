@@ -40,6 +40,7 @@ var fake_money = flag.Bool("fake_money", false, "Enables a money system which is
 var status = flag.String("status", "[::1]:12345", "The port to expose status information on")
 var unix = flag.String("unix", "", "The path to accept / receive packets as unix packets from")
 var tcptun = flag.String("tcptun", "", "Address to try and tcp tunnel to")
+var tcptunserve = flag.Bool("tcptunserve", false, "Enables this node to be an exit node")
 var tcpaddress = flag.String("tcp_address", "", "IP address to assign to the tcp tunnel")
 
 func main() {
@@ -129,6 +130,17 @@ func main() {
 		log.Fatal(http.ListenAndServe(*status, nil))
 	}()
 
+	if *tcptunserve {
+		log.Printf("Starting tcp tunnel server")
+		log.Printf("Establishing tcp tunnel to %v", *tcptun)
+		i, err := tuntap.Open("tun%d", tuntap.DevTun)
+		if err != nil {
+			log.Fatal(err)
+		}
+		tunserver := node.NewTCPTunServer(n.Node(), i, 10000)
+		tunserver.Listen()
+	}
+
 	if len(*tcptun) > 0 {
 		log.Printf("Establishing tcp tunnel to %v", *tcptun)
 		i, err := tuntap.Open("tun%d", tuntap.DevTun)
@@ -140,7 +152,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		t := node.NewTCPTunnel(i, n.Node(), types.NodeAddress(dest), 10000)
+		t := node.NewTCPTunClient(n.Node(), i, types.NodeAddress(dest), 10000, i.Name())
 		defer t.Close()
 
 		if len(*tcpaddress) > 0 {
@@ -148,19 +160,19 @@ func main() {
 			if err != nil {
 				log.Fatal(err)
 			}
-			err = exec.Command("ip", "link", "set", "dev", strings.TrimRight(i.Name(), "\x00"), "up").Run()
+			err = exec.Command("ip", "link", "set", "dev", i.Name(), "up").Run()
 			if err != nil {
 				log.Fatal(err)
 			}
-			err = exec.Command("ip", "addr", "add", *tcpaddress, "dev", strings.TrimRight(i.Name(), "\x00")).Run()
+			err = exec.Command("ip", "addr", "add", *tcpaddress, "dev", i.Name()).Run()
 			if err != nil {
 				log.Fatal(err)
 			}
-			err = exec.Command("ip", "route", "add", "0/1", "via", ip.String(), "dev", strings.TrimRight(i.Name(), "\x00")).Run()
+			err = exec.Command("ip", "route", "add", "0/1", "via", ip.String(), "dev", i.Name()).Run()
 			if err != nil {
 				log.Fatal(err)
 			}
-			err = exec.Command("ip", "route", "add", "128/1", "via", ip.String(), "dev", strings.TrimRight(i.Name(), "\x00")).Run()
+			err = exec.Command("ip", "route", "add", "128/1", "via", ip.String(), "dev", i.Name()).Run()
 			if err != nil {
 				log.Fatal(err)
 			}
