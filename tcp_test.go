@@ -58,7 +58,7 @@ func (n testNode) GetNodeAddress() types.NodeAddress {
 	return "source"
 }
 
-func readTunPacket() tuntap.Packet {
+func exampleTunPacket() tuntap.Packet {
 	p := make([]byte, 192, 192)
 	p[0] = 0x6
 	addr := []byte(net.ParseIP("2002::"))
@@ -82,7 +82,7 @@ func TestTCPTunRequest(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tcp := NewTCPTunnel(node, tun, dest, amt, i.Name())
+	tcp := NewTCPTunClient(node, tun, dest, amt, i.Name())
 	defer tcp.Close()
 
 	// Check request from new tunnel
@@ -116,7 +116,7 @@ func TestTCPTunResponse(t *testing.T) {
 	}
 
 	// Start new client
-	tcp := NewTCPTunnel(node, tun, dest, amt, i.Name())
+	tcp := NewTCPTunClient(node, tun, dest, amt, i.Name())
 	defer tcp.Close()
 
 	// Check request from new client
@@ -176,7 +176,7 @@ func TestTCPTunToData(t *testing.T) {
 	}
 
 	// Start new client
-	tcp := NewTCPTunnel(node, tun, dest, amt, i.Name())
+	tcp := NewTCPTunClient(node, tun, dest, amt, i.Name())
 	defer tcp.Close()
 
 	// Check request from new client
@@ -194,7 +194,7 @@ func TestTCPTunToData(t *testing.T) {
 	node.out <- p
 
 	// Write to client's tun device
-	tp := readTunPacket()
+	tp := exampleTunPacket()
 	tun.out <- &tp
 
 	// Receive the packet over AutoRoute and make
@@ -241,7 +241,7 @@ func TestTCPTunReadError(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tcp := NewTCPTunnel(node, tun, dest, amt, strings.TrimRight(i.Name(), "\x00"))
+	tcp := NewTCPTunClient(node, tun, dest, amt, strings.TrimRight(i.Name(), "\x00"))
 	defer tcp.Close()
 
 	// Check request from new client
@@ -259,7 +259,7 @@ func TestTCPTunReadError(t *testing.T) {
 	node.out <- p
 
 	// Send in a test packet
-	tp := readTunPacket()
+	tp := exampleTunPacket()
 	tun.out <- &tp
 
 	// Make sure the error appears
@@ -284,7 +284,7 @@ func TestTCPTunReadTruncated(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tcp := NewTCPTunnel(node, tun, dest, amt, strings.TrimRight(i.Name(), "\x00"))
+	tcp := NewTCPTunClient(node, tun, dest, amt, strings.TrimRight(i.Name(), "\x00"))
 	defer tcp.Close()
 
 	// Check request from new client
@@ -302,7 +302,7 @@ func TestTCPTunReadTruncated(t *testing.T) {
 	node.out <- p
 
 	// Send in a test packet
-	tp := readTunPacket()
+	tp := exampleTunPacket()
 	tp.Truncated = true
 	tun.out <- &tp
 
@@ -329,7 +329,7 @@ func TestTCPTunReadWriteFails(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tcp := NewTCPTunnel(node, tun, dest, amt, strings.TrimRight(i.Name(), "\x00"))
+	tcp := NewTCPTunClient(node, tun, dest, amt, strings.TrimRight(i.Name(), "\x00"))
 	defer tcp.Close()
 
 	// Check request from new client
@@ -347,7 +347,7 @@ func TestTCPTunReadWriteFails(t *testing.T) {
 	node.out <- p
 
 	// Send in a test packet
-	tp := readTunPacket()
+	tp := exampleTunPacket()
 	tun.out <- &tp
 
 	// Make sure the error appears
@@ -372,7 +372,7 @@ func TestTCPTunWrite(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tcp := NewTCPTunnel(node, tun, dest, amt, strings.TrimRight(i.Name(), "\x00"))
+	tcp := NewTCPTunClient(node, tun, dest, amt, strings.TrimRight(i.Name(), "\x00"))
 	defer tcp.Close()
 
 	// Check request from new client
@@ -390,7 +390,7 @@ func TestTCPTunWrite(t *testing.T) {
 	node.out <- p
 
 	// Send in a test packet
-	tp := readTunPacket()
+	tp := exampleTunPacket()
 	b, err := json.Marshal(&tp)
 	if err != nil {
 		t.Fatal(err)
@@ -427,7 +427,7 @@ func TestTCPTunWriteSendError(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tcp := NewTCPTunnel(node, tun, dest, amt, strings.TrimRight(i.Name(), "\x00"))
+	tcp := NewTCPTunClient(node, tun, dest, amt, strings.TrimRight(i.Name(), "\x00"))
 	defer tcp.Close()
 
 	// Check request from new client
@@ -445,7 +445,7 @@ func TestTCPTunWriteSendError(t *testing.T) {
 	node.out <- p
 
 	// Send in a test packet
-	tp := readTunPacket()
+	tp := exampleTunPacket()
 	b, err := json.Marshal(&tp)
 	if err != nil {
 		t.Fatal(err)
@@ -477,7 +477,7 @@ func TestTCPTunWriteUnmarshalError(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tcp := NewTCPTunnel(node, tun, dest, amt, strings.TrimRight(i.Name(), "\x00"))
+	tcp := NewTCPTunClient(node, tun, dest, amt, strings.TrimRight(i.Name(), "\x00"))
 	defer tcp.Close()
 
 	// Check request from new client

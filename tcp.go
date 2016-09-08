@@ -13,12 +13,15 @@ import (
 	"github.com/AutoRoute/node/types"
 )
 
+// NodeConnection is an AutoRoute connection between two AutoRoute nodes.
+// It implements a DataConnection (can send and receive AutoRoute packets)
+// but also has a NodeAddress.
 type NodeConnection interface {
 	DataConnection
 	GetNodeAddress() types.NodeAddress
 }
 
-type TCP struct {
+type TCPTunClient struct {
 	node NodeConnection
 	tun  TCPTun
 	dest types.NodeAddress
@@ -34,6 +37,8 @@ type TCPTun interface {
 
 var truncated_error error = errors.New("truncated packet")
 
+// SetDevAddr takes a network interface name and an IP address in string form
+// and sets the device up and assigns it an IP address.
 func SetDevAddr(dev string, addr string) error {
 	_, err := exec.Command("ip", "link", "set", "dev", dev, "up").CombinedOutput()
 	if err != nil {
@@ -44,21 +49,27 @@ func SetDevAddr(dev string, addr string) error {
 	return err
 }
 
-func NewTCPTunnel(n NodeConnection, tun TCPTun, dest types.NodeAddress, amt int64, tun_name string) *TCP {
-	t := &TCP{n, tun, dest, amt, make(chan bool), make(chan error, 1)}
+// NewTCPTunnel creates and starts a TCP tunneling client. After creating a TCP object, it starts
+// the handshake to the server (exit node) specified by dest and returns a pointer to the TCP
+// object. Then it starts listening on the tun and node connection.
+func NewTCPTunClient(n NodeConnection, tun TCPTun, dest types.NodeAddress, amt int64, tun_name string) *TCPTunClient {
+	t := &TCPTunClient{n, tun, dest, amt, make(chan bool), make(chan error, 1)}
 	go t.handshake(tun_name)
 	return t
 }
 
-func (t *TCP) Close() {
+func (t *TCPTunClient) Close() {
 	close(t.quit)
 }
 
-func (t *TCP) Error() chan error {
+func (t *TCPTunClient) Error() chan error {
 	return t.err
 }
 
-func (t *TCP) handshake(tun_name string) {
+// Sends a request to tunnel with the server. Receives it's assigned IP address and
+// sets the tun device up with that address. That begins listening on the tun and
+// node connection.
+func (t *TCPTunClient) handshake(tun_name string) {
 	req := types.TCPTunnelRequest{t.node.GetNodeAddress()}
 	req_b, _ := req.MarshalBinary()
 	ep := types.Packet{t.dest, t.amt, req_b}
@@ -85,7 +96,9 @@ func (t *TCP) handshake(tun_name string) {
 	go t.writetun()
 }
 
-func (t *TCP) readtun() {
+// Reads from the tun device, wraps the node in a TCP tunneling packet and
+// sends it out the node connection.
+func (t *TCPTunClient) readtun() {
 	for {
 		select {
 		case <-t.quit:
@@ -118,7 +131,9 @@ func (t *TCP) readtun() {
 	}
 }
 
-func (t *TCP) writetun() {
+// Reads from the node connection, unwraps the node from the TCP tunneling packet
+// and sends it out the tun device.
+func (t *TCPTunClient) writetun() {
 	for {
 		select {
 		case p := <-t.node.Packets():

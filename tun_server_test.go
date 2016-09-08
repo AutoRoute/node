@@ -24,7 +24,7 @@ func TestReceiveRequest(t *testing.T) {
 	source := types.NodeAddress("source")
 	tun := testTun{make(chan *tuntap.Packet), make(chan *tuntap.Packet), nil, nil}
 	node := testNode{make(chan types.Packet), make(chan types.Packet), nil}
-	tunserver := NewTunServer(node, tun, amt)
+	tunserver := NewTCPTunServer(node, tun, amt)
 	tunserver.Listen()
 	defer tunserver.Close()
 
@@ -57,7 +57,7 @@ func TestListenNodeData(t *testing.T) {
 	source := types.NodeAddress("source")
 	tun := testTun{make(chan *tuntap.Packet), make(chan *tuntap.Packet), nil, nil}
 	node := testNode{make(chan types.Packet), make(chan types.Packet), nil}
-	tunserver := NewTunServer(node, tun, amt)
+	tunserver := NewTCPTunServer(node, tun, amt)
 	tunserver.Listen()
 	defer tunserver.Close()
 
@@ -79,7 +79,7 @@ func TestListenNodeData(t *testing.T) {
 	}
 
 	// Create test node packet
-	p := readTunPacket()
+	p := exampleTunPacket()
 	b, err := json.Marshal(p)
 	if err != nil {
 		t.Fatal(err)
@@ -112,7 +112,7 @@ func TestListenTun(t *testing.T) {
 	source := types.NodeAddress("source")
 	tun := testTun{make(chan *tuntap.Packet), make(chan *tuntap.Packet), nil, nil}
 	node := testNode{make(chan types.Packet), make(chan types.Packet), nil}
-	tunserver := NewTunServer(node, tun, amt)
+	tunserver := NewTCPTunServer(node, tun, amt)
 	tunserver.Listen()
 	defer tunserver.Close()
 
@@ -134,7 +134,7 @@ func TestListenTun(t *testing.T) {
 	}
 
 	// Send test tun packet
-	p := readTunPacket()
+	p := exampleTunPacket()
 	tun.out <- &p
 
 	// Receive the packet from the node connection
@@ -170,12 +170,12 @@ func TestTunServerReadError(t *testing.T) {
 	read_error := errors.New("Read Error")
 	tun := testTun{make(chan *tuntap.Packet), make(chan *tuntap.Packet), read_error, nil}
 	node := testNode{make(chan types.Packet), make(chan types.Packet), nil}
-	tunserver := NewTunServer(node, tun, amt)
+	tunserver := NewTCPTunServer(node, tun, amt)
 	tunserver.Listen()
 	defer tunserver.Close()
 
 	// Send in a test packet
-	p := readTunPacket()
+	p := exampleTunPacket()
 	tun.out <- &p
 
 	// Make sure the error appears
@@ -189,7 +189,7 @@ func TestTunServerReadTruncated(t *testing.T) {
 	amt := int64(7)
 	tun := testTun{make(chan *tuntap.Packet), make(chan *tuntap.Packet), nil, nil}
 	node := testNode{make(chan types.Packet), make(chan types.Packet), nil}
-	tunserver := NewTunServer(node, tun, amt)
+	tunserver := NewTCPTunServer(node, tun, amt)
 	tunserver.Listen()
 	defer tunserver.Close()
 
@@ -209,12 +209,12 @@ func TestTunServerReadWriteFails(t *testing.T) {
 	write_error := errors.New("Write Error")
 	tun := testTun{make(chan *tuntap.Packet), make(chan *tuntap.Packet), nil, nil}
 	node := testNode{make(chan types.Packet, 1), make(chan types.Packet), write_error}
-	tunserver := NewTunServer(node, tun, amt)
+	tunserver := NewTCPTunServer(node, tun, amt)
 	tunserver.Listen()
 	defer tunserver.Close()
 
 	// Send in a test packet
-	p := readTunPacket()
+	p := exampleTunPacket()
 	tun.out <- &p
 
 	// Make sure the error appears
@@ -230,7 +230,7 @@ func TestTunServerWriteSendError(t *testing.T) {
 	write_error := errors.New("Write Error")
 	tun := testTun{make(chan *tuntap.Packet, 1), make(chan *tuntap.Packet), nil, write_error}
 	node := testNode{make(chan types.Packet), make(chan types.Packet), nil}
-	tunserver := NewTunServer(node, tun, amt)
+	tunserver := NewTCPTunServer(node, tun, amt)
 	tunserver.Listen()
 	defer tunserver.Close()
 
@@ -272,7 +272,7 @@ func TestTunServerWriteUnmarshalError(t *testing.T) {
 	source := types.NodeAddress("source")
 	tun := testTun{make(chan *tuntap.Packet), make(chan *tuntap.Packet), nil, nil}
 	node := testNode{make(chan types.Packet), make(chan types.Packet), nil}
-	tunserver := NewTunServer(node, tun, amt)
+	tunserver := NewTCPTunServer(node, tun, amt)
 	tunserver.Listen()
 	defer tunserver.Close()
 

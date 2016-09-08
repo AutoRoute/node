@@ -10,7 +10,7 @@ import (
 	"github.com/AutoRoute/node/types"
 )
 
-type TunServer struct {
+type TCPTunServer struct {
 	node        NodeConnection
 	tun         TCPTun
 	amt         int64
@@ -21,19 +21,23 @@ type TunServer struct {
 	err         chan error
 }
 
-func NewTunServer(n NodeConnection, tun TCPTun, amt int64) *TunServer {
-	return &TunServer{n, tun, amt, make(map[string]types.NodeAddress), make(map[types.NodeAddress]bool), 0, make(chan bool), make(chan error, 1)}
+// NewTCPTunServer just constructs and returns a TCPTunServer with the given paramters.
+// Unlike NewTCPTunClient, it does not start listening.
+func NewTCPTunServer(n NodeConnection, tun TCPTun, amt int64) *TCPTunServer {
+	return &TCPTunServer{n, tun, amt, make(map[string]types.NodeAddress), make(map[types.NodeAddress]bool), 0, make(chan bool), make(chan error, 1)}
 }
 
-func (ts *TunServer) Close() {
+func (ts *TCPTunServer) Close() {
 	close(ts.quit)
 }
 
-func (ts *TunServer) Error() chan error {
+func (ts *TCPTunServer) Error() chan error {
 	return ts.err
 }
 
-func (ts *TunServer) connect(connectingNode types.NodeAddress) {
+// connect takes the NodeAddress of the connecting Node (the Node that sent a request to tunnel),
+// adds it to the connection table, and assigns and sends it an IP address
+func (ts *TCPTunServer) connect(connectingNode types.NodeAddress) {
 	ip := fmt.Sprintf("2001::%d", ts.currIP)
 	ts.currIP++
 	nodeAddr := connectingNode
@@ -50,13 +54,16 @@ func (ts *TunServer) connect(connectingNode types.NodeAddress) {
 	}
 }
 
-func (ts *TunServer) Listen() *TunServer {
+// Listen() starts listening on the tun and AutoRoute connection
+func (ts *TCPTunServer) Listen() {
 	go ts.listenNode()
 	go ts.listenTun()
-	return ts
 }
 
-func (ts *TunServer) listenNode() {
+// listenNode reads a packet from the node connection and determines whether
+// it's a TCP tunnel request or data packet. If it's a request to tunnel, connect
+// is called. Otherwise the packet is unwrapped and sent out the tun device.
+func (ts *TCPTunServer) listenNode() {
 	for p := range ts.node.Packets() {
 		// src := types.NodeAddress(p.Dest)
 		// if _, ok := ts.connections[src]; !ok {
@@ -100,7 +107,9 @@ func (ts *TunServer) listenNode() {
 	}
 }
 
-func (ts *TunServer) listenTun() {
+// listenTun reads a packet from the tun device, wraps it in a TCP tunnel packet
+// and sends it out the node connection
+func (ts *TCPTunServer) listenTun() {
 	for {
 		p, err := ts.tun.ReadPacket()
 		if err != nil {
