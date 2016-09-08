@@ -46,6 +46,22 @@ func (m *reachabilityHandler) addMap(address types.NodeAddress, new_map *BloomRe
 	}
 }
 
+// Handles a connection going away.
+func (m *reachabilityHandler) removeConnection(address types.NodeAddress) {
+	m.l.Lock()
+	defer m.l.Unlock()
+	delete(m.maps, address)
+	delete(m.conns, address)
+	m.merged_map = NewBloomReachabilityMap()
+	for _, maps := range m.maps {
+		m.merged_map.Merge(maps)
+	}
+	for _, conn := range m.conns {
+		conn.SendMap(m.merged_map.Copy())
+	}
+
+}
+
 func (m *reachabilityHandler) AddConnection(id types.NodeAddress, c MapConnection) {
 	// TODO(colin): This should be streamed. or something similar.
 	m.l.Lock()
@@ -74,6 +90,7 @@ func (m *reachabilityHandler) HandleConnection(id types.NodeAddress, c MapConnec
 		select {
 		case rmap, ok := <-c.ReachabilityMaps():
 			if !ok {
+				m.removeConnection(id)
 				return
 			}
 			rmap.Increment()
