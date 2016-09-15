@@ -5,7 +5,7 @@ import (
 )
 
 type Logger struct {
-	Log io.Writer
+	BloomFilterLog io.Writer
 }
 
 func NewLogger(w io.Writer) Logger {
@@ -13,6 +13,6 @@ func NewLogger(w io.Writer) Logger {
 }
 
 func (lgr *Logger) LogBloomFilter(brm *BloomReachabilityMap) error {
-	_, err := brm.Conglomerate.WriteTo(lgr.Log)
+	_, err := brm.Conglomerate.WriteTo(lgr.BloomFilterLog)
 	return err
 }
