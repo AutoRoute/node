@@ -74,10 +74,10 @@ func (m *BloomReachabilityMap) Copy() *BloomReachabilityMap {
 }
 
 func (m *BloomReachabilityMap) Equal(b *BloomReachabilityMap) bool {
+	if len(m.Filters) != len(b.Filters) {
+		return false
+	}
 	for k, v := range m.Filters {
-		if k >= len(b.Filters) {
-			return false
-		}
 		if b.Filters[k].Equal(v) == false {
 			return false
 		}
