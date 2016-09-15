@@ -1,18 +1,18 @@
 package internal
 
 import (
+	"encoding/json"
 	"io"
 )
 
 type Logger struct {
-	BloomFilterLog io.Writer
+	BloomFilterLog *json.Encoder
 }
 
 func NewLogger(w io.Writer) Logger {
-	return Logger{w}
+	return Logger{json.NewEncoder(w)}
 }
 
 func (lgr *Logger) LogBloomFilter(brm *BloomReachabilityMap) error {
-	_, err := brm.Conglomerate.WriteTo(lgr.BloomFilterLog)
-	return err
+	return lgr.BloomFilterLog.Encode(brm.Conglomerate)
 }

@@ -2,6 +2,7 @@ package internal
 
 import (
 	"bytes"
+	"encoding/json"
 	"testing"
 
 	"github.com/AutoRoute/node/types"
@@ -9,17 +10,22 @@ import (
 
 func TestLogBloomFilter(t *testing.T) {
 	buf := bytes.Buffer{}
-	log := Logger{&buf}
+	logger := NewLogger(&buf)
 	a := types.NodeAddress("1")
 
-	bloomMap := NewBloomReachabilityMap()
-	bloomMap.AddEntry(a)
+	bloomMap1 := NewBloomReachabilityMap()
+	bloomMap1.AddEntry(a)
 
-	log.LogBloomFilter(bloomMap)
+	logger.LogBloomFilter(bloomMap1)
 
-	bloomMap.Conglomerate.ReadFrom(&buf)
+	var bloomMap2 BloomReachabilityMap
+	decoder := json.NewDecoder(&buf)
+	err := decoder.Decode(&bloomMap2.Conglomerate)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	if !(bloomMap.IsReachable(a)) {
-		t.Fatal("expected %s to be reachable in %v", a, bloomMap)
+	if !(bloomMap2.IsReachable(a)) {
+		t.Fatal("expected %s to be reachable in %v", a, bloomMap2)
 	}
 }
