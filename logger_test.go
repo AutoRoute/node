@@ -1,10 +1,11 @@
-package internal
+package node
 
 import (
 	"bytes"
 	"encoding/json"
 	"testing"
 
+	"github.com/AutoRoute/node/internal"
 	"github.com/AutoRoute/node/types"
 )
 
@@ -13,12 +14,12 @@ func TestLogBloomFilter(t *testing.T) {
 	logger := NewLogger(&buf)
 	a := types.NodeAddress("1")
 
-	bloomMap1 := NewBloomReachabilityMap()
+	bloomMap1 := internal.NewBloomReachabilityMap()
 	bloomMap1.AddEntry(a)
 
 	logger.LogBloomFilter(bloomMap1)
 
-	var bloomMap2 BloomReachabilityMap
+	var bloomMap2 internal.BloomReachabilityMap
 	decoder := json.NewDecoder(&buf)
 	err := decoder.Decode(&bloomMap2.Conglomerate)
 	if err != nil {

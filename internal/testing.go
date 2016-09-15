@@ -97,3 +97,10 @@ func Link(a, b Linkable) {
 	a.AddConnection(c2)
 	b.AddConnection(c1)
 }
+
+type testLogger struct {
+}
+
+func (t testLogger) LogBloomFilter(brm *BloomReachabilityMap) error {
+	return nil
+}

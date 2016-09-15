@@ -80,7 +80,8 @@ func main() {
 		money = rpc
 	}
 	log.Printf("Connected")
-	n := node.NewServer(key, money, log.New(os.Stderr, "", log.LstdFlags))
+	var packet_logger node.Logger
+	n := node.NewServer(key, money, log.New(os.Stderr, "", log.LstdFlags), packet_logger)
 
 	log.Printf("Starting to listen on %s", *listen)
 	err = n.Listen(*listen)

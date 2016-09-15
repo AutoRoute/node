@@ -34,9 +34,9 @@ type Router struct {
 	quit chan bool
 }
 
-func NewRouter(pk PublicKey) *Router {
+func NewRouter(pk PublicKey, packet_logger Logger) *Router {
 	id_export.Set(fmt.Sprintf("%x", pk.Hash()))
-	reach := newReachability(pk.Hash())
+	reach := newReachability(pk.Hash(), packet_logger)
 	// TODO(daniel): Eventually, add flags that allow a user to specify alternate
 	// routing algorithms.
 	algorithm := newBandwidthRouting(reach)

@@ -16,10 +16,11 @@ type reachabilityHandler struct {
 	conns      map[types.NodeAddress]MapConnection
 	maps       map[types.NodeAddress]*BloomReachabilityMap
 	merged_map *BloomReachabilityMap
+	logger     Logger
 	quit       chan bool
 }
 
-func newReachability(me types.NodeAddress) *reachabilityHandler {
+func newReachability(me types.NodeAddress, packet_logger Logger) *reachabilityHandler {
 	conns := make(map[types.NodeAddress]MapConnection)
 	maps := make(map[types.NodeAddress]*BloomReachabilityMap)
 	impl := &reachabilityHandler{
@@ -28,6 +29,7 @@ func newReachability(me types.NodeAddress) *reachabilityHandler {
 		conns,
 		maps,
 		NewBloomReachabilityMap(),
+		packet_logger,
 		make(chan bool),
 	}
 	impl.merged_map.AddEntry(me)
@@ -64,6 +66,11 @@ func (m *reachabilityHandler) AddConnection(id types.NodeAddress, c MapConnectio
 			log.Print(err)
 		}
 	}()
+
+	err := m.logger.LogBloomFilter(m.merged_map)
+	if err != nil {
+		log.Print(err)
+	}
 
 	// Store all received maps
 	go m.HandleConnection(id, c)
