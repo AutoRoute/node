@@ -35,8 +35,8 @@ func (e emptywriter) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
-func NewServer(key Key, m types.Money, logger *log.Logger, packet_logger Logger) *Server {
-	n := internal.NewNode(key.k, m, time.Tick(30*time.Second), time.Tick(30*time.Second), packet_logger)
+func NewServer(key Key, m types.Money, logger *log.Logger, route_logger Logger) *Server {
+	n := internal.NewNode(key.k, m, time.Tick(30*time.Second), time.Tick(30*time.Second), route_logger)
 	if logger == nil {
 		logger = log.New(emptywriter{}, "", 0)
 	}
