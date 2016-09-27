@@ -6,7 +6,8 @@ import (
 
 func TestConnection(t *testing.T) {
 	listen := NewNodeBinary(BinaryOptions{Listen: "[::1]:9999",
-		Fake_money: true})
+		FakeMoney:    true,
+		BloomLogPath: "/tmp/bloom1.log"})
 	listen.Start()
 	defer listen.KillAndPrint(t)
 	listen_id, err := WaitForID(listen)
@@ -15,9 +16,10 @@ func TestConnection(t *testing.T) {
 	}
 
 	connect := NewNodeBinary(BinaryOptions{
-		Listen:     "[::1]:9998",
-		Connect:    []string{"[::1]:9999"},
-		Fake_money: true})
+		Listen:       "[::1]:9998",
+		Connect:      []string{"[::1]:9999"},
+		FakeMoney:    true,
+		BloomLogPath: "/tmp/bloom2.log"})
 	connect.Start()
 	defer connect.KillAndPrint(t)
 	connect_id, err := WaitForID(connect)

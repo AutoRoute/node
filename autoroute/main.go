@@ -28,8 +28,8 @@ var autodiscover = flag.Bool("auto", false,
 	"Whether we should try and find neighboring routers")
 var dev_names = flag.String("devs", "",
 	"Comma separated list of interfaces to discover on")
-var keyfile = flag.String("keyfile", "",
-	"The keyfile we should check for a key and write our current key to")
+var key_file = flag.String("key_file", "",
+	"The key_file we should check for a key and write our current key to")
 var btc_host = flag.String("btc_host", "localhost:8333",
 	"The bitcoin daemon we should connect to")
 var btc_user = flag.String("btc_user", "user",
@@ -39,9 +39,9 @@ var btc_pass = flag.String("btc_pass", "password",
 var fake_money = flag.Bool("fake_money", false, "Enables a money system which is purely fake")
 var status = flag.String("status", "[::1]:12345", "The port to expose status information on")
 var unix = flag.String("unix", "", "The path to accept / receive packets as unix packets from")
-var tcptun = flag.String("tcptun", "", "Address to try and tcp tunnel to")
-var tcptunserve = flag.Bool("tcptunserve", false, "Enables this node to be an exit node")
-var tcpaddress = flag.String("tcp_address", "", "IP address to assign to the tcp tunnel")
+var tcp_tun = flag.String("tcp_tun", "", "Address to try and tcp tunnel to")
+var tcp_tun_serve = flag.Bool("tcp_tun_serve", false, "Enables this node to be an exit node")
+var tcp_address = flag.String("tcp_address", "", "IP address to assign to the tcp tunnel")
 var bloom_log_path = flag.String("bloom_log_path", "", "Bloom filter log path")
 
 func main() {
@@ -56,8 +56,8 @@ func main() {
 	// Figure out and load what key we are using for our identity
 	var key node.Key
 	var err error
-	if len(*keyfile) > 0 {
-		key, err = node.LoadKey(*keyfile)
+	if len(*key_file) > 0 {
+		key, err = node.LoadKey(*key_file)
 		if err != nil {
 			log.Fatalf("Error loading key: %v", err)
 		}
@@ -82,9 +82,9 @@ func main() {
 	}
 	log.Printf("Connected")
 
-	bloom_log, err := os.Open(*bloom_log_path)
+	bloom_log, err := os.Create(*bloom_log_path)
 	if err != nil {
-		log.Fatal("Error opening bloom log: %v", err)
+		log.Fatal("Error creating bloom log: %v", err)
 	}
 	route_logger := node.NewLogger(bloom_log)
 	n := node.NewServer(key, money, log.New(os.Stderr, "", log.LstdFlags), route_logger)
@@ -137,9 +137,9 @@ func main() {
 		log.Fatal(http.ListenAndServe(*status, nil))
 	}()
 
-	if *tcptunserve {
+	if *tcp_tun_serve {
 		log.Printf("Starting tcp tunnel server")
-		log.Printf("Establishing tcp tunnel to %v", *tcptun)
+		log.Printf("Establishing tcp tunnel to %v", *tcp_tun)
 		i, err := tuntap.Open("tun%d", tuntap.DevTun)
 		if err != nil {
 			log.Fatal(err)
@@ -148,22 +148,22 @@ func main() {
 		tunserver.Listen()
 	}
 
-	if len(*tcptun) > 0 {
-		log.Printf("Establishing tcp tunnel to %v", *tcptun)
+	if len(*tcp_tun) > 0 {
+		log.Printf("Establishing tcp tunnel to %v", *tcp_tun)
 		i, err := tuntap.Open("tun%d", tuntap.DevTun)
 		if err != nil {
 			log.Fatal(err)
 		}
 		dest := ""
-		_, err = fmt.Sscanf(*tcptun, "%x", &dest)
+		_, err = fmt.Sscanf(*tcp_tun, "%x", &dest)
 		if err != nil {
 			log.Fatal(err)
 		}
 		t := node.NewTCPTunClient(n.Node(), i, types.NodeAddress(dest), 10000, i.Name())
 		defer t.Close()
 
-		if len(*tcpaddress) > 0 {
-			ip, _, err := net.ParseCIDR(*tcpaddress)
+		if len(*tcp_address) > 0 {
+			ip, _, err := net.ParseCIDR(*tcp_address)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -171,7 +171,7 @@ func main() {
 			if err != nil {
 				log.Fatal(err)
 			}
-			err = exec.Command("ip", "addr", "add", *tcpaddress, "dev", i.Name()).Run()
+			err = exec.Command("ip", "addr", "add", *tcp_address, "dev", i.Name()).Run()
 			if err != nil {
 				log.Fatal(err)
 			}
