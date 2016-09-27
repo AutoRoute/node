@@ -39,6 +39,11 @@ func newReachability(me types.NodeAddress, route_logger Logger) *reachabilityHan
 func (m *reachabilityHandler) addMap(address types.NodeAddress, new_map *BloomReachabilityMap) {
 	m.l.Lock()
 	defer m.l.Unlock()
+	temp := m.maps[address].Copy()
+	temp.Merge(new_map)
+	if temp.Equal(m.maps[address]) {
+		return
+	}
 	m.maps[address].Merge(new_map)
 	m.merged_map.Merge(new_map)
 	for addr, conn := range m.conns {
@@ -46,6 +51,22 @@ func (m *reachabilityHandler) addMap(address types.NodeAddress, new_map *BloomRe
 			conn.SendMap(new_map.Copy())
 		}
 	}
+}
+
+// Handles a connection going away.
+func (m *reachabilityHandler) removeConnection(address types.NodeAddress) {
+	m.l.Lock()
+	defer m.l.Unlock()
+	delete(m.maps, address)
+	delete(m.conns, address)
+	m.merged_map = NewBloomReachabilityMap()
+	for _, maps := range m.maps {
+		m.merged_map.Merge(maps)
+	}
+	for _, conn := range m.conns {
+		conn.SendMap(m.merged_map.Copy())
+	}
+
 }
 
 func (m *reachabilityHandler) AddConnection(id types.NodeAddress, c MapConnection) {
@@ -81,6 +102,7 @@ func (m *reachabilityHandler) HandleConnection(id types.NodeAddress, c MapConnec
 		select {
 		case rmap, ok := <-c.ReachabilityMaps():
 			if !ok {
+				m.removeConnection(id)
 				return
 			}
 			rmap.Increment()

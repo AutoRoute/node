@@ -111,3 +111,76 @@ func TestNoBackwardsPackets(t *testing.T) {
 		t.Fatal("Expected error, but got none.\n")
 	}
 }
+
+// Test that multiply sending the same map doesn't generate multiple relays
+func TestNoMapCycles(t *testing.T) {
+	conn1, conn3 := makePairedMapConnections()
+	conn2, conn4 := makePairedMapConnections()
+
+	address1 := types.NodeAddress("1")
+	address2 := types.NodeAddress("2")
+	address3 := types.NodeAddress("3")
+	addressSent := types.NodeAddress("Sent")
+	addressSent2 := types.NodeAddress("Sent2")
+
+	reach1 := newReachability(address1)
+	defer reach1.Close()
+
+	reach1.AddConnection(address2, conn3)
+	<-conn1.ReachabilityMaps()
+	reach1.AddConnection(address3, conn4)
+	<-conn2.ReachabilityMaps()
+
+	m := NewBloomReachabilityMap()
+	m.AddEntry(addressSent)
+	conn1.SendMap(m.Copy())
+
+	found_address := false
+	timeout := time.After(10 * time.Second)
+loop:
+	for {
+		select {
+		case c := <-conn2.ReachabilityMaps():
+			if c.IsReachable(addressSent) {
+				found_address = true
+				break loop
+			}
+		case <-timeout:
+			break loop
+		}
+	}
+
+	if !found_address {
+		t.Fatal("Cannot find find sent address in received map")
+	}
+
+	found_address = false
+	found_address2 := false
+	go conn1.SendMap(m.Copy())
+	m2 := NewBloomReachabilityMap()
+	m2.AddEntry(addressSent2)
+	go conn1.SendMap(m2.Copy())
+	timeout = time.After(10 * time.Second)
+
+loop2:
+	for {
+		select {
+		case c := <-conn2.ReachabilityMaps():
+			if c.IsReachable(addressSent) {
+				found_address = true
+			}
+			if c.IsReachable(addressSent2) {
+				found_address2 = true
+				break loop2
+			}
+		case <-timeout:
+			break loop2
+		}
+	}
+	if found_address {
+		t.Fatal("Map was sent when it should not have been")
+	}
+	if !found_address2 {
+		t.Fatal("second address was not sent")
+	}
+}
