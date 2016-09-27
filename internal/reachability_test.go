@@ -123,7 +123,7 @@ func TestNoMapCycles(t *testing.T) {
 	addressSent := types.NodeAddress("Sent")
 	addressSent2 := types.NodeAddress("Sent2")
 
-	reach1 := newReachability(address1)
+	reach1 := newReachability(address1, testLogger{})
 	defer reach1.Close()
 
 	reach1.AddConnection(address2, conn3)
