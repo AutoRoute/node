@@ -99,8 +99,10 @@ func Link(a, b Linkable) {
 }
 
 type testLogger struct {
+	Count int // TODO: Use gomock
 }
 
-func (t testLogger) LogBloomFilter(brm *BloomReachabilityMap) error {
+func (t *testLogger) LogBloomFilter(brm *BloomReachabilityMap) error {
+	t.Count++
 	return nil
 }
