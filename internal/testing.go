@@ -99,10 +99,16 @@ func Link(a, b Linkable) {
 }
 
 type testLogger struct {
-	Count int // TODO: Use gomock
+	BloomCount int
+	RouteCount int
 }
 
 func (t *testLogger) LogBloomFilter(brm *BloomReachabilityMap) error {
-	t.Count++
+	t.BloomCount++
+	return nil
+}
+
+func (t *testLogger) LogRoutingDecision(dest types.NodeAddress, next types.NodeAddress, packet_size int, amt int64) error {
+	t.RouteCount++
 	return nil
 }

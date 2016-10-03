@@ -103,7 +103,7 @@ func TestBitcoin(t *testing.T) {
 		BTCHost:      "127.0.0.1:19001",
 		BTCUser:      "admin1",
 		BTCPass:      "123",
-		BloomLogPath: "/tmp/bloom1.log",
+		RouteLogPath: "/tmp/route1.log",
 	})
 	listen.Start()
 	defer listen.KillAndPrint(t)
@@ -118,7 +118,7 @@ func TestBitcoin(t *testing.T) {
 		BTCHost:      "127.0.0.1:19011",
 		BTCUser:      "admin2",
 		BTCPass:      "123",
-		BloomLogPath: "/tmp/bloom2.log",
+		RouteLogPath: "/tmp/route2.log",
 	})
 	connect.Start()
 	defer connect.KillAndPrint(t)

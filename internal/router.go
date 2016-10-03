@@ -40,7 +40,7 @@ func NewRouter(pk PublicKey, route_logger Logger) *Router {
 	// TODO(daniel): Eventually, add flags that allow a user to specify alternate
 	// routing algorithms.
 	algorithm := newBandwidthRouting(reach)
-	routing := newRoutingHandler(pk, algorithm)
+	routing := newRoutingHandler(pk, algorithm, route_logger)
 	c1, c2, quit := splitChannel(routing.Routes())
 	receipt := newReceipt(pk.Hash(), c1)
 	Ledger := newLedger(pk.Hash(), receipt.PacketHashes(), c2)

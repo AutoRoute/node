@@ -34,7 +34,7 @@ func TestPing(t *testing.T) {
 		FakeMoney:    true,
 		Tcptunserve:  true,
 		Keyfile:      "/tmp/keyfile0",
-		BloomLogPath: "/tmp/bloom1.log",
+		RouteLogPath: "/tmp/route1.log",
 	})
 	ponger.Start()
 	defer ponger.KillAndPrint(t)
@@ -58,7 +58,7 @@ func TestPing(t *testing.T) {
 		Connect:      []string{"localhost:9999"},
 		Tcptun:       node_addr0,
 		Keyfile:      "/tmp/keyfile1",
-		BloomLogPath: "/tmp/bloom1.log",
+		RouteLogPath: "/tmp/route1.log",
 	})
 	pinger.Start()
 	defer pinger.KillAndPrint(t)
