@@ -16,18 +16,19 @@ type AutoRouteBinary struct {
 
 // Represents various options which can be passed to the binary.
 type BinaryOptions struct {
-	Listen               string
-	Fake_money           bool
-	Connect              []string
-	Unix                 string
-	Autodiscover         bool
-	Autodiscover_devices []string
-	Tcptun               string
-	Tcptunserve          bool
-	Keyfile              string
-	BTCHost              string
-	BTCUser              string
-	BTCPass              string
+	Listen              string
+	FakeMoney           bool
+	Connect             []string
+	Unix                string
+	Autodiscover        bool
+	AutodiscoverDevices []string
+	Tcptun              string
+	Tcptunserve         bool
+	Keyfile             string
+	BTCHost             string
+	BTCUser             string
+	BTCPass             string
+	BloomLogPath        string
 }
 
 // Transforms a BinaryOptions into a valid AutoRoute command line.
@@ -36,7 +37,7 @@ func ProduceCommandLine(b BinaryOptions) []string {
 	if len(b.Listen) > 0 {
 		args = append(args, "--listen="+b.Listen)
 	}
-	if b.Fake_money {
+	if b.FakeMoney {
 		args = append(args, "--fake_money")
 	}
 	if len(b.Connect) > 0 {
@@ -45,17 +46,17 @@ func ProduceCommandLine(b BinaryOptions) []string {
 	if b.Autodiscover {
 		args = append(args, "--auto=true")
 	}
-	if len(b.Autodiscover_devices) > 0 {
-		args = append(args, "--devs="+strings.Join(b.Autodiscover_devices, ","))
+	if len(b.AutodiscoverDevices) > 0 {
+		args = append(args, "--devs="+strings.Join(b.AutodiscoverDevices, ","))
 	}
 	if len(b.Tcptun) > 0 {
-		args = append(args, "--tcptun="+b.Tcptun)
+		args = append(args, "--tcp_tun="+b.Tcptun)
 	}
 	if b.Tcptunserve {
-		args = append(args, "--tcptunserve")
+		args = append(args, "--tcp_tun_serve")
 	}
 	if len(b.Keyfile) > 0 {
-		args = append(args, "--keyfile="+b.Keyfile)
+		args = append(args, "--key_file="+b.Keyfile)
 	}
 	if len(b.BTCHost) > 0 {
 		args = append(args, "--btc_host="+b.BTCHost)
@@ -68,6 +69,9 @@ func ProduceCommandLine(b BinaryOptions) []string {
 	}
 	if len(b.Unix) > 0 {
 		args = append(args, "--unix="+b.Unix)
+	}
+	if len(b.BloomLogPath) > 0 {
+		args = append(args, "--bloom_log_path="+b.BloomLogPath)
 	}
 	return args
 }

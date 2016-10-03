@@ -21,9 +21,9 @@ type Node struct {
 	quit           chan bool
 }
 
-func NewNode(pk PrivateKey, m types.Money, receipt_ticker <-chan time.Time, payment_ticker <-chan time.Time) *Node {
+func NewNode(pk PrivateKey, m types.Money, receipt_ticker <-chan time.Time, payment_ticker <-chan time.Time, route_logger Logger) *Node {
 	n := &Node{
-		NewRouter(pk.PublicKey()),
+		NewRouter(pk.PublicKey(), route_logger),
 		&sync.Mutex{},
 		pk,
 		make(chan types.Packet),

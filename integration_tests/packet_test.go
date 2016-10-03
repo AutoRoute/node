@@ -13,9 +13,10 @@ import (
 // This tests that packets sent over a packet connection fully transit the system.
 func TestPacket(t *testing.T) {
 	listen := NewNodeBinary(BinaryOptions{
-		Listen:     "[::1]:9999",
-		Fake_money: true,
-		Unix:       "/tmp/unix",
+		Listen:       "[::1]:9999",
+		FakeMoney:    true,
+		Unix:         "/tmp/unix",
+		BloomLogPath: "/tmp/bloom1.log",
 	})
 	listen.Start()
 	defer listen.KillAndPrint(t)
@@ -25,10 +26,11 @@ func TestPacket(t *testing.T) {
 	}
 
 	connect := NewNodeBinary(BinaryOptions{
-		Listen:     "[::1]:9998",
-		Connect:    []string{"[::1]:9999"},
-		Fake_money: true,
-		Unix:       "/tmp/unix2",
+		Listen:       "[::1]:9998",
+		Connect:      []string{"[::1]:9999"},
+		FakeMoney:    true,
+		Unix:         "/tmp/unix2",
+		BloomLogPath: "/tmp/bloom2.log",
 	})
 	connect.Start()
 	defer connect.KillAndPrint(t)

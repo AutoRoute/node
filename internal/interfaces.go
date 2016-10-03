@@ -59,3 +59,8 @@ type routingAlgorithm interface {
 	// Does any required cleanup.
 	Cleanup()
 }
+
+// Interface for something that can log routing decisions
+type Logger interface {
+	LogBloomFilter(*BloomReachabilityMap) error
+}

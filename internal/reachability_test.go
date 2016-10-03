@@ -11,8 +11,10 @@ func TestMapHandler(t *testing.T) {
 	c1, c2 := makePairedMapConnections()
 	a1 := types.NodeAddress("1")
 	a2 := types.NodeAddress("2")
-	m1 := newReachability(a1)
-	m2 := newReachability(a1)
+	lgr1 := &testLogger{0}
+	lgr2 := &testLogger{0}
+	m1 := newReachability(a1, lgr1)
+	m2 := newReachability(a1, lgr2)
 	defer m1.Close()
 	defer m2.Close()
 	m1.AddConnection(a2, c2)
@@ -34,10 +36,13 @@ func TestMapHandler(t *testing.T) {
 	}
 
 	if !timeout(m1, a2) {
-		t.Fatal("timed out waiting for m1", m1)
+		t.Fatal("Timed out waiting for m1", m1)
 	}
 	if !timeout(m2, a1) {
-		t.Fatal("timed out waiting for m1", m2)
+		t.Fatal("Timed out waiting for m1", m2)
+	}
+	if lgr1.Count != 1 || lgr2.Count != 1 {
+		t.Fatal("Not all connections logged", lgr1.Count, lgr2.Count)
 	}
 }
 
@@ -47,9 +52,12 @@ func TestRelayMapHandler(t *testing.T) {
 	a1 := types.NodeAddress("1")
 	a2 := types.NodeAddress("2")
 	a3 := types.NodeAddress("3")
-	m1 := newReachability(a1)
-	m2 := newReachability(a2)
-	m3 := newReachability(a3)
+	lgr1 := &testLogger{0}
+	lgr2 := &testLogger{0}
+	lgr3 := &testLogger{0}
+	m1 := newReachability(a1, lgr1)
+	m2 := newReachability(a2, lgr2)
+	m3 := newReachability(a3, lgr3)
 	defer m1.Close()
 	defer m2.Close()
 	defer m3.Close()
@@ -74,10 +82,13 @@ func TestRelayMapHandler(t *testing.T) {
 	}
 
 	if !timeout(m3, a2, a2) {
-		t.Fatal("timed out waiting for m1", m3)
+		t.Fatal("Timed out waiting for m1", m3)
 	}
 	if !timeout(m3, a1, a2) {
-		t.Fatal("timed out waiting for m1", m3)
+		t.Fatal("Timed out waiting for m1", m3)
+	}
+	if lgr1.Count != 1 || lgr2.Count != 2 || lgr3.Count != 1 {
+		t.Fatal("Not all connections logged", lgr1.Count, lgr2.Count, lgr3.Count)
 	}
 }
 
@@ -92,8 +103,11 @@ func TestNoBackwardsPackets(t *testing.T) {
 	address2 := types.NodeAddress("2")
 	address3 := types.NodeAddress("3")
 
-	reach1 := newReachability(address1)
-	reach2 := newReachability(address2)
+	lgr1 := &testLogger{0}
+	lgr2 := &testLogger{0}
+
+	reach1 := newReachability(address1, lgr1)
+	reach2 := newReachability(address2, lgr2)
 	defer reach1.Close()
 	defer reach2.Close()
 
@@ -108,7 +122,10 @@ func TestNoBackwardsPackets(t *testing.T) {
 		t.Fatalf("Expected empty dest, got '%s'.\n", dest)
 	}
 	if err == nil {
-		t.Fatal("Expected error, but got none.\n")
+		t.Fatal("Expected error, but got none.")
+	}
+	if lgr1.Count != 1 || lgr2.Count != 2 {
+		t.Fatal("Not all connectinos logged", lgr1.Count, lgr2.Count)
 	}
 }
 
@@ -123,7 +140,9 @@ func TestNoMapCycles(t *testing.T) {
 	addressSent := types.NodeAddress("Sent")
 	addressSent2 := types.NodeAddress("Sent2")
 
-	reach1 := newReachability(address1)
+	lgr := &testLogger{0}
+
+	reach1 := newReachability(address1, lgr)
 	defer reach1.Close()
 
 	reach1.AddConnection(address2, conn3)
@@ -181,6 +200,9 @@ loop2:
 		t.Fatal("Map was sent when it should not have been")
 	}
 	if !found_address2 {
-		t.Fatal("second address was not sent")
+		t.Fatal("Second address was not sent")
+	}
+	if lgr.Count != 2 {
+		t.Fatal("Not all connections logged", lgr.Count)
 	}
 }

@@ -97,3 +97,12 @@ func Link(a, b Linkable) {
 	a.AddConnection(c2)
 	b.AddConnection(c1)
 }
+
+type testLogger struct {
+	Count int // TODO: Use gomock
+}
+
+func (t *testLogger) LogBloomFilter(brm *BloomReachabilityMap) error {
+	t.Count++
+	return nil
+}

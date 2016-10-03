@@ -130,20 +130,22 @@ func TestConnection(t *testing.T) {
 	listen_port := integration.GetUnusedPort()
 	// autoroute -fake_money -listen "[%ip0%looptap0-0]:31337" -auto=true -devs='looptap0-0'
 	listen := integration.NewNodeBinary(integration.BinaryOptions{
-		Listen:               BuildListenAddress(listen_dev, listen_port),
-		Fake_money:           true,
-		Autodiscover:         true,
-		Autodiscover_devices: []string{listen_dev.Name},
+		Listen:              BuildListenAddress(listen_dev, listen_port),
+		FakeMoney:           true,
+		Autodiscover:        true,
+		AutodiscoverDevices: []string{listen_dev.Name},
+		BloomLogPath:        "/tmp/bloom1.log",
 	})
 	listen.Start()
 	defer listen.KillAndPrint(t)
 	// autoroute -fake_money -listen "[%ip1%looptap0-1]:31337" -auto=true -devs='looptap0-1'
 	connect_port := integration.GetUnusedPort()
 	connect := integration.NewNodeBinary(integration.BinaryOptions{
-		Listen:               BuildListenAddress(connect_dev, connect_port),
-		Fake_money:           true,
-		Autodiscover:         true,
-		Autodiscover_devices: []string{connect_dev.Name},
+		Listen:              BuildListenAddress(connect_dev, connect_port),
+		FakeMoney:           true,
+		Autodiscover:        true,
+		AutodiscoverDevices: []string{connect_dev.Name},
+		BloomLogPath:        "/tmp/bloom2.log",
 	})
 	connect.Start()
 	defer connect.KillAndPrint(t)

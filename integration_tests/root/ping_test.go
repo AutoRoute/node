@@ -30,10 +30,11 @@ func TestPing(t *testing.T) {
 
 	// tun0
 	ponger := integration.NewNodeBinary(integration.BinaryOptions{
-		Listen:      "localhost:9999",
-		Fake_money:  true,
-		Tcptunserve: true,
-		Keyfile:     "/tmp/keyfile0",
+		Listen:       "localhost:9999",
+		FakeMoney:    true,
+		Tcptunserve:  true,
+		Keyfile:      "/tmp/keyfile0",
+		BloomLogPath: "/tmp/bloom1.log",
 	})
 	ponger.Start()
 	defer ponger.KillAndPrint(t)
@@ -52,11 +53,12 @@ func TestPing(t *testing.T) {
 
 	// tun1
 	pinger := integration.NewNodeBinary(integration.BinaryOptions{
-		Listen:     "localhost:9998",
-		Fake_money: true,
-		Connect:    []string{"localhost:9999"},
-		Tcptun:     node_addr0,
-		Keyfile:    "/tmp/keyfile1",
+		Listen:       "localhost:9998",
+		FakeMoney:    true,
+		Connect:      []string{"localhost:9999"},
+		Tcptun:       node_addr0,
+		Keyfile:      "/tmp/keyfile1",
+		BloomLogPath: "/tmp/bloom1.log",
 	})
 	pinger.Start()
 	defer pinger.KillAndPrint(t)
