@@ -11,7 +11,8 @@ func TestNode(t *testing.T) {
 	sk1, _ := NewECDSAKey()
 	sk2, _ := NewECDSAKey()
 	c := make(chan time.Time)
-	n1 := NewNode(sk1, FakeMoney{}, time.Tick(100*time.Millisecond), c, &testLogger{})
+	lgr := testLogger{0, 0}
+	n1 := NewNode(sk1, FakeMoney{}, time.Tick(100*time.Millisecond), c, &lgr)
 	n2 := NewNode(sk2, FakeMoney{}, time.Tick(100*time.Millisecond), time.Tick(100*time.Millisecond), &testLogger{})
 	defer n1.Close()
 	defer n2.Close()
@@ -27,4 +28,8 @@ func TestNode(t *testing.T) {
 		t.Fatalf("Error sending packet: %v", err)
 	}
 	<-n2.Packets()
+
+	if lgr.RouteCount != 1 {
+		t.Fatal("Not all route decisions logged", lgr.RouteCount)
+	}
 }
