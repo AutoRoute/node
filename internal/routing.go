@@ -136,7 +136,7 @@ func (r *routingHandler) sendPacket(p types.Packet, src types.NodeAddress) error
 		return err
 	}
 
-	err = r.route_logger.LogRoutingDecision(p.Destination(), next, len(p.Data), p.Amount())
+	err = r.route_logger.LogRoutingDecision(p.Destination(), next, len(p.Data), p.Amount(), p.Hash())
 	if err != nil {
 		return err
 	}

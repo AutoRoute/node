@@ -108,7 +108,7 @@ func (t *testLogger) LogBloomFilter(brm *BloomReachabilityMap) error {
 	return nil
 }
 
-func (t *testLogger) LogRoutingDecision(dest types.NodeAddress, next types.NodeAddress, packet_size int, amt int64) error {
+func (t *testLogger) LogRoutingDecision(dest types.NodeAddress, next types.NodeAddress, packet_size int, amt int64, packet_hash types.PacketHash) error {
 	t.RouteCount++
 	return nil
 }

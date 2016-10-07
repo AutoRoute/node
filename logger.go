@@ -14,6 +14,7 @@ type routingDecision struct {
 	Next       types.NodeAddress
 	PacketSize int
 	Amt        int64
+	PacketHash types.PacketHash
 }
 
 type Logger struct {
@@ -31,8 +32,8 @@ func (lgr Logger) LogBloomFilter(brm *internal.BloomReachabilityMap) error {
 	return lgr.log_enc.Encode(brm.Conglomerate)
 }
 
-func (lgr Logger) LogRoutingDecision(dest types.NodeAddress, next types.NodeAddress, packet_size int, amt int64) error {
+func (lgr Logger) LogRoutingDecision(dest types.NodeAddress, next types.NodeAddress, packet_size int, amt int64, packet_hash types.PacketHash) error {
 	lgr.lock.Lock()
 	defer lgr.lock.Unlock()
-	return lgr.log_enc.Encode(routingDecision{dest, next, packet_size, amt})
+	return lgr.log_enc.Encode(routingDecision{dest, next, packet_size, amt, packet_hash})
 }

@@ -40,9 +40,10 @@ func TestRoutingDecision(t *testing.T) {
 	dest := types.NodeAddress("destination")
 	next := types.NodeAddress("next_hop")
 	packet_size := 10
+	packet_hash := types.PacketHash("packet_hash")
 	amt := int64(7)
 
-	err := lgr.LogRoutingDecision(dest, next, packet_size, amt)
+	err := lgr.LogRoutingDecision(dest, next, packet_size, amt, packet_hash)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,7 +56,8 @@ func TestRoutingDecision(t *testing.T) {
 	}
 
 	if rd.Dest != dest || rd.Next != next ||
-		rd.PacketSize != packet_size || rd.Amt != amt {
+		rd.PacketSize != packet_size || rd.Amt != amt ||
+		rd.PacketHash != packet_hash {
 		t.Fatal("Unexpected log entry", rd.Dest, rd.Next, rd.PacketSize, rd.Amt)
 	}
 }
