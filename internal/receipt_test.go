@@ -10,7 +10,8 @@ func TestReceiptHandler(t *testing.T) {
 	pk2, _ := NewECDSAKey()
 	a1, a2 := types.NodeAddress("1"), pk2.PublicKey().Hash()
 	i1, i2 := make(chan routingDecision), make(chan routingDecision)
-	ri1, ri2 := newReceipt(a1, i1), newReceipt(a2, i2)
+	lgr1, lgr2 := testLogger{0, 0, 0}, testLogger{0, 0, 0}
+	ri1, ri2 := newReceipt(a1, i1, &lgr1), newReceipt(a2, i2, &lgr2)
 	defer ri1.Close()
 	defer ri2.Close()
 
@@ -27,4 +28,8 @@ func TestReceiptHandler(t *testing.T) {
 
 	<-ri2.PacketHashes()
 	<-ri1.PacketHashes()
+
+	if lgr2.ReceiptCount != 1 {
+		t.Fatal("Not all receipts logged", lgr2.ReceiptCount)
+	}
 }

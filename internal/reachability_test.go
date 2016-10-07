@@ -11,8 +11,8 @@ func TestMapHandler(t *testing.T) {
 	c1, c2 := makePairedMapConnections()
 	a1 := types.NodeAddress("1")
 	a2 := types.NodeAddress("2")
-	lgr1 := &testLogger{0, 0}
-	lgr2 := &testLogger{0, 0}
+	lgr1 := &testLogger{0, 0, 0}
+	lgr2 := &testLogger{0, 0, 0}
 	m1 := newReachability(a1, lgr1)
 	m2 := newReachability(a1, lgr2)
 	defer m1.Close()
@@ -52,9 +52,9 @@ func TestRelayMapHandler(t *testing.T) {
 	a1 := types.NodeAddress("1")
 	a2 := types.NodeAddress("2")
 	a3 := types.NodeAddress("3")
-	lgr1 := &testLogger{0, 0}
-	lgr2 := &testLogger{0, 0}
-	lgr3 := &testLogger{0, 0}
+	lgr1 := &testLogger{0, 0, 0}
+	lgr2 := &testLogger{0, 0, 0}
+	lgr3 := &testLogger{0, 0, 0}
 	m1 := newReachability(a1, lgr1)
 	m2 := newReachability(a2, lgr2)
 	m3 := newReachability(a3, lgr3)
@@ -103,8 +103,8 @@ func TestNoBackwardsPackets(t *testing.T) {
 	address2 := types.NodeAddress("2")
 	address3 := types.NodeAddress("3")
 
-	lgr1 := &testLogger{0, 0}
-	lgr2 := &testLogger{0, 0}
+	lgr1 := &testLogger{0, 0, 0}
+	lgr2 := &testLogger{0, 0, 0}
 
 	reach1 := newReachability(address1, lgr1)
 	reach2 := newReachability(address2, lgr2)
@@ -140,7 +140,7 @@ func TestNoMapCycles(t *testing.T) {
 	addressSent := types.NodeAddress("Sent")
 	addressSent2 := types.NodeAddress("Sent2")
 
-	lgr := &testLogger{0, 0}
+	lgr := &testLogger{0, 0, 0}
 
 	reach1 := newReachability(address1, lgr)
 	defer reach1.Close()

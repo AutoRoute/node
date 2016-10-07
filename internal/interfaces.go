@@ -64,4 +64,5 @@ type routingAlgorithm interface {
 type Logger interface {
 	LogBloomFilter(*BloomReachabilityMap) error
 	LogRoutingDecision(types.NodeAddress, types.NodeAddress, int, int64, types.PacketHash) error
+	LogPacketReceipt(types.PacketHash) error
 }

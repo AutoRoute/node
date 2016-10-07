@@ -16,16 +16,18 @@ type receiptHandler struct {
 	l           *sync.Mutex
 	id          types.NodeAddress
 	outgoing    chan types.PacketHash
+	logger      Logger
 	quit        chan bool
 }
 
-func newReceipt(id types.NodeAddress, c <-chan routingDecision) *receiptHandler {
+func newReceipt(id types.NodeAddress, c <-chan routingDecision, route_logger Logger) *receiptHandler {
 	r := &receiptHandler{
 		make(map[types.NodeAddress]ReceiptConnection),
 		make(map[types.PacketHash]routingDecision),
 		&sync.Mutex{},
 		id,
 		make(chan types.PacketHash),
+		route_logger,
 		make(chan bool),
 	}
 	go r.sentPackets(c)
@@ -98,6 +100,11 @@ func (r *receiptHandler) sendReceipt(id types.NodeAddress, receipt PacketReceipt
 		}
 		dest[record.source] = true
 		r.outgoing <- hash
+
+		err := r.logger.LogPacketReceipt(hash)
+		if err != nil {
+			log.Fatal("Couldn't log receipt?")
+		}
 	}
 	for addr, _ := range dest {
 		if addr != r.id {

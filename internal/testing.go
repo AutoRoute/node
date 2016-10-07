@@ -99,8 +99,9 @@ func Link(a, b Linkable) {
 }
 
 type testLogger struct {
-	BloomCount int
-	RouteCount int
+	BloomCount   int
+	RouteCount   int
+	ReceiptCount int
 }
 
 func (t *testLogger) LogBloomFilter(brm *BloomReachabilityMap) error {
@@ -110,5 +111,10 @@ func (t *testLogger) LogBloomFilter(brm *BloomReachabilityMap) error {
 
 func (t *testLogger) LogRoutingDecision(dest types.NodeAddress, next types.NodeAddress, packet_size int, amt int64, packet_hash types.PacketHash) error {
 	t.RouteCount++
+	return nil
+}
+
+func (t *testLogger) LogPacketReceipt(packet_hash types.PacketHash) error {
+	t.ReceiptCount++
 	return nil
 }

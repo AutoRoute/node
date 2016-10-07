@@ -37,3 +37,9 @@ func (lgr Logger) LogRoutingDecision(dest types.NodeAddress, next types.NodeAddr
 	defer lgr.lock.Unlock()
 	return lgr.log_enc.Encode(routingDecision{dest, next, packet_size, amt, packet_hash})
 }
+
+func (lgr Logger) LogPacketReceipt(packet_hash types.PacketHash) error {
+	lgr.lock.Lock()
+	defer lgr.lock.Unlock()
+	return lgr.log_enc.Encode(packet_hash)
+}

@@ -11,7 +11,7 @@ func TestNode(t *testing.T) {
 	sk1, _ := NewECDSAKey()
 	sk2, _ := NewECDSAKey()
 	c := make(chan time.Time)
-	lgr := testLogger{0, 0}
+	lgr := testLogger{0, 0, 0}
 	n1 := NewNode(sk1, FakeMoney{}, time.Tick(100*time.Millisecond), c, &lgr)
 	n2 := NewNode(sk2, FakeMoney{}, time.Tick(100*time.Millisecond), time.Tick(100*time.Millisecond), &testLogger{})
 	defer n1.Close()

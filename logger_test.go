@@ -34,7 +34,7 @@ func TestLogBloomFilter(t *testing.T) {
 	}
 }
 
-func TestRoutingDecision(t *testing.T) {
+func TestLogRoutingDecision(t *testing.T) {
 	buf := bytes.Buffer{}
 	lgr := NewLogger(&buf)
 	dest := types.NodeAddress("destination")
@@ -59,5 +59,27 @@ func TestRoutingDecision(t *testing.T) {
 		rd.PacketSize != packet_size || rd.Amt != amt ||
 		rd.PacketHash != packet_hash {
 		t.Fatal("Unexpected log entry", rd.Dest, rd.Next, rd.PacketSize, rd.Amt)
+	}
+}
+
+func TestLogPacketReceipt(t *testing.T) {
+	buf := bytes.Buffer{}
+	lgr := NewLogger(&buf)
+	packet_hash_in := types.PacketHash("packet_hash")
+
+	err := lgr.LogPacketReceipt(packet_hash_in)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var packet_hash_out types.PacketHash
+	dec := json.NewDecoder(&buf)
+	err = dec.Decode(&packet_hash_out)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if packet_hash_in != packet_hash_out {
+		t.Fatalf("Unexpected packet hash: %v != %v", packet_hash_in, packet_hash_out)
 	}
 }
