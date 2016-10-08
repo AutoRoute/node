@@ -55,8 +55,10 @@ func TestDirectRouter(t *testing.T) {
 	k1 := sk1.PublicKey()
 	sk2, _ := NewECDSAKey()
 	k2 := sk2.PublicKey()
-	r1 := NewRouter(k1, &testLogger{})
-	r2 := NewRouter(k2, &testLogger{})
+	lgr1 := testLogger{0, 0}
+	lgr2 := testLogger{0, 0}
+	r1 := NewRouter(k1, &lgr1)
+	r2 := NewRouter(k2, &lgr2)
 	defer r1.Close()
 	defer r2.Close()
 	a2 := k2.Hash()
@@ -83,6 +85,10 @@ func TestDirectRouter(t *testing.T) {
 	if err == nil {
 		t.Fatal("Expected error got nil")
 	}
+
+	if lgr1.RouteCount != 1 && lgr2.RouteCount != 0 {
+		t.Fatal("Not all routes logged")
+	}
 }
 
 func TestRelayRouter(t *testing.T) {
@@ -102,9 +108,12 @@ func TestRelayRouter(t *testing.T) {
 		t.Fatal(err)
 	}
 	a3 := k3.Hash()
-	r1 := NewRouter(k1, &testLogger{})
-	r2 := NewRouter(k2, &testLogger{})
-	r3 := NewRouter(k3, &testLogger{})
+	lgr1 := testLogger{0, 0}
+	lgr2 := testLogger{0, 0}
+	lgr3 := testLogger{0, 0}
+	r1 := NewRouter(k1, &lgr1)
+	r2 := NewRouter(k2, &lgr2)
+	r3 := NewRouter(k3, &lgr3)
 	defer r1.Close()
 	defer r2.Close()
 	defer r3.Close()
@@ -132,5 +141,9 @@ func TestRelayRouter(t *testing.T) {
 	received := <-r3.Packets()
 	if received.Dest != p3.Dest || received.Amt != p3.Amt || !bytes.Equal(received.Data, p3.Data) {
 		t.Fatalf("%q != %q", received, p3)
+	}
+
+	if lgr1.RouteCount != 1 {
+		t.Fatal("Not all routes logged")
 	}
 }

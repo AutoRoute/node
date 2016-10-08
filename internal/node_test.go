@@ -28,8 +28,4 @@ func TestNode(t *testing.T) {
 		t.Fatalf("Error sending packet: %v", err)
 	}
 	<-n2.Packets()
-
-	if lgr.RouteCount != 1 {
-		t.Fatal("Not all routing decisions logged", lgr.RouteCount)
-	}
 }
