@@ -55,8 +55,8 @@ func TestDirectRouter(t *testing.T) {
 	k1 := sk1.PublicKey()
 	sk2, _ := NewECDSAKey()
 	k2 := sk2.PublicKey()
-	lgr1 := testLogger{0, 0}
-	lgr2 := testLogger{0, 0}
+	lgr1 := testLogger{0, 0, 0}
+	lgr2 := testLogger{0, 0, 0}
 	r1 := NewRouter(k1, &lgr1)
 	r2 := NewRouter(k2, &lgr2)
 	defer r1.Close()
@@ -108,9 +108,9 @@ func TestRelayRouter(t *testing.T) {
 		t.Fatal(err)
 	}
 	a3 := k3.Hash()
-	lgr1 := testLogger{0, 0}
-	lgr2 := testLogger{0, 0}
-	lgr3 := testLogger{0, 0}
+	lgr1 := testLogger{0, 0, 0}
+	lgr2 := testLogger{0, 0, 0}
+	lgr3 := testLogger{0, 0, 0}
 	r1 := NewRouter(k1, &lgr1)
 	r2 := NewRouter(k2, &lgr2)
 	r3 := NewRouter(k3, &lgr3)
