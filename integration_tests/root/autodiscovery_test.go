@@ -134,7 +134,7 @@ func TestConnection(t *testing.T) {
 		FakeMoney:           true,
 		Autodiscover:        true,
 		AutodiscoverDevices: []string{listen_dev.Name},
-		BloomLogPath:        "/tmp/bloom1.log",
+		RouteLogPath:        "/tmp/route1.log",
 	})
 	listen.Start()
 	defer listen.KillAndPrint(t)
@@ -145,7 +145,7 @@ func TestConnection(t *testing.T) {
 		FakeMoney:           true,
 		Autodiscover:        true,
 		AutodiscoverDevices: []string{connect_dev.Name},
-		BloomLogPath:        "/tmp/bloom2.log",
+		RouteLogPath:        "/tmp/route2.log",
 	})
 	connect.Start()
 	defer connect.KillAndPrint(t)

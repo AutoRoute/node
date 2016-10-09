@@ -11,22 +11,53 @@ import (
 
 func TestLogBloomFilter(t *testing.T) {
 	buf := bytes.Buffer{}
-	logger := NewLogger(&buf)
+	lgr := NewLogger(&buf)
 	a := types.NodeAddress("1")
 
 	bloomMap1 := internal.NewBloomReachabilityMap()
 	bloomMap1.AddEntry(a)
 
-	logger.LogBloomFilter(bloomMap1)
+	err := lgr.LogBloomFilter(bloomMap1)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	var bloomMap2 internal.BloomReachabilityMap
-	decoder := json.NewDecoder(&buf)
-	err := decoder.Decode(&bloomMap2.Conglomerate)
+	dec := json.NewDecoder(&buf)
+	err = dec.Decode(&bloomMap2.Conglomerate)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	if !(bloomMap2.IsReachable(a)) {
-		t.Fatal("expected %s to be reachable in %v", a, bloomMap2)
+		t.Fatal("Expected %s to be reachable in %v", a, bloomMap2)
+	}
+}
+
+func TestRoutingDecision(t *testing.T) {
+	buf := bytes.Buffer{}
+	lgr := NewLogger(&buf)
+	dest := types.NodeAddress("destination")
+	next := types.NodeAddress("next_hop")
+	packet_size := 10
+	packet_hash := types.PacketHash("packet_hash")
+	amt := int64(7)
+
+	err := lgr.LogRoutingDecision(dest, next, packet_size, amt, packet_hash)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var rd routingDecision
+	dec := json.NewDecoder(&buf)
+	err = dec.Decode(&rd)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if rd.Dest != dest || rd.Next != next ||
+		rd.PacketSize != packet_size || rd.Amt != amt ||
+		rd.PacketHash != packet_hash {
+		t.Fatal("Unexpected log entry", rd.Dest, rd.Next, rd.PacketSize, rd.Amt)
 	}
 }

@@ -3,6 +3,7 @@ package internal
 import (
 	"bytes"
 	"log"
+	"sync"
 	"testing"
 	"time"
 
@@ -14,8 +15,10 @@ func TestRouterConnections(t *testing.T) {
 	k1 := sk1.PublicKey()
 	sk2, _ := NewECDSAKey()
 	k2 := sk2.PublicKey()
-	r1 := NewRouter(k1, &testLogger{})
-	r2 := NewRouter(k2, &testLogger{})
+	lgr1 := testLogger{0, 0, &sync.Mutex{}}
+	lgr2 := testLogger{0, 0, &sync.Mutex{}}
+	r1 := NewRouter(k1, &lgr1)
+	r2 := NewRouter(k2, &lgr2)
 	defer r1.Close()
 	defer r2.Close()
 	Link(r1, r2)
@@ -32,8 +35,10 @@ func TestDoubleConnect(t *testing.T) {
 	k1 := sk1.PublicKey()
 	sk2, _ := NewECDSAKey()
 	k2 := sk2.PublicKey()
-	r1 := NewRouter(k1, &testLogger{})
-	r2 := NewRouter(k2, &testLogger{})
+	lgr1 := testLogger{0, 0, &sync.Mutex{}}
+	lgr2 := testLogger{0, 0, &sync.Mutex{}}
+	r1 := NewRouter(k1, &lgr1)
+	r2 := NewRouter(k2, &lgr2)
 	defer r1.Close()
 	defer r2.Close()
 	c1, c2 := MakePairedConnections(r1.GetAddress(), r2.GetAddress())
@@ -55,8 +60,10 @@ func TestDirectRouter(t *testing.T) {
 	k1 := sk1.PublicKey()
 	sk2, _ := NewECDSAKey()
 	k2 := sk2.PublicKey()
-	r1 := NewRouter(k1, &testLogger{})
-	r2 := NewRouter(k2, &testLogger{})
+	lgr1 := testLogger{0, 0, &sync.Mutex{}}
+	lgr2 := testLogger{0, 0, &sync.Mutex{}}
+	r1 := NewRouter(k1, &lgr1)
+	r2 := NewRouter(k2, &lgr2)
 	defer r1.Close()
 	defer r2.Close()
 	a2 := k2.Hash()
@@ -64,6 +71,7 @@ func TestDirectRouter(t *testing.T) {
 
 	// Send a test packet over the connection
 	p2 := testPacket(a2)
+
 	go func() {
 		err := r1.SendPacket(p2)
 		if err != nil {
@@ -82,6 +90,12 @@ func TestDirectRouter(t *testing.T) {
 	err := r1.SendPacket(p3)
 	if err == nil {
 		t.Fatal("Expected error got nil")
+	}
+
+	lgr1.GetRouteCount()
+	lgr2.GetRouteCount()
+	if lgr1.GetRouteCount() != 1 && lgr2.GetRouteCount() != 0 {
+		t.Fatal("Not all routes logged")
 	}
 }
 
@@ -102,9 +116,12 @@ func TestRelayRouter(t *testing.T) {
 		t.Fatal(err)
 	}
 	a3 := k3.Hash()
-	r1 := NewRouter(k1, &testLogger{})
-	r2 := NewRouter(k2, &testLogger{})
-	r3 := NewRouter(k3, &testLogger{})
+	lgr1 := testLogger{0, 0, &sync.Mutex{}}
+	lgr2 := testLogger{0, 0, &sync.Mutex{}}
+	lgr3 := testLogger{0, 0, &sync.Mutex{}}
+	r1 := NewRouter(k1, &lgr1)
+	r2 := NewRouter(k2, &lgr2)
+	r3 := NewRouter(k3, &lgr3)
 	defer r1.Close()
 	defer r2.Close()
 	defer r3.Close()
@@ -132,5 +149,9 @@ func TestRelayRouter(t *testing.T) {
 	received := <-r3.Packets()
 	if received.Dest != p3.Dest || received.Amt != p3.Amt || !bytes.Equal(received.Data, p3.Data) {
 		t.Fatalf("%q != %q", received, p3)
+	}
+
+	if lgr1.GetRouteCount() != 1 {
+		t.Fatal("Not all routes logged")
 	}
 }

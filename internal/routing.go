@@ -36,6 +36,8 @@ type routingHandler struct {
 	quit        chan bool
 	// The routing algorithm to use.
 	routing_algo routingAlgorithm
+	// The routing decision logger
+	route_logger Logger
 }
 
 // Represents a permanent record of a routingHandler decision.
@@ -50,7 +52,7 @@ type routingDecision struct {
 }
 
 func newRoutingHandler(pk PublicKey,
-	algo routingAlgorithm) *routingHandler {
+	algo routingAlgorithm, route_logger Logger) *routingHandler {
 	handler := &routingHandler{
 		pk,
 		make(chan types.Packet),
@@ -58,6 +60,7 @@ func newRoutingHandler(pk PublicKey,
 		make(map[types.NodeAddress]DataConnection),
 		make(chan bool),
 		algo,
+		route_logger,
 	}
 
 	handler.routing_algo.BindToRouting(handler)
@@ -130,6 +133,11 @@ func (r *routingHandler) sendPacket(p types.Packet, src types.NodeAddress) error
 	err = r.connections[next].SendPacket(p)
 	if err != nil {
 		log.Print("Error sending packet.\n")
+		return err
+	}
+
+	err = r.route_logger.LogRoutingDecision(p.Destination(), next, len(p.Data), p.Amount(), p.Hash())
+	if err != nil {
 		return err
 	}
 

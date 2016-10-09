@@ -42,7 +42,7 @@ var unix = flag.String("unix", "", "The path to accept / receive packets as unix
 var tcp_tun = flag.String("tcp_tun", "", "Address to try and tcp tunnel to")
 var tcp_tun_serve = flag.Bool("tcp_tun_serve", false, "Enables this node to be an exit node")
 var tcp_address = flag.String("tcp_address", "", "IP address to assign to the tcp tunnel")
-var bloom_log_path = flag.String("bloom_log_path", "", "Bloom filter log path")
+var route_log_path = flag.String("route_log_path", "", "Routing decision log path")
 
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds | log.Lshortfile)
@@ -82,11 +82,11 @@ func main() {
 	}
 	log.Printf("Connected")
 
-	bloom_log, err := os.Create(*bloom_log_path)
+	route_log, err := os.Create(*route_log_path)
 	if err != nil {
 		log.Fatal("Error creating bloom log: %v", err)
 	}
-	route_logger := node.NewLogger(bloom_log)
+	route_logger := node.NewLogger(route_log)
 	n := node.NewServer(key, money, log.New(os.Stderr, "", log.LstdFlags), route_logger)
 
 	log.Printf("Starting to listen on %s", *listen)

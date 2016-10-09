@@ -16,7 +16,7 @@ func TestPacket(t *testing.T) {
 		Listen:       "[::1]:9999",
 		FakeMoney:    true,
 		Unix:         "/tmp/unix",
-		BloomLogPath: "/tmp/bloom1.log",
+		RouteLogPath: "/tmp/route1.log",
 	})
 	listen.Start()
 	defer listen.KillAndPrint(t)
@@ -30,7 +30,7 @@ func TestPacket(t *testing.T) {
 		Connect:      []string{"[::1]:9999"},
 		FakeMoney:    true,
 		Unix:         "/tmp/unix2",
-		BloomLogPath: "/tmp/bloom2.log",
+		RouteLogPath: "/tmp/route2.log",
 	})
 	connect.Start()
 	defer connect.KillAndPrint(t)

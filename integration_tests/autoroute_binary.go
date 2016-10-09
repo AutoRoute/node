@@ -28,7 +28,7 @@ type BinaryOptions struct {
 	BTCHost             string
 	BTCUser             string
 	BTCPass             string
-	BloomLogPath        string
+	RouteLogPath        string
 }
 
 // Transforms a BinaryOptions into a valid AutoRoute command line.
@@ -70,8 +70,8 @@ func ProduceCommandLine(b BinaryOptions) []string {
 	if len(b.Unix) > 0 {
 		args = append(args, "--unix="+b.Unix)
 	}
-	if len(b.BloomLogPath) > 0 {
-		args = append(args, "--bloom_log_path="+b.BloomLogPath)
+	if len(b.RouteLogPath) > 0 {
+		args = append(args, "--route_log_path="+b.RouteLogPath)
 	}
 	return args
 }
