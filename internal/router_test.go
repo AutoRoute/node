@@ -15,8 +15,8 @@ func TestRouterConnections(t *testing.T) {
 	k1 := sk1.PublicKey()
 	sk2, _ := NewECDSAKey()
 	k2 := sk2.PublicKey()
-	lgr1 := testLogger{0, 0, &sync.Mutex{}}
-	lgr2 := testLogger{0, 0, &sync.Mutex{}}
+	lgr1 := testLogger{0, 0, 0, &sync.Mutex{}}
+	lgr2 := testLogger{0, 0, 0, &sync.Mutex{}}
 	r1 := NewRouter(k1, &lgr1)
 	r2 := NewRouter(k2, &lgr2)
 	defer r1.Close()
@@ -35,8 +35,8 @@ func TestDoubleConnect(t *testing.T) {
 	k1 := sk1.PublicKey()
 	sk2, _ := NewECDSAKey()
 	k2 := sk2.PublicKey()
-	lgr1 := testLogger{0, 0, &sync.Mutex{}}
-	lgr2 := testLogger{0, 0, &sync.Mutex{}}
+	lgr1 := testLogger{0, 0, 0, &sync.Mutex{}}
+	lgr2 := testLogger{0, 0, 0, &sync.Mutex{}}
 	r1 := NewRouter(k1, &lgr1)
 	r2 := NewRouter(k2, &lgr2)
 	defer r1.Close()
@@ -60,8 +60,8 @@ func TestDirectRouter(t *testing.T) {
 	k1 := sk1.PublicKey()
 	sk2, _ := NewECDSAKey()
 	k2 := sk2.PublicKey()
-	lgr1 := testLogger{0, 0, &sync.Mutex{}}
-	lgr2 := testLogger{0, 0, &sync.Mutex{}}
+	lgr1 := testLogger{0, 0, 0, &sync.Mutex{}}
+	lgr2 := testLogger{0, 0, 0, &sync.Mutex{}}
 	r1 := NewRouter(k1, &lgr1)
 	r2 := NewRouter(k2, &lgr2)
 	defer r1.Close()
@@ -116,9 +116,9 @@ func TestRelayRouter(t *testing.T) {
 		t.Fatal(err)
 	}
 	a3 := k3.Hash()
-	lgr1 := testLogger{0, 0, &sync.Mutex{}}
-	lgr2 := testLogger{0, 0, &sync.Mutex{}}
-	lgr3 := testLogger{0, 0, &sync.Mutex{}}
+	lgr1 := testLogger{0, 0, 0, &sync.Mutex{}}
+	lgr2 := testLogger{0, 0, 0, &sync.Mutex{}}
+	lgr3 := testLogger{0, 0, 0, &sync.Mutex{}}
 	r1 := NewRouter(k1, &lgr1)
 	r2 := NewRouter(k2, &lgr2)
 	r3 := NewRouter(k3, &lgr3)

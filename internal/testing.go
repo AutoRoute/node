@@ -101,9 +101,10 @@ func Link(a, b Linkable) {
 }
 
 type testLogger struct {
-	BloomCount int
-	RouteCount int
-	l          *sync.Mutex
+	BloomCount   int
+	RouteCount   int
+	ReceiptCount int
+	l            *sync.Mutex
 }
 
 func (t *testLogger) LogBloomFilter(brm *BloomReachabilityMap) error {
@@ -120,6 +121,13 @@ func (t *testLogger) LogRoutingDecision(dest types.NodeAddress, next types.NodeA
 	return nil
 }
 
+func (t *testLogger) LogPacketReceipt(packet_hash types.PacketHash) error {
+	t.l.Lock()
+	defer t.l.Unlock()
+	t.ReceiptCount++
+	return nil
+}
+
 func (t *testLogger) GetBloomCount() int {
 	t.l.Lock()
 	defer t.l.Unlock()
@@ -130,4 +138,10 @@ func (t *testLogger) GetRouteCount() int {
 	t.l.Lock()
 	defer t.l.Unlock()
 	return t.RouteCount
+}
+
+func (t *testLogger) GetReceiptCount() int {
+	t.l.Lock()
+	defer t.l.Unlock()
+	return t.ReceiptCount
 }

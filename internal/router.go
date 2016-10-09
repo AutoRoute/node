@@ -42,7 +42,7 @@ func NewRouter(pk PublicKey, route_logger Logger) *Router {
 	algorithm := newBandwidthRouting(reach)
 	routing := newRoutingHandler(pk, algorithm, route_logger)
 	c1, c2, quit := splitChannel(routing.Routes())
-	receipt := newReceipt(pk.Hash(), c1)
+	receipt := newReceipt(pk.Hash(), c1, route_logger)
 	Ledger := newLedger(pk.Hash(), receipt.PacketHashes(), c2)
 	return &Router{
 		pk,
