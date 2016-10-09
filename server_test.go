@@ -15,11 +15,12 @@ import (
 func TestConnection(t *testing.T) {
 	key1, _ := NewKey()
 	key2, _ := NewKey()
-	buf := bytes.Buffer{}
+	buf1 := bytes.Buffer{}
+	buf2 := bytes.Buffer{}
 
-	n1 := NewServer(key1, internal.FakeMoney{}, nil, NewLogger(&buf))
+	n1 := NewServer(key1, internal.FakeMoney{}, nil, NewLogger(&buf1))
 	defer n1.Close()
-	n2 := NewServer(key2, internal.FakeMoney{}, nil, NewLogger(&buf))
+	n2 := NewServer(key2, internal.FakeMoney{}, nil, NewLogger(&buf2))
 	defer n2.Close()
 
 	err := n1.Listen("[::1]:16543")
@@ -51,11 +52,12 @@ func WaitForReachable(n Node, addr types.NodeAddress) error {
 func TestDataTransmission(t *testing.T) {
 	key1, _ := NewKey()
 	key2, _ := NewKey()
-	buf := bytes.Buffer{}
+	buf1 := bytes.Buffer{}
+	buf2 := bytes.Buffer{}
 
-	n1 := NewServer(key1, internal.FakeMoney{}, nil, NewLogger(&buf))
+	n1 := NewServer(key1, internal.FakeMoney{}, nil, NewLogger(&buf1))
 	defer n1.Close()
-	n2 := NewServer(key2, internal.FakeMoney{}, nil, NewLogger(&buf))
+	n2 := NewServer(key2, internal.FakeMoney{}, nil, NewLogger(&buf2))
 	defer n2.Close()
 	err := n1.Listen("[::1]:16544")
 	if err != nil {
@@ -95,11 +97,12 @@ func TestDataTransmission(t *testing.T) {
 func benchmarkDataTransmission(size int, b *testing.B) {
 	key1, _ := NewKey()
 	key2, _ := NewKey()
-	buf := bytes.Buffer{}
+	buf1 := bytes.Buffer{}
+	buf2 := bytes.Buffer{}
 
-	n1 := NewServer(key1, internal.FakeMoney{}, nil, NewLogger(&buf))
+	n1 := NewServer(key1, internal.FakeMoney{}, nil, NewLogger(&buf1))
 	defer n1.Close()
-	n2 := NewServer(key2, internal.FakeMoney{}, nil, NewLogger(&buf))
+	n2 := NewServer(key2, internal.FakeMoney{}, nil, NewLogger(&buf2))
 	defer n2.Close()
 	err := n1.Listen(fmt.Sprintf("[::1]:16%03d", (size+b.N)%127+1))
 	if err != nil {

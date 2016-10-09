@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"sync"
 	"testing"
 	"time"
 
@@ -11,8 +12,8 @@ func TestMapHandler(t *testing.T) {
 	c1, c2 := makePairedMapConnections()
 	a1 := types.NodeAddress("1")
 	a2 := types.NodeAddress("2")
-	lgr1 := &testLogger{0, 0, 0}
-	lgr2 := &testLogger{0, 0, 0}
+	lgr1 := &testLogger{0, 0, 0, &sync.Mutex{}}
+	lgr2 := &testLogger{0, 0, 0, &sync.Mutex{}}
 	m1 := newReachability(a1, lgr1)
 	m2 := newReachability(a1, lgr2)
 	defer m1.Close()
@@ -41,8 +42,8 @@ func TestMapHandler(t *testing.T) {
 	if !timeout(m2, a1) {
 		t.Fatal("Timed out waiting for m1", m2)
 	}
-	if lgr1.BloomCount != 1 || lgr2.BloomCount != 1 {
-		t.Fatal("Not all connections logged", lgr1.BloomCount, lgr2.BloomCount)
+	if lgr1.GetBloomCount() != 1 || lgr2.GetBloomCount() != 1 {
+		t.Fatal("Not all connections logged", lgr1.GetBloomCount(), lgr2.GetBloomCount())
 	}
 }
 
@@ -52,9 +53,9 @@ func TestRelayMapHandler(t *testing.T) {
 	a1 := types.NodeAddress("1")
 	a2 := types.NodeAddress("2")
 	a3 := types.NodeAddress("3")
-	lgr1 := &testLogger{0, 0, 0}
-	lgr2 := &testLogger{0, 0, 0}
-	lgr3 := &testLogger{0, 0, 0}
+	lgr1 := &testLogger{0, 0, 0, &sync.Mutex{}}
+	lgr2 := &testLogger{0, 0, 0, &sync.Mutex{}}
+	lgr3 := &testLogger{0, 0, 0, &sync.Mutex{}}
 	m1 := newReachability(a1, lgr1)
 	m2 := newReachability(a2, lgr2)
 	m3 := newReachability(a3, lgr3)
@@ -87,8 +88,8 @@ func TestRelayMapHandler(t *testing.T) {
 	if !timeout(m3, a1, a2) {
 		t.Fatal("Timed out waiting for m1", m3)
 	}
-	if lgr1.BloomCount != 1 || lgr2.BloomCount != 2 || lgr3.BloomCount != 1 {
-		t.Fatal("Not all connections logged", lgr1.BloomCount, lgr2.BloomCount, lgr3.BloomCount)
+	if lgr1.GetBloomCount() != 1 || lgr2.GetBloomCount() != 2 || lgr3.GetBloomCount() != 1 {
+		t.Fatal("Not all connections logged", lgr1.GetBloomCount(), lgr2.GetBloomCount(), lgr3.GetBloomCount())
 	}
 }
 
@@ -103,8 +104,8 @@ func TestNoBackwardsPackets(t *testing.T) {
 	address2 := types.NodeAddress("2")
 	address3 := types.NodeAddress("3")
 
-	lgr1 := &testLogger{0, 0, 0}
-	lgr2 := &testLogger{0, 0, 0}
+	lgr1 := &testLogger{0, 0, 0, &sync.Mutex{}}
+	lgr2 := &testLogger{0, 0, 0, &sync.Mutex{}}
 
 	reach1 := newReachability(address1, lgr1)
 	reach2 := newReachability(address2, lgr2)
@@ -124,8 +125,8 @@ func TestNoBackwardsPackets(t *testing.T) {
 	if err == nil {
 		t.Fatal("Expected error, but got none.")
 	}
-	if lgr1.BloomCount != 1 || lgr2.BloomCount != 2 {
-		t.Fatal("Not all connectinos logged", lgr1.BloomCount, lgr2.BloomCount)
+	if lgr1.GetBloomCount() != 1 || lgr2.GetBloomCount() != 2 {
+		t.Fatal("Not all connectinos logged", lgr1.GetBloomCount(), lgr2.GetBloomCount())
 	}
 }
 
@@ -140,7 +141,7 @@ func TestNoMapCycles(t *testing.T) {
 	addressSent := types.NodeAddress("Sent")
 	addressSent2 := types.NodeAddress("Sent2")
 
-	lgr := &testLogger{0, 0, 0}
+	lgr := &testLogger{0, 0, 0, &sync.Mutex{}}
 
 	reach1 := newReachability(address1, lgr)
 	defer reach1.Close()
@@ -202,7 +203,7 @@ loop2:
 	if !found_address2 {
 		t.Fatal("Second address was not sent")
 	}
-	if lgr.BloomCount != 2 {
-		t.Fatal("Not all connections logged", lgr.BloomCount)
+	if lgr.GetBloomCount() != 2 {
+		t.Fatal("Not all connections logged", lgr.GetBloomCount())
 	}
 }
